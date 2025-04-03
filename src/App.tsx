@@ -11,6 +11,7 @@ import {
   MenuList,
   MenuItem,
   SimpleGrid,
+  Image,
 } from '@chakra-ui/react';
 import { FaSun, FaMoon, FaHome, FaDumbbell, FaCog, FaPalette } from 'react-icons/fa';
 import Home from './views/Home';
@@ -22,7 +23,7 @@ const App: React.FC = () => {
   const { colorMode, toggleColorMode } = useColorMode(); // Hook to toggle between dark and light mode
   const [colorScheme, setColorScheme] = useState<string>(() => {
     // Load the color scheme from localStorage or default to 'cyan'
-    return localStorage.getItem('colorScheme') || 'cyan';
+    return localStorage.getItem('colorScheme') || 'red';
   });
 
   const colorSchemes = [
@@ -60,7 +61,10 @@ const App: React.FC = () => {
     <Flex direction="column" height="100vh">
       <Box bg={`${colorScheme}.500`} p={4}>
         <Flex justify="space-between" align="center">
-          <Heading size="md">Pulsar PWA</Heading>
+          <Flex align="center" gap={2}>
+            <Image src="/favicon.svg" alt="App Icon" boxSize="24px" /> {/* Display SVG favicon */}
+            <Heading size="md">Pulsar PWA</Heading>
+          </Flex>
           <Flex gap={2}>
             <IconButton
               aria-label="Toggle Theme"
