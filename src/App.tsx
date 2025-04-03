@@ -14,7 +14,7 @@ import {
   Image,
 } from '@chakra-ui/react';
 import { FaSun, FaMoon, FaPalette, FaHome, FaDumbbell, FaCog } from 'react-icons/fa'; // Import icons
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Link as RouterLink } from 'react-router-dom'; // Import RouterLink
 import Home from './views/Home';
 import Workout from './views/Workout';
 import Settings from './views/Settings';
@@ -51,8 +51,12 @@ const App: React.FC = () => {
       <Box bg={`${colorScheme}.500`} p={4}>
         <Flex justify="space-between" align="center">
           <Flex align="center" gap={2}>
-            <Image src="/favicon.svg" alt="App Icon" boxSize="24px" /> {/* Display SVG favicon */}
-            <Heading size="md">Pulsar PWA</Heading>
+            <RouterLink to="/"> {/* Make the logo/title clickable */}
+              <Flex align="center" gap={2}>
+                <Image src="/favicon.svg" alt="App Icon" boxSize="24px" />
+                <Heading size="md" color="white">Pulsar PWA</Heading>
+              </Flex>
+            </RouterLink>
           </Flex>
           <Flex gap={2}>
             <IconButton
