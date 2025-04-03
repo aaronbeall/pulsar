@@ -20,12 +20,13 @@ export interface Routine {
       duration?: number; // In seconds
     }>;
   }>;
-  responses: {
+  prompts: {
     goals: string; // User's workout goals
     equipment: string; // Equipment the user will use
     time: string; // Time available for workouts
     additionalInfo: string; // Additional information provided by the user
   };
+  aiResponses: string[]; // AI-generated responses based on user input
   liked: boolean;
   disliked: boolean;
   favorite: boolean;

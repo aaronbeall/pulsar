@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, Flex, Heading, Text, SimpleGrid } from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import { Box, Button, Flex, Heading, Text, SimpleGrid, useToken } from '@chakra-ui/react'; // Import useToken
+import { FaDumbbell } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import { getRoutines, getWorkouts } from '../db/indexedDb';
 import { Routine, Workout } from '../models/types';
 
 const Home: React.FC = () => {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
+  const [red500] = useToken('colors', ['red.500']); // Retrieve the Chakra theme color
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,7 +57,10 @@ const Home: React.FC = () => {
   };
 
   return (
-    <Flex direction="column" p={4} width="100%">
+    <Flex direction="column" p={4} align="center" justify="center" height="100%" width="100%">
+      <Box textAlign="center" mb={6}>
+        <FaDumbbell size="100px" color={red500} />
+      </Box>
       {routines.length === 0 ? (
         <Box textAlign="center">
           <Heading size="lg" mb={4}>
