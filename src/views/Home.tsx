@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, Flex, Heading, Text, SimpleGrid, useToken } from '@chakra-ui/react'; // Import useToken
+import { Box, Button, Flex, Heading, Text, SimpleGrid, useToken, Highlight } from '@chakra-ui/react'; // Import useToken and Highlight
 import { FaDumbbell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { getRoutines, getWorkouts } from '../db/indexedDb';
@@ -64,7 +64,16 @@ const Home: React.FC = () => {
       {routines.length === 0 ? (
         <Box textAlign="center">
           <Heading size="lg" mb={4}>
-            Welcome to Pulsar PWA!
+            <Highlight
+              query="Pulsar"
+              styles={{
+                display: 'inline-block',
+                color: 'cyan.500',
+                fontWeight: 'bold',
+              }}
+            >
+              Welcome to Pulsar PWA!
+            </Highlight>
           </Heading>
           <Text mb={4}>Get started by creating your first workout routine.</Text>
           <Button colorScheme="cyan" onClick={() => navigate('/workout')}>
@@ -74,7 +83,16 @@ const Home: React.FC = () => {
       ) : (
         <Box textAlign="center">
           <Heading size="lg" mb={4}>
-            Ready to Workout?
+            <Highlight
+              query="Pulsar"
+              styles={{
+                display: 'inline-block',
+                color: 'cyan.500',
+                fontWeight: 'bold',
+              }}
+            >
+              Ready to Workout with Pulsar?
+            </Highlight>
           </Heading>
           <Button colorScheme="cyan" mb={4}>
             Start Workout

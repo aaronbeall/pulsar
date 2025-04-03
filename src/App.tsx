@@ -12,6 +12,7 @@ import {
   MenuItem,
   SimpleGrid,
   Image,
+  Text,
 } from '@chakra-ui/react';
 import { FaSun, FaMoon, FaPalette, FaHome, FaDumbbell, FaCog } from 'react-icons/fa'; // Import icons
 import { Routes, Route, Link, useLocation, Link as RouterLink } from 'react-router-dom'; // Import RouterLink
@@ -54,9 +55,10 @@ const App: React.FC = () => {
             <RouterLink to="/"> {/* Make the logo/title clickable */}
               <Flex align="center" gap={2}>
                 <Image src="/favicon.svg" alt="App Icon" boxSize="24px" />
-                <Heading size="md" color="white">Pulsar PWA</Heading>
+                <Heading size="md" color="white">PULSAR</Heading>
               </Flex>
             </RouterLink>
+            <Text fontSize="sm" color="whiteAlpha.800" ml={2}>Your AI Assisted Workout</Text> {/* Subheading */}
           </Flex>
           <Flex gap={2}>
             <IconButton

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Box, Button, Flex, Heading, Input, Text, Spinner } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Input, Text, Spinner, Skeleton, VStack } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
-import { addRoutine } from '../db/indexedDb';
+import { addRoutine, addExercise } from '../db/indexedDb';
 import { generateRoutine } from '../services/routineBuilderService';
 import { workoutPrompts } from '../constants/prompts'; // Import reusable prompts
 
@@ -21,8 +21,9 @@ export const WorkoutSetup: React.FC = () => {
       setStep(step + 1);
     } else {
       setIsLoading(true);
-      const routine = await generateRoutine(responses);
-      await addRoutine(routine);
+      const { routine, exercises } = await generateRoutine(responses); // Updated to handle new structure
+      await Promise.all(exercises.map((exercise) => addExercise(exercise))); // Save exercises to IndexedDB
+      await addRoutine(routine); // Save routine to IndexedDB
       setIsLoading(false);
       navigate(`/workout/routine/${routine.id}`, { replace: true }); // Navigate to WorkoutRoutine view
     }
@@ -44,9 +45,15 @@ export const WorkoutSetup: React.FC = () => {
     return (
       <Flex direction="column" align="center" justify="center" height="100%" width="100%">
         <Spinner size="xl" color="cyan.500" mb={4} />
-        <Text fontSize="lg" color="gray.600">
+        <Text fontSize="lg" color="gray.600" mb={4}>
           Building your customized routine based on your answers.
         </Text>
+        <VStack spacing={4} align="stretch" width="80%">
+          <Skeleton height="20px" />
+          <Skeleton height="20px" />
+          <Skeleton height="20px" />
+          <Skeleton height="20px" />
+        </VStack>
       </Flex>
     );
   }

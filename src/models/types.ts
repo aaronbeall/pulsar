@@ -1,6 +1,7 @@
 export interface Exercise {
   id: string; // Unique identifier
   name: string;
+  description: string; // Optional description
   howToUrl: string;
   imageUrl: string;
   liked: boolean;
@@ -11,8 +12,12 @@ export interface Exercise {
 export interface Routine {
   id: string; // Unique identifier
   name: string;
+  description: string;
+  active: boolean;
+  createdAt: number;
   dailySchedule: Array<{
     day: string; // e.g., "Monday", "Tuesday"
+    kind: string;
     exercises: Array<{
       exerciseId: string; // Reference to Exercise
       reps?: number;
@@ -26,7 +31,12 @@ export interface Routine {
     time: string; // Time available for workouts
     additionalInfo: string; // Additional information provided by the user
   };
-  aiResponses: string[]; // AI-generated responses based on user input
+  aiResponses: Array<{
+    date: number;
+    prompt: string;
+    response: string;
+    dismissed: boolean;
+  }>;
   liked: boolean;
   disliked: boolean;
   favorite: boolean;
@@ -40,4 +50,5 @@ export interface Workout {
     exerciseId: string; // Reference to Exercise
     completed: boolean; // True if completed, false if skipped
   }>;
+  completedAt: number;
 }
