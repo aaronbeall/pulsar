@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Button,
   Box,
@@ -13,17 +13,17 @@ import {
   SimpleGrid,
   Image,
 } from '@chakra-ui/react';
-import { FaSun, FaMoon, FaHome, FaDumbbell, FaCog, FaPalette } from 'react-icons/fa';
+import { FaSun, FaMoon, FaPalette, FaHome, FaDumbbell, FaCog } from 'react-icons/fa'; // Import icons
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import Home from './views/Home';
 import Workout from './views/Workout';
 import Settings from './views/Settings';
 
 const App: React.FC = () => {
-  const [activePage, setActivePage] = useState<string>('Home');
   const { colorMode, toggleColorMode } = useColorMode(); // Hook to toggle between dark and light mode
-  const [colorScheme, setColorScheme] = useState<string>(() => {
+  const [colorScheme, setColorScheme] = React.useState<string>(() => {
     // Load the color scheme from localStorage or default to 'cyan'
-    return localStorage.getItem('colorScheme') || 'red';
+    return localStorage.getItem('colorScheme') || 'cyan';
   });
 
   const colorSchemes = [
@@ -44,18 +44,7 @@ const App: React.FC = () => {
     localStorage.setItem('colorScheme', scheme); // Save the selected color scheme to localStorage
   };
 
-  const renderPage = () => {
-    switch (activePage) {
-      case 'Home':
-        return <Home />;
-      case 'Workout':
-        return <Workout />;
-      case 'Settings':
-        return <Settings />;
-      default:
-        return <Home />;
-    }
-  };
+  const location = useLocation(); // Get the current route location
 
   return (
     <Flex direction="column" height="100vh">
@@ -107,31 +96,41 @@ const App: React.FC = () => {
           </Flex>
         </Flex>
       </Box>
-      <Flex flex="1" p={4} bg="gray.100" _dark={{ bg: "gray.900" }}>
-        {renderPage()}
+      <Flex flex="1" p={4} bg="gray.100" _dark={{ bg: `gray.900` }}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/workout/*" element={<Workout />} />
+          <Route
+            path="/settings"
+            element={<Settings colorScheme={colorScheme} onColorSchemeChange={handleColorSchemeChange} />}
+          />
+        </Routes>
       </Flex>
       <Flex bg={`${colorScheme}.500`} p={4} justify="space-around">
         <Button
+          as={Link}
+          to="/"
           colorScheme={colorScheme}
-          variant={activePage === 'Home' ? 'solid' : 'ghost'}
-          onClick={() => setActivePage('Home')}
-          leftIcon={<FaHome />}
+          variant={location.pathname === '/' ? 'solid' : 'ghost'} // Active state for Home
+          leftIcon={<FaHome />} // Add Home icon
         >
           Home
         </Button>
         <Button
+          as={Link}
+          to="/workout"
           colorScheme={colorScheme}
-          variant={activePage === 'Workout' ? 'solid' : 'ghost'}
-          onClick={() => setActivePage('Workout')}
-          leftIcon={<FaDumbbell />}
+          variant={location.pathname.startsWith('/workout') ? 'solid' : 'ghost'} // Active state for Workout
+          leftIcon={<FaDumbbell />} // Add Workout icon
         >
           Workout
         </Button>
         <Button
+          as={Link}
+          to="/settings"
           colorScheme={colorScheme}
-          variant={activePage === 'Settings' ? 'solid' : 'ghost'}
-          onClick={() => setActivePage('Settings')}
-          leftIcon={<FaCog />}
+          variant={location.pathname === '/settings' ? 'solid' : 'ghost'} // Active state for Settings
+          leftIcon={<FaCog />} // Add Settings icon
         >
           Settings
         </Button>

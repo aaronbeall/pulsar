@@ -20,6 +20,15 @@ export interface Routine {
       duration?: number; // In seconds
     }>;
   }>;
+  responses: {
+    goals: string; // User's workout goals
+    equipment: string; // Equipment the user will use
+    time: string; // Time available for workouts
+    additionalInfo: string; // Additional information provided by the user
+  };
+  liked: boolean;
+  disliked: boolean;
+  favorite: boolean;
 }
 
 export interface Workout {
