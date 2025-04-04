@@ -3,7 +3,8 @@ export interface Exercise {
   name: string;
   description: string; // Optional description
   howToUrl: string;
-  imageUrl: string;
+  coverImageUrl: string;
+  iconImageUrl: string;
   liked: boolean;
   disliked: boolean;
   favorite: boolean;

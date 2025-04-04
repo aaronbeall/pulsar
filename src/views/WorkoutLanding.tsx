@@ -7,91 +7,96 @@ import {
   Text,
   VStack,
   Alert,
-  AlertIcon,
   AlertTitle,
   AlertDescription,
   Card,
   CardBody,
   CardHeader,
+  SimpleGrid,
+  Circle,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { Routine } from '../models/types';
-import { getRoutines } from '../db/indexedDb';
+import { getRoutines, getWorkouts } from '../db/indexedDb'; // Import getWorkouts
+import { FaPlus } from 'react-icons/fa'; // Import the add icon
+import Timeline from '../components/Timeline'; // Import the Timeline component
+import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
 
 export const WorkoutLanding: React.FC = () => {
   const [routines, setRoutines] = useState<Routine[]>([]);
-  const [activeTodayRoutines, setActiveTodayRoutines] = useState<Routine[]>([]);
   const [activeRoutines, setActiveRoutines] = useState<Routine[]>([]);
   const [inactiveRoutines, setInactiveRoutines] = useState<Routine[]>([]);
+  const [workouts, setWorkouts] = useState<Workout[]>([]); // State for workouts
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchRoutines = async () => {
+    const fetchData = async () => {
       const routinesData = await getRoutines();
+      const workoutsData = await getWorkouts(); // Fetch workouts
 
-    // Redirect to setup if no routines exist
-    if (routinesData.length === 0) {
+      // Redirect to setup if no routines exist
+      if (routinesData.length === 0) {
         navigate('setup', { replace: true }); // Replace history stack
-    }
+      }
 
-      const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-
-      const activeToday = routinesData.filter(
-        (routine) =>
-          routine.active &&
-          routine.dailySchedule.some((schedule) => schedule.day === today)
-      );
-
-      const active = routinesData.filter(
-        (routine) =>
-          routine.active &&
-          !routine.dailySchedule.some((schedule) => schedule.day === today)
-      );
-
+      const active = routinesData.filter((routine) => routine.active);
       const inactive = routinesData.filter((routine) => !routine.active);
 
-      setRoutines(routinesData);
-      setActiveTodayRoutines(activeToday);
       setActiveRoutines(active);
       setInactiveRoutines(inactive);
+      setWorkouts(workoutsData); // Set workouts state
     };
-    fetchRoutines();
+    fetchData();
   }, []);
+
+  const days = DAYS_OF_WEEK.map((day) => day.slice(0, 3)); // Use abbreviated days
 
   return (
     <Flex direction="column" p={4} align="center" width="100%">
+      {activeRoutines.some((routine) =>
+        routine.dailySchedule.some(
+          (schedule) =>
+            schedule.day === new Date().toLocaleDateString('en-US', { weekday: 'long' })
+        )
+      ) && (
+        <Alert status="success" variant="solid" borderRadius="md" mb={6} p={6}>
+          <Box fontSize="7em" mr={4}>🏋️‍♂️</Box> {/* Workout emoji */}
+          <Flex direction="column" align="start">
+            <AlertTitle fontSize="2xl" fontWeight="bold">
+              It's time to workout!
+            </AlertTitle>
+            <AlertDescription fontSize="lg">
+              You have an active routine for today. Click below to start your workout now!
+            </AlertDescription>
+            <Button
+              mt={4}
+              size="lg"
+              colorScheme="cyan"
+              onClick={() =>
+                navigate(
+                  `/workout/session/${
+                    activeRoutines.find((routine) =>
+                      routine.dailySchedule.some(
+                        (schedule) =>
+                          schedule.day === new Date().toLocaleDateString('en-US', { weekday: 'long' })
+                      )
+                    )?.id
+                  }`
+                )
+              }
+            >
+              Start Workout
+            </Button>
+          </Flex>
+        </Alert>
+      )}
+      <Timeline activeRoutines={activeRoutines} workouts={workouts} />
       <Flex justify="space-between" align="center" width="100%" mb={4}>
         <Heading size="lg">My Workouts</Heading>
-        <Button colorScheme="cyan" onClick={() => navigate('/workout/setup')}>
-          Create New Workout
+        <Button colorScheme="cyan" leftIcon={<FaPlus />} onClick={() => navigate('/workout/setup')}>
+          New Routine
         </Button>
       </Flex>
-      {activeTodayRoutines.length > 0 && (
-        <Box width="100%" mb={4}>
-          <Heading size="md" mb={2}>Active Today</Heading>
-          <VStack spacing={4} align="start" width="100%">
-            {activeTodayRoutines.map((routine) => (
-              <Card key={routine.id} width="100%" variant="elevated" borderRadius="md">
-                <CardHeader>
-                  <Heading size="md">{routine.name}</Heading>
-                </CardHeader>
-                <CardBody>
-                  <Text fontSize="sm" color="gray.600" mb={2}>
-                    {routine.description}
-                  </Text>
-                  <Button
-                    size="sm"
-                    colorScheme="cyan"
-                    onClick={() => navigate(`/workout/session/${routine.id}`)}
-                  >
-                    Start Workout
-                  </Button>
-                </CardBody>
-              </Card>
-            ))}
-          </VStack>
-        </Box>
-      )}
       {activeRoutines.length > 0 && (
         <Box width="100%" mb={4}>
           <Heading size="md" mb={2}>Active</Heading>

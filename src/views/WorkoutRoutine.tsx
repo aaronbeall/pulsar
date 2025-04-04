@@ -31,13 +31,15 @@ import {
   Tbody,
   Tr,
   Th,
-  Td
+  Td,
+  Switch // Import Switch component
 } from '@chakra-ui/react';
 import { FaInfoCircle, FaEdit, FaMagic } from 'react-icons/fa'; // Import icons
 import { Routine, Exercise } from '../models/types';
 import { getRoutines, addRoutine, getExercises } from '../db/indexedDb'; // Import addRoutine to update the Routine
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
 import { format } from 'date-fns'; // Import date-fns for formatting dates
+import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
 
 const WorkoutRoutine: React.FC = () => {
   const { routineId } = useParams<{ routineId: string }>(); // Get routineId from route params
@@ -99,7 +101,19 @@ const WorkoutRoutine: React.FC = () => {
       <Box width="100%" maxWidth="1200px">
         <Flex justify="space-between" align="center" mb={4}>
           <Heading size="lg">{routine.name}</Heading>
-          <Flex gap={2}>
+          <Flex gap={2} align="center">
+            <Text fontSize="sm" color="gray.600">
+              Active
+            </Text>
+            <Switch
+              colorScheme="cyan"
+              isChecked={routine.active}
+              onChange={async () => {
+                const updatedRoutine = { ...routine, active: !routine.active };
+                setRoutine(updatedRoutine); // Update local state
+                await addRoutine(updatedRoutine); // Persist the updated Routine to the database
+              }}
+            />
             <IconButton
               aria-label="View Details"
               icon={<FaInfoCircle />}
@@ -182,32 +196,34 @@ const WorkoutRoutine: React.FC = () => {
           </DrawerContent>
         </Drawer>
         <VStack align="start" spacing={4}>
-          <Box mb={4} p={4} borderWidth="1px" borderRadius="md" bg="gray.50" _dark={{ bg: "gray.700" }}>
-            <Flex align="center" mb={2}>
-              <Box as={FaMagic} color="cyan.500" mr={2} /> {/* Sparkly AI icon */}
-              <Text fontSize="md">
-                Let me know if you want to{' '}
-                <Button
+            <Flex gap={4} width="100%" alignItems="center">
+              <Box p={4} borderWidth="1px" borderRadius="md" bg="gray.50" _dark={{ bg: "gray.700" }}>
+                <Flex align="center" >
+                  <Box as={FaMagic} color="cyan.500" mr={2} /> {/* Sparkly AI icon */}
+                  <Text fontSize="md">
+                    Let me know if you want to{' '}
+                    <Button
+                      variant="solid"
+                      size="sm"
+                      colorScheme="cyan"
+                      onClick={() => alert('Navigate to edit routine functionality')} // Placeholder for edit action
+                    >
+                      Make Changes
+                    </Button>
+                  </Text>
+                </Flex>
+              </Box>
+              <Text> or </Text>
+              <Button
                   variant="solid"
-                  size="sm"
-                  colorScheme="cyan"
-                  onClick={() => alert('Navigate to edit routine functionality')} // Placeholder for edit action
-                >
-                  Make Changes
-                </Button>{' '}
-                or you're{' '}
-                <Button
-                  variant="solid"
-                  size="sm"
+                  size="lg"
                   colorScheme="red"
                   onClick={() => alert('Start workout functionality')} // Placeholder for start workout action
-                >
+              >
                   Ready to Workout! 🏋️
-                </Button>
-              </Text>
+              </Button>
             </Flex>
-          </Box>
-          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => {
+          {DAYS_OF_WEEK.map((day) => {
             const scheduleForDay = routine.dailySchedule.find((schedule) => schedule.day === day);
 
             if (!scheduleForDay) {
