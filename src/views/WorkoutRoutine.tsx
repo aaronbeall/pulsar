@@ -32,7 +32,10 @@ import {
   Tr,
   Th,
   Td,
-  Switch // Import Switch component
+  Switch, // Import Switch component
+  Breadcrumb, // Import Breadcrumb components
+  BreadcrumbItem,
+  BreadcrumbLink
 } from '@chakra-ui/react';
 import { FaInfoCircle, FaEdit, FaMagic } from 'react-icons/fa'; // Import icons
 import { Routine, Exercise } from '../models/types';
@@ -40,6 +43,7 @@ import { getRoutines, addRoutine, getExercises } from '../db/indexedDb'; // Impo
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
 import { format } from 'date-fns'; // Import date-fns for formatting dates
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
+import { Link as RouterLink } from 'react-router-dom'; // Import RouterLink
 
 const WorkoutRoutine: React.FC = () => {
   const { routineId } = useParams<{ routineId: string }>(); // Get routineId from route params
@@ -98,6 +102,16 @@ const WorkoutRoutine: React.FC = () => {
 
   return (
     <Flex direction="column" align="center" p={4} width="100%">
+      <Breadcrumb mb={4} width="100%">
+        <BreadcrumbItem>
+          <BreadcrumbLink as={RouterLink} to="/workout">
+            Workouts
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrentPage>
+          <BreadcrumbLink>Routine</BreadcrumbLink>
+        </BreadcrumbItem>
+      </Breadcrumb>
       <Box width="100%" maxWidth="1200px">
         <Flex justify="space-between" align="center" mb={4}>
           <Heading size="lg">{routine.name}</Heading>

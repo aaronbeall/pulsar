@@ -3,10 +3,21 @@ import { v4 as uuidv4 } from 'uuid'; // Import UUID for unique IDs
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)); // Fake delay function
 
+const funnyWords = [
+  'Wacky', 'Zany', 'Bouncy', 'Funky', 'Snazzy', 'Quirky', 'Spunky', 'Jazzy', 'Peppy', 'Sassy',
+  'Loopy', 'Goofy', 'Nutty', 'Cheeky', 'Perky', 'Zippy', 'Bubbly', 'Jolly', 'Frisky', 'Chirpy'
+];
+
+const generateRandomName = () => {
+  const shuffled = funnyWords.sort(() => 0.5 - Math.random());
+  return `${shuffled[0]} ${shuffled[1]} ${shuffled[2]}`;
+};
+
 export const generateRoutine = async (responses: { [key: string]: string }): Promise<{ routine: Routine, exercises: Exercise[] }> => {
   await delay(2000); // Add a 2000ms delay
 
   const routineId = uuidv4();
+  const routineName = generateRandomName(); // Generate a random name
   const exercises: Exercise[] = [
     {
       id: uuidv4(),
@@ -67,7 +78,7 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
 
   const routine: Routine = {
     id: routineId,
-    name: 'My Custom Routine',
+    name: routineName, // Use the generated name
     description: 'A routine tailored to your preferences.',
     active: true,
     createdAt: Date.now(),

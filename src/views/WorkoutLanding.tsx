@@ -49,8 +49,6 @@ export const WorkoutLanding: React.FC = () => {
     fetchData();
   }, []);
 
-  const days = DAYS_OF_WEEK.map((day) => day.slice(0, 3)); // Use abbreviated days
-
   return (
     <Flex direction="column" p={4} align="center" width="100%">
       {activeRoutines.some((routine) =>
