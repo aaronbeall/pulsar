@@ -43,14 +43,15 @@ import { getRoutines, addRoutine, getExercises } from '../db/indexedDb'; // Impo
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
 import { format } from 'date-fns'; // Import date-fns for formatting dates
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
-import { Link as RouterLink } from 'react-router-dom'; // Import RouterLink
+import { Link as RouterLink, useNavigate } from 'react-router-dom'; // Import RouterLink and useNavigate
 
 const WorkoutRoutine: React.FC = () => {
-  const { routineId } = useParams<{ routineId: string }>(); // Get routineId from route params
+  const { routineId } = useParams<{ routineId: string }>();
   const [routine, setRoutine] = useState<Routine | null>(null);
-  const [newResponses, setNewResponses] = useState<Routine['aiResponses']>([]); // State for new responses
-  const { isOpen, onOpen, onClose } = useDisclosure(); // Drawer state
-  const [exercises, setExercises] = useState<Exercise[]>([]); // State to store exercises
+  const [newResponses, setNewResponses] = useState<Routine['aiResponses']>([]);
+  const [activeRoutines, setActiveRoutines] = useState<Routine[]>([]); // State for active routines
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [exercises, setExercises] = useState<Exercise[]>([]);
 
   useEffect(() => {
     const fetchRoutine = async () => {
@@ -58,8 +59,10 @@ const WorkoutRoutine: React.FC = () => {
       const selectedRoutine = routines.find((r) => r.id === routineId) || null;
       setRoutine(selectedRoutine);
 
+      const active = routines.filter((r) => r.active);
+      setActiveRoutines(active);
+
       if (selectedRoutine) {
-        // Filter new (not dismissed) responses
         setNewResponses(selectedRoutine.aiResponses.filter((response) => !response.dismissed));
       }
     };
@@ -92,6 +95,34 @@ const WorkoutRoutine: React.FC = () => {
     await addRoutine(updatedRoutine); // Persist the updated Routine to the database
   };
 
+  const toggleActiveState = async () => {
+    if (!routine) return;
+
+    if (routine.active && activeRoutines.length === 1) {
+      const confirmDisable = window.confirm(
+        'This is the only active routine. Are you sure you want to disable it?'
+      );
+      if (!confirmDisable) return;
+    }
+
+    if (!routine.active && activeRoutines.length > 0) {
+      const confirmEnable = window.confirm(
+        'There is already an active routine. Are you sure you want to enable this routine?'
+      );
+      if (!confirmEnable) return;
+    }
+
+    const updatedRoutine = { ...routine, active: !routine.active };
+    setRoutine(updatedRoutine); // Update local state
+    await addRoutine(updatedRoutine); // Persist the updated Routine to the database
+
+    // Update the active routines state
+    const updatedActiveRoutines = updatedRoutine.active
+      ? [...activeRoutines, updatedRoutine]
+      : activeRoutines.filter((r) => r.id !== updatedRoutine.id);
+    setActiveRoutines(updatedActiveRoutines);
+  };
+
   if (!routine) {
     return (
       <Box textAlign="center" p={4}>
@@ -122,11 +153,7 @@ const WorkoutRoutine: React.FC = () => {
             <Switch
               colorScheme="cyan"
               isChecked={routine.active}
-              onChange={async () => {
-                const updatedRoutine = { ...routine, active: !routine.active };
-                setRoutine(updatedRoutine); // Update local state
-                await addRoutine(updatedRoutine); // Persist the updated Routine to the database
-              }}
+              onChange={toggleActiveState} // Use the toggleActiveState function
             />
             <IconButton
               aria-label="View Details"
