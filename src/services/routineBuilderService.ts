@@ -1,7 +1,11 @@
 import { Routine, Exercise } from '../models/types';
 import { v4 as uuidv4 } from 'uuid'; // Import UUID for unique IDs
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)); // Fake delay function
+
 export const generateRoutine = async (responses: { [key: string]: string }): Promise<{ routine: Routine, exercises: Exercise[] }> => {
+  await delay(2000); // Add a 2000ms delay
+
   const routineId = uuidv4();
   const exercises: Exercise[] = [
     {
@@ -24,11 +28,41 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
       disliked: false,
       favorite: false,
     },
+    {
+      id: uuidv4(),
+      name: 'Plank',
+      howToUrl: 'https://example.com/plank',
+      imageUrl: 'https://example.com/plank.jpg',
+      description: 'A core strengthening exercise.',
+      liked: false,
+      disliked: false,
+      favorite: false,
+    },
+    {
+      id: uuidv4(),
+      name: 'Lunges',
+      howToUrl: 'https://example.com/lunges',
+      imageUrl: 'https://example.com/lunges.jpg',
+      description: 'A lower body exercise for balance and strength.',
+      liked: false,
+      disliked: false,
+      favorite: false,
+    },
+    {
+      id: uuidv4(),
+      name: 'Burpees',
+      howToUrl: 'https://example.com/burpees',
+      imageUrl: 'https://example.com/burpees.jpg',
+      description: 'A full-body cardio exercise.',
+      liked: false,
+      disliked: false,
+      favorite: false,
+    },
   ];
 
   const routine: Routine = {
     id: routineId,
-    name: 'Custom Routine',
+    name: 'My Custom Routine',
     description: 'A routine tailored to your preferences.',
     active: true,
     createdAt: Date.now(),
@@ -39,13 +73,23 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
         exercises: [
           { exerciseId: exercises[0].id, reps: 10, sets: 3 },
           { exerciseId: exercises[1].id, reps: 15, sets: 3 },
+          { exerciseId: exercises[2].id, duration: 60 },
         ],
       },
       {
         day: 'Wednesday',
         kind: 'Cardio',
         exercises: [
-          { exerciseId: exercises[0].id, duration: 60 },
+          { exerciseId: exercises[3].id, reps: 12, sets: 3 },
+          { exerciseId: exercises[4].id, duration: 90 },
+        ],
+      },
+      {
+        day: 'Thursday',
+        kind: 'Flexibility',
+        exercises: [
+          { exerciseId: exercises[2].id, duration: 120 },
+          { exerciseId: exercises[3].id, reps: 10, sets: 2 },
         ],
       },
     ],
