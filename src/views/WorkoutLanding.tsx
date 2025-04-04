@@ -70,20 +70,39 @@ export const WorkoutLanding: React.FC = () => {
               mt={4}
               size="lg"
               colorScheme="cyan"
-              onClick={() =>
+              onClick={() => {
+                const todayRoutine = activeRoutines.find((routine) =>
+                  routine.dailySchedule.some(
+                    (schedule) =>
+                      schedule.day === new Date().toLocaleDateString('en-US', { weekday: 'long' })
+                  )
+                );
+                const startedWorkout = workouts.find(
+                  (workout) =>
+                    workout.routineId === todayRoutine?.id &&
+                    new Date(workout.date).toDateString() === new Date().toDateString() &&
+                    !workout.completedAt
+                );
                 navigate(
-                  `/workout/session/${
-                    activeRoutines.find((routine) =>
-                      routine.dailySchedule.some(
-                        (schedule) =>
-                          schedule.day === new Date().toLocaleDateString('en-US', { weekday: 'long' })
-                      )
-                    )?.id
-                  }`
-                )
-              }
+                  startedWorkout
+                    ? `/workout/session/${startedWorkout.id}` // Continue workout
+                    : `/workout/session/${todayRoutine?.id}` // Start workout
+                );
+              }}
             >
-              Start Workout
+              {workouts.some(
+                (workout) =>
+                  workout.routineId === activeRoutines.find((routine) =>
+                    routine.dailySchedule.some(
+                      (schedule) =>
+                        schedule.day === new Date().toLocaleDateString('en-US', { weekday: 'long' })
+                    )
+                  )?.id &&
+                  new Date(workout.date).toDateString() === new Date().toDateString() &&
+                  !workout.completedAt
+              )
+                ? 'Continue Workout'
+                : 'Start Workout'}
             </Button>
           </Flex>
         </Alert>
