@@ -16,11 +16,12 @@ import {
   Circle,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
-import { Routine } from '../models/types';
+import { Routine, Workout } from '../models/types';
 import { getRoutines, getWorkouts } from '../db/indexedDb'; // Import getWorkouts
 import { FaPlus } from 'react-icons/fa'; // Import the add icon
 import Timeline from '../components/Timeline'; // Import the Timeline component
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
+import { hasRoutineForToday, findTodayRoutine, findIncompleteWorkoutForToday } from '../utils/workoutUtils';
 
 export const WorkoutLanding: React.FC = () => {
   const [routines, setRoutines] = useState<Routine[]>([]);
@@ -51,14 +52,9 @@ export const WorkoutLanding: React.FC = () => {
 
   return (
     <Flex direction="column" p={4} align="center" width="100%">
-      {activeRoutines.some((routine) =>
-        routine.dailySchedule.some(
-          (schedule) =>
-            schedule.day === new Date().toLocaleDateString('en-US', { weekday: 'long' })
-        )
-      ) && (
+      {hasRoutineForToday(activeRoutines) && (
         <Alert status="success" variant="solid" borderRadius="md" mb={6} p={6}>
-          <Box fontSize="7em" mr={4}>🏋️‍♂️</Box> {/* Workout emoji */}
+          <Box fontSize="7em" mr={4}>🏋️‍♂️</Box>
           <Flex direction="column" align="start">
             <AlertTitle fontSize="2xl" fontWeight="bold">
               It's time to workout!
@@ -71,36 +67,16 @@ export const WorkoutLanding: React.FC = () => {
               size="lg"
               colorScheme="cyan"
               onClick={() => {
-                const todayRoutine = activeRoutines.find((routine) =>
-                  routine.dailySchedule.some(
-                    (schedule) =>
-                      schedule.day === new Date().toLocaleDateString('en-US', { weekday: 'long' })
-                  )
-                );
-                const startedWorkout = workouts.find(
-                  (workout) =>
-                    workout.routineId === todayRoutine?.id &&
-                    new Date(workout.date).toDateString() === new Date().toDateString() &&
-                    !workout.completedAt
-                );
+                const todayRoutine = findTodayRoutine(activeRoutines);
+                const startedWorkout = findIncompleteWorkoutForToday(workouts, activeRoutines);
                 navigate(
                   startedWorkout
-                    ? `/workout/session/${startedWorkout.id}` // Continue workout
-                    : `/workout/session/${todayRoutine?.id}` // Start workout
+                    ? `/workout/session/${startedWorkout.id}`
+                    : `/workout/session/${todayRoutine?.id}`
                 );
               }}
             >
-              {workouts.some(
-                (workout) =>
-                  workout.routineId === activeRoutines.find((routine) =>
-                    routine.dailySchedule.some(
-                      (schedule) =>
-                        schedule.day === new Date().toLocaleDateString('en-US', { weekday: 'long' })
-                    )
-                  )?.id &&
-                  new Date(workout.date).toDateString() === new Date().toDateString() &&
-                  !workout.completedAt
-              )
+              {findIncompleteWorkoutForToday(workouts, activeRoutines)
                 ? 'Continue Workout'
                 : 'Start Workout'}
             </Button>

@@ -51,11 +51,11 @@ export type RoutinePromptKey = keyof Routine["prompts"];
 
 export interface Workout {
   id: string; // Unique identifier
-  date: string; // ISO date string
-  routineId: string; // Reference to Routine
+  startedAt: number;
+  routineId: string;
+  completedAt: number;
   completedExercises: Array<{
     exerciseId: string; // Reference to Exercise
     completed: boolean; // True if completed, false if skipped
   }>;
-  completedAt: number;
 }
