@@ -1,18 +1,19 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Box, Button, Flex, Heading, Input, Text, Spinner, Skeleton, VStack } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { addRoutine, addExercise } from '../db/indexedDb';
 import { generateRoutine } from '../services/routineBuilderService';
 import { workoutPrompts } from '../constants/prompts'; // Import reusable prompts
+import { RoutinePromptKey } from '../models/types';
 
 export const WorkoutSetup: React.FC = () => {
   const [step, setStep] = useState<number>(1);
-  const [responses, setResponses] = useState<{ [key: string]: string }>({});
+  const [responses, setResponses] = useState<Record<RoutinePromptKey, string>>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  const handleInputChange = (key: string, value: string) => {
+  const handleInputChange = (key: RoutinePromptKey, value: string) => {
     setResponses((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -35,7 +36,7 @@ export const WorkoutSetup: React.FC = () => {
     }
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus();
     }

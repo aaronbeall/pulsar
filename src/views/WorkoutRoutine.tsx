@@ -201,7 +201,7 @@ const WorkoutRoutine: React.FC = () => {
                     {prompt.question}
                   </Text>
                   <Text fontSize="md" color="gray.600">
-                    {routine.prompts[prompt.key as keyof typeof routine.prompts] || 'N/A'}
+                    {routine.prompts[prompt.key] || 'N/A'}
                   </Text>
                   <Divider mt={2} />
                 </Box>
@@ -237,10 +237,15 @@ const WorkoutRoutine: React.FC = () => {
           </DrawerContent>
         </Drawer>
         <VStack align="start" spacing={4}>
-            <Flex gap={4} width="100%" alignItems="center">
+            <Flex
+              gap={4}
+              width="100%"
+              alignItems="center"
+              direction={{ base: 'column', md: 'row' }} // Change direction to column on smaller screens
+            >
               <Box p={4} borderWidth="1px" borderRadius="md" bg="gray.50" _dark={{ bg: "gray.700" }}>
-                <Flex align="center" >
-                  <Box as={FaMagic} color="cyan.500" mr={2} /> {/* Sparkly AI icon */}
+                <Flex align="center">
+                  <Box as={FaMagic} color="cyan.500" mr={2} />
                   <Text fontSize="md">
                     Let me know if you want to{' '}
                     <Button
@@ -254,14 +259,14 @@ const WorkoutRoutine: React.FC = () => {
                   </Text>
                 </Flex>
               </Box>
-              <Text> or </Text>
+              <Text> or you're </Text>
               <Button
-                  variant="solid"
-                  size="lg"
-                  colorScheme="red"
-                  onClick={() => alert('Start workout functionality')} // Placeholder for start workout action
+                variant="solid"
+                size="lg"
+                colorScheme="red"
+                onClick={() => alert('Start workout functionality')} // Placeholder for start workout action
               >
-                  Ready to Workout! 🏋️
+                Ready to Workout! 🏋️
               </Button>
             </Flex>
           {DAYS_OF_WEEK.map((day) => {

@@ -1,3 +1,5 @@
+import { Routine } from "../models/types";
+
 export const workoutPrompts = [
   {
     question: "What are your goals?",
@@ -19,4 +21,4 @@ export const workoutPrompts = [
     placeholder: "Ex. I have asthma, I hate running, or I'm overweight",
     key: "additionalInfo",
   },
-];
+] as { question: string; placeholder: string; key: keyof Routine["prompts"] }[];

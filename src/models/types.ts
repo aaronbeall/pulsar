@@ -1,3 +1,7 @@
+import { DAYS_OF_WEEK } from "../constants/days";
+
+export type DayOfWeek = (typeof DAYS_OF_WEEK)[number];
+
 export interface Exercise {
   id: string; // Unique identifier
   name: string;
@@ -17,7 +21,7 @@ export interface Routine {
   active: boolean;
   createdAt: number;
   dailySchedule: Array<{
-    day: string; // e.g., "Monday", "Tuesday"
+    day: DayOfWeek; // e.g., "Monday", "Tuesday"
     kind: string;
     exercises: Array<{
       exerciseId: string; // Reference to Exercise
@@ -42,6 +46,8 @@ export interface Routine {
   disliked: boolean;
   favorite: boolean;
 }
+
+export type RoutinePromptKey = keyof Routine["prompts"];
 
 export interface Workout {
   id: string; // Unique identifier
