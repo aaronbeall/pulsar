@@ -15,8 +15,8 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
     <Box
       position="relative"
       width="100%"
-      borderWidth="1px"
-      borderRadius="md"
+      borderWidth="none"
+      borderRadius="full"
       p={4}
       bg="gray.50"
       _dark={{ bg: "gray.800" }}
@@ -32,6 +32,7 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
         height="4px"
         bg="gray.400"
         zIndex="0"
+        opacity={0.25}
       />
       {/* Fill line up to the current day */}
       <Box
@@ -73,11 +74,14 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
                 size="40px"
                 bg={color}
                 color="white"
-                border={isToday ? '3px solid yellow' : 'none'} // Highlight current day
+                borderColor="yellow.400"
+                borderWidth={isToday ? '3px' : 'none'}
+                boxShadow={isToday ? '0px 0px 8px rgba(236, 201, 75, 0.6)' : 'none'}
+                transform={isToday ? 'scale(1.5)' : 'scale(1)'}
               >
                 {emoji}
               </Circle>
-              <Text fontSize="sm" mt={2} color={isToday ? 'yellow.500' : 'gray.600'}>
+              <Text fontSize="sm" position="relative" top={isToday ? 2 : 0} mt={ 2} fontWeight={isToday ? "bold" : "normal"} color={isToday ? 'yellow.500' : 'gray.600'}>
                 {day.slice(0, 3)} {/* Abbreviated day name */}
               </Text>
             </Flex>

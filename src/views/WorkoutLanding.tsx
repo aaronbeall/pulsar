@@ -14,6 +14,7 @@ import {
   CardHeader,
   SimpleGrid,
   Circle,
+  Spinner,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { Routine, Workout } from '../models/types';
@@ -21,7 +22,10 @@ import { getRoutines, getWorkouts } from '../db/indexedDb'; // Import getWorkout
 import { FaPlus } from 'react-icons/fa'; // Import the add icon
 import Timeline from '../components/Timeline'; // Import the Timeline component
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
-import { hasRoutineForToday, findTodayRoutine, findIncompleteWorkoutForToday } from '../utils/workoutUtils';
+import { hasRoutineForToday, findRoutineForToday, findWorkoutForToday, hasStartedIncompleteWorkoutForToday, getWorkoutStatusForToday } from '../utils/workoutUtils';
+import RoutineCard from '../components/RoutineCard';
+import TimeToWorkoutAlert from '../components/TimeToWorkoutAlert';
+import RestDayAlert from '../components/RestDayAlert';
 
 export const WorkoutLanding: React.FC = () => {
   const [routines, setRoutines] = useState<Routine[]>([]);
@@ -43,6 +47,7 @@ export const WorkoutLanding: React.FC = () => {
       const active = routinesData.filter((routine) => routine.active);
       const inactive = routinesData.filter((routine) => !routine.active);
 
+      setRoutines(routinesData);
       setActiveRoutines(active);
       setInactiveRoutines(inactive);
       setWorkouts(workoutsData); // Set workouts state
@@ -50,38 +55,20 @@ export const WorkoutLanding: React.FC = () => {
     fetchData();
   }, []);
 
+  if (routines.length === 0) {
+    return (
+      <Flex direction="column" align="center" justify="center" height="100%" width="100%">
+        <Spinner size="xl" color="cyan.500" mb={4} />
+      </Flex>
+    );
+  }
+
   return (
     <Flex direction="column" p={4} align="center" width="100%">
-      {hasRoutineForToday(activeRoutines) && (
-        <Alert status="success" variant="solid" borderRadius="md" mb={6} p={6}>
-          <Box fontSize="7em" mr={4}>🏋️‍♂️</Box>
-          <Flex direction="column" align="start">
-            <AlertTitle fontSize="2xl" fontWeight="bold">
-              It's time to workout!
-            </AlertTitle>
-            <AlertDescription fontSize="lg">
-              You have an active routine for today. Click below to start your workout now!
-            </AlertDescription>
-            <Button
-              mt={4}
-              size="lg"
-              colorScheme="cyan"
-              onClick={() => {
-                const todayRoutine = findTodayRoutine(activeRoutines);
-                const startedWorkout = findIncompleteWorkoutForToday(workouts, activeRoutines);
-                navigate(
-                  startedWorkout
-                    ? `/workout/session/${startedWorkout.id}`
-                    : `/workout/session/${todayRoutine?.id}`
-                );
-              }}
-            >
-              {findIncompleteWorkoutForToday(workouts, activeRoutines)
-                ? 'Continue Workout'
-                : 'Start Workout'}
-            </Button>
-          </Flex>
-        </Alert>
+      {hasRoutineForToday(activeRoutines) ? (
+        <TimeToWorkoutAlert routines={activeRoutines} workouts={workouts} />
+      ) : (
+        <RestDayAlert />
       )}
       <Timeline activeRoutines={activeRoutines} workouts={workouts} />
       <Flex justify="space-between" align="center" width="100%" mb={4}>
@@ -95,23 +82,7 @@ export const WorkoutLanding: React.FC = () => {
           <Heading size="md" mb={2}>Active</Heading>
           <VStack spacing={4} align="start" width="100%">
             {activeRoutines.map((routine) => (
-              <Card key={routine.id} width="100%" variant="elevated" borderRadius="md">
-                <CardHeader>
-                  <Heading size="md">{routine.name}</Heading>
-                </CardHeader>
-                <CardBody>
-                  <Text fontSize="sm" color="gray.600" mb={2}>
-                    {routine.description}
-                  </Text>
-                  <Button
-                    size="sm"
-                    colorScheme="cyan"
-                    onClick={() => navigate(`/workout/routine/${routine.id}`)}
-                  >
-                    View Routine
-                  </Button>
-                </CardBody>
-              </Card>
+              <RoutineCard key={routine.id} routine={routine} />
             ))}
           </VStack>
         </Box>
@@ -121,23 +92,7 @@ export const WorkoutLanding: React.FC = () => {
           <Heading size="md" mb={2}>Inactive</Heading>
           <VStack spacing={4} align="start" width="100%">
             {inactiveRoutines.map((routine) => (
-              <Card key={routine.id} width="100%" variant="outline" borderRadius="md">
-                <CardHeader>
-                  <Heading size="md">{routine.name}</Heading>
-                </CardHeader>
-                <CardBody>
-                  <Text fontSize="sm" color="gray.600" mb={2}>
-                    {routine.description}
-                  </Text>
-                  <Button
-                    size="sm"
-                    colorScheme="cyan"
-                    onClick={() => navigate(`/workout/routine/${routine.id}`)}
-                  >
-                    View Routine
-                  </Button>
-                </CardBody>
-              </Card>
+              <RoutineCard key={routine.id} routine={routine} variant="outline" />
             ))}
           </VStack>
         </Box>

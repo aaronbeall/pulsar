@@ -61,7 +61,17 @@ export const getRoutines = async (): Promise<Routine[]> => {
   return db.getAll('routines');
 };
 
+export const getRoutine = async (id: string): Promise<Routine | undefined> => {
+  const db = await getDB();
+  return db.get('routines', id);
+};
+
 export const getWorkouts = async (): Promise<Workout[]> => {
   const db = await getDB();
   return db.getAll('workouts');
+};
+
+export const getWorkout = async (id: string): Promise<Workout | undefined> => {
+  const db = await getDB();
+  return db.get('workouts', id);
 };

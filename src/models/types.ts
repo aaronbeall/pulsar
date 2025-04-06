@@ -9,9 +9,9 @@ export interface Exercise {
   howToUrl: string;
   coverImageUrl: string;
   iconImageUrl: string;
-  liked: boolean;
-  disliked: boolean;
-  favorite: boolean;
+  liked?: boolean;
+  disliked?: boolean;
+  favorite?: boolean;
 }
 
 export interface Routine {
@@ -42,20 +42,24 @@ export interface Routine {
     response: string;
     dismissed: boolean;
   }>;
-  liked: boolean;
-  disliked: boolean;
-  favorite: boolean;
+  liked?: boolean;
+  disliked?: boolean;
+  favorite?: boolean;
 }
 
 export type RoutinePromptKey = keyof Routine["prompts"];
 
 export interface Workout {
   id: string; // Unique identifier
-  startedAt: number;
+  nickname: string;
   routineId: string;
-  completedAt: number;
+  startedAt: number;
+  completedAt?: number;
   completedExercises: Array<{
     exerciseId: string; // Reference to Exercise
     completed: boolean; // True if completed, false if skipped
   }>;
+  liked?: boolean;
+  disliked?: boolean;
+  favorite?: boolean;
 }

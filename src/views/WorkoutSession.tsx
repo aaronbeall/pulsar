@@ -1,45 +1,79 @@
 import React from 'react';
-import { Box, Button, Flex, Heading, Text, VStack } from '@chakra-ui/react';
-import { getRoutines } from '../db/indexedDb';
-import { Routine } from '../models/types';
+import { Box, Button, Flex, Heading, Spinner, Text, VStack } from '@chakra-ui/react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { getRoutines, getWorkout, addWorkout, getRoutine } from '../db/indexedDb';
+import { Routine, Workout } from '../models/types';
+import { findExercisesForToday, findRoutineForToday } from '../utils/workoutUtils';
+import { v4 as uuidv4 } from 'uuid';
+import { generateRandomName } from '../utils/nameUtils';
 
-export const WorkoutSession: React.FC<{ routineId: string }> = ({ routineId }) => {
-    const [routine, setRoutine] = React.useState<Routine | null>(null);
-  
-    React.useEffect(() => {
-      const fetchRoutine = async () => {
-        const routines = await getRoutines();
-        const selectedRoutine = routines.find((r) => r.id === routineId) || null;
-        setRoutine(selectedRoutine);
-      };
-      fetchRoutine();
-    }, [routineId]);
-  
-    if (!routine) {
-      return (
-        <Box textAlign="center" p={4}>
-          <Heading size="lg">Routine Not Found</Heading>
-        </Box>
-      );
-    }
-  
+export const WorkoutSession: React.FC = () => {
+  const { sessionId } = useParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [workout, setWorkout] = React.useState<Workout | null>(null);
+  const [routine, setRoutine] = React.useState<Routine | null>(null);
+
+  React.useEffect(() => {
+    const initSession = async () => {
+      console.log('Initializing workout session...', { sessionId });
+      if (sessionId) {
+        // Load existing workout
+        const existingWorkout = await getWorkout(sessionId);
+        if (existingWorkout) {
+          setWorkout(existingWorkout);
+          const workoutRoutine = await getRoutine(existingWorkout.routineId);
+          setRoutine(workoutRoutine || null);
+          return;
+        }
+      }
+
+      // Create new workout
+      const routineId = searchParams.get('routineId');
+      const routine = await getRoutine(routineId || '');
+      if (!routine) {
+        navigate('/workout', { replace: true });
+        return;
+      }
+
+      const newWorkout: Workout = {
+        id: uuidv4(),
+        nickname: generateRandomName(),
+        routineId: routine.id,
+        startedAt: Date.now(),
+        completedExercises: []
+      }
+      
+      await addWorkout(newWorkout);
+
+      setWorkout(newWorkout);
+      setRoutine(routine);
+      navigate(`/workout/session/${newWorkout.id}`, { replace: true });
+    };
+
+    initSession();
+  }, [sessionId, navigate]);
+
+  if (!routine || !workout) {
     return (
-      <Flex direction="column" p={4} width="100%">
-        <Heading size="lg" mb={4}>
-          {routine.name}
-        </Heading>
-        {routine.dailySchedule.map((day, index) => (
-          <Box key={index} mb={4}>
-            <Heading size="md" mb={2}>
-              {day.day}
-            </Heading>
-            {day.exercises.map((exercise, idx) => (
-              <Text key={idx}>
-                Exercise ID: {exercise.exerciseId}, Reps: {exercise.reps}, Sets: {exercise.sets}, Duration: {exercise.duration}s
-              </Text>
-            ))}
-          </Box>
-        ))}
+      <Flex direction="column" align="center" justify="center" height="100%" width="100%">
+        <Spinner size="xl" color="cyan.500" mb={4} />
       </Flex>
     );
-  };
+  }
+
+  return (
+    <Flex direction="column" p={4} width="100%">
+      <Heading size="lg" mb={4}>{workout.nickname}</Heading>
+      <VStack spacing={4} align="stretch">
+        {findExercisesForToday(routine).map((exercise, idx) => (
+            <Box key={idx} p={4} borderWidth={1} borderRadius="md">
+              <Text fontWeight="bold">Exercise {idx + 1}</Text>
+              <Text>Sets: {exercise.sets} × Reps: {exercise.reps}</Text>
+              {exercise.duration && <Text>Duration: {exercise.duration}s</Text>}
+            </Box>
+          ))}
+      </VStack>
+    </Flex>
+  );
+};

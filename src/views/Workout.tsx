@@ -11,7 +11,7 @@ const Workout: React.FC = () => {
       <Route path="/" element={<WorkoutLanding />} />
       <Route path="setup" element={<WorkoutSetup />} />
       <Route path="routine/:routineId" element={<WorkoutRoutine />} />
-      <Route path="session/:routineId" element={<WorkoutSession routineId="" />} />
+      <Route path="session/:sessionId?" element={<WorkoutSession />} />
     </Routes>
   );
 };

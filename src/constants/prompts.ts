@@ -1,4 +1,4 @@
-import { Routine } from "../models/types";
+import { RoutinePromptKey } from "../models/types";
 
 export const workoutPrompts = [
   {
@@ -21,4 +21,4 @@ export const workoutPrompts = [
     placeholder: "Ex. I have asthma, I hate running, or I'm overweight",
     key: "additionalInfo",
   },
-] as { question: string; placeholder: string; key: keyof Routine["prompts"] }[];
+] as { question: string; placeholder: string; key: RoutinePromptKey }[];

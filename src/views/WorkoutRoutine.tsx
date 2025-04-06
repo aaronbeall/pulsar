@@ -37,7 +37,7 @@ import {
   BreadcrumbItem,
   BreadcrumbLink
 } from '@chakra-ui/react';
-import { FaInfoCircle, FaEdit, FaMagic } from 'react-icons/fa'; // Import icons
+import { FaInfoCircle, FaEdit, FaMagic, FaDumbbell } from 'react-icons/fa'; // Import icons
 import { Routine, Exercise } from '../models/types';
 import { getRoutines, addRoutine, getExercises } from '../db/indexedDb'; // Import addRoutine to update the Routine
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
@@ -143,6 +143,44 @@ const WorkoutRoutine: React.FC = () => {
           <BreadcrumbLink>Routine</BreadcrumbLink>
         </BreadcrumbItem>
       </Breadcrumb>
+      <Flex
+              gap={4}
+              width="100%"
+              alignItems="center"
+              justifyContent="center"
+              mb={4}
+              direction={{ base: 'column', md: 'row' }}
+            >
+              <Box p={4} borderWidth="1px" borderRadius="full" bg="gray.50" _dark={{ bg: "gray.700" }}>
+                <Flex align="baseline" gap={2}>
+                  <Text fontSize="md">
+                    Let me know if you want to
+                  </Text>
+                  <Button
+                    variant="solid"
+                    size="md"
+                    colorScheme="cyan"
+                    borderRadius="full"
+                    leftIcon={<FaMagic />}
+                    onClick={() => alert('Navigate to edit routine functionality')} // Placeholder for edit action
+                  >
+                    Make Changes
+                  </Button>
+                </Flex>
+              </Box>
+              <Text> or you're </Text>
+              <Button
+                variant="solid"
+                size="lg"
+                height={16}
+                colorScheme="red"
+                borderRadius="full"
+                leftIcon={<FaDumbbell />}
+                onClick={() => alert('Start workout functionality')} // Placeholder for start workout action
+              >
+                Ready to Workout!
+              </Button>
+            </Flex>
       <Box width="100%" maxWidth="1200px">
         <Flex justify="space-between" align="center" mb={4}>
           <Heading size="lg">{routine.name}</Heading>
@@ -237,38 +275,7 @@ const WorkoutRoutine: React.FC = () => {
           </DrawerContent>
         </Drawer>
         <VStack align="start" spacing={4}>
-            <Flex
-              gap={4}
-              width="100%"
-              alignItems="center"
-              direction={{ base: 'column', md: 'row' }} // Change direction to column on smaller screens
-            >
-              <Box p={4} borderWidth="1px" borderRadius="md" bg="gray.50" _dark={{ bg: "gray.700" }}>
-                <Flex align="center">
-                  <Box as={FaMagic} color="cyan.500" mr={2} />
-                  <Text fontSize="md">
-                    Let me know if you want to{' '}
-                    <Button
-                      variant="solid"
-                      size="sm"
-                      colorScheme="cyan"
-                      onClick={() => alert('Navigate to edit routine functionality')} // Placeholder for edit action
-                    >
-                      Make Changes
-                    </Button>
-                  </Text>
-                </Flex>
-              </Box>
-              <Text> or you're </Text>
-              <Button
-                variant="solid"
-                size="lg"
-                colorScheme="red"
-                onClick={() => alert('Start workout functionality')} // Placeholder for start workout action
-              >
-                Ready to Workout! 🏋️
-              </Button>
-            </Flex>
+            
           {DAYS_OF_WEEK.map((day) => {
             const scheduleForDay = routine.dailySchedule.find((schedule) => schedule.day === day);
 

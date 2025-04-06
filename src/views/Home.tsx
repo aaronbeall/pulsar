@@ -4,6 +4,7 @@ import { FaDumbbell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { getRoutines, getWorkouts } from '../db/indexedDb';
 import { Routine, Workout } from '../models/types';
+import { findRoutineForToday, findWorkoutForToday } from '../utils/workoutUtils';
 
 const Home: React.FC = () => {
   const [routines, setRoutines] = useState<Routine[]>([]);
@@ -94,7 +95,17 @@ const Home: React.FC = () => {
               Ready to Workout with Pulsar?
             </Highlight>
           </Heading>
-          <Button colorScheme="cyan" mb={4}>
+          <Button 
+            colorScheme="cyan" 
+            mb={4} 
+            onClick={() => {
+              const todayRoutine = findRoutineForToday(routines);
+              const startedWorkout = findWorkoutForToday(workouts, routines);
+              navigate(
+                `/workout/session/${startedWorkout?.id ?? `?routineId=${ todayRoutine?.id }`}`
+              );
+            }}
+          >
             Start Workout
           </Button>
           {workouts.length > 0 && (
