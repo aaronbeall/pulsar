@@ -73,7 +73,7 @@ export const WorkoutLanding: React.FC = () => {
       <Timeline activeRoutines={activeRoutines} workouts={workouts} />
       <Flex justify="space-between" align="center" width="100%" mb={4}>
         <Heading size="lg">My Workouts</Heading>
-        <Button colorScheme="cyan" leftIcon={<FaPlus />} onClick={() => navigate('/workout/setup')}>
+        <Button variant="ghost" colorScheme="cyan" leftIcon={<FaPlus />} onClick={() => navigate('/workout/setup')}>
           New Routine
         </Button>
       </Flex>

@@ -33,7 +33,7 @@ const TimeToWorkoutAlert: React.FC<TimeToWorkoutAlertProps> = ({ routines, worko
             navigate(
               startedWorkout
                 ? `/workout/session/${startedWorkout.id}`
-                : `/workout/session/?routine=${todayRoutine.id}`
+                : `/workout/session/?routineId=${todayRoutine.id}`
             );
           }}
         >

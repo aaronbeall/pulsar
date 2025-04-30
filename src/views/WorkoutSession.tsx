@@ -1,9 +1,9 @@
 import React from 'react';
 import { Box, Button, Flex, Heading, Spinner, Text, VStack } from '@chakra-ui/react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { getRoutines, getWorkout, addWorkout, getRoutine } from '../db/indexedDb';
+import { getRoutines, getWorkout, addWorkout, getRoutine, getWorkouts } from '../db/indexedDb';
 import { Routine, Workout } from '../models/types';
-import { findExercisesForToday, findRoutineForToday } from '../utils/workoutUtils';
+import { findExercisesForToday, findRoutineForToday, findWorkoutForToday } from '../utils/workoutUtils';
 import { v4 as uuidv4 } from 'uuid';
 import { generateRandomName } from '../utils/nameUtils';
 
@@ -16,9 +16,9 @@ export const WorkoutSession: React.FC = () => {
 
   React.useEffect(() => {
     const initSession = async () => {
-      console.log('Initializing workout session...', { sessionId });
+
+      // Load existing workout by sessionId
       if (sessionId) {
-        // Load existing workout
         const existingWorkout = await getWorkout(sessionId);
         if (existingWorkout) {
           setWorkout(existingWorkout);
@@ -28,7 +28,7 @@ export const WorkoutSession: React.FC = () => {
         }
       }
 
-      // Create new workout
+      // Initialize workout by routineId
       const routineId = searchParams.get('routineId');
       const routine = await getRoutine(routineId || '');
       if (!routine) {
@@ -36,6 +36,15 @@ export const WorkoutSession: React.FC = () => {
         return;
       }
 
+      // Check if there's already a workout for today's routine
+      const workouts = await getWorkouts();
+      const existingWorkoutForToday = findWorkoutForToday(workouts, [routine]);
+      if (existingWorkoutForToday) {
+        navigate(`/workout/session/${existingWorkoutForToday.id}`, { replace: true });
+        return;
+      }
+
+      // Create new workout
       const newWorkout: Workout = {
         id: uuidv4(),
         nickname: generateRandomName(),
