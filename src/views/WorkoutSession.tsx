@@ -3,7 +3,7 @@ import { Box, Button, Flex, Heading, Spinner, Text, VStack } from '@chakra-ui/re
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getRoutines, getWorkout, addWorkout, getRoutine, getWorkouts } from '../db/indexedDb';
 import { Routine, Workout } from '../models/types';
-import { findExercisesForToday, findRoutineForToday, findWorkoutForToday } from '../utils/workoutUtils';
+import { findExercisesForToday, findRoutineForToday, findWorkoutForToday, getTodayDayOfWeek } from '../utils/workoutUtils';
 import { v4 as uuidv4 } from 'uuid';
 import { generateRandomName } from '../utils/nameUtils';
 
@@ -47,6 +47,7 @@ export const WorkoutSession: React.FC = () => {
       // Create new workout
       const newWorkout: Workout = {
         id: uuidv4(),
+        day: getTodayDayOfWeek(),
         nickname: generateRandomName(),
         routineId: routine.id,
         startedAt: Date.now(),

@@ -61,11 +61,18 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
             : isPastDay;
 
           let emoji = '💤'; // Default emoji for rest day
-          let color = 'gray.400'; // Default color for rest day
+          let color = isToday ? 'yellow.100' : isPastDay ? 'yellow.100' : 'gray.400';
 
           if (hasWorkout) {
-            emoji = '🔥'; // Workout day
-            color = isCompleted ? 'green.500' : isPastDay ? 'gray.400' : 'cyan.500'; // Green for completed, gray for past incomplete, cyan for upcoming
+            if (isPastDay && !isCompleted) {
+              emoji = '❌';
+              color = 'red.100';
+            } else {
+              emoji = '🔥';
+              if (isCompleted) {
+                color = 'orange.200';
+              }
+            }
           }
 
           return (
@@ -75,13 +82,13 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
                 bg={color}
                 color="white"
                 borderColor="yellow.400"
-                borderWidth={isToday ? '3px' : 'none'}
+                borderWidth={isToday ? '2px' : 'none'}
                 boxShadow={isToday ? '0px 0px 8px rgba(236, 201, 75, 0.6)' : 'none'}
-                transform={isToday ? 'scale(1.5)' : 'scale(1)'}
+                transform={isToday ? 'scale(2)' : 'scale(1)'}
               >
                 {emoji}
               </Circle>
-              <Text fontSize="sm" position="relative" top={isToday ? 2 : 0} mt={ 2} fontWeight={isToday ? "bold" : "normal"} color={isToday ? 'yellow.500' : 'gray.600'}>
+              <Text fontSize="sm" position="relative" top={isToday ? 3 : 0} mt={ 2} fontWeight={isToday ? "bold" : "normal"} color={isToday ? 'yellow.500' : 'gray.600'}>
                 {day.slice(0, 3)} {/* Abbreviated day name */}
               </Text>
             </Flex>
