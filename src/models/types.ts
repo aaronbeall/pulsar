@@ -25,8 +25,8 @@ export interface Routine {
     kind: string;
     exercises: Array<{
       exerciseId: string; // Reference to Exercise
+      sets: number;
       reps?: number;
-      sets?: number;
       duration?: number; // In seconds
     }>;
   }>;
@@ -53,13 +53,20 @@ export interface Workout {
   id: string; // Unique identifier
   nickname: string;
   routineId: string;
+  day: DayOfWeek;
   startedAt: number;
   completedAt?: number;
   completedExercises: Array<{
     exerciseId: string; // Reference to Exercise
-    completed: boolean; // True if completed, false if skipped
+    sets: number;
+    reps: number;
+    weight?: number;
+    startedAt: number;
+    completedAt: number;
+    skipped: boolean;
   }>;
   liked?: boolean;
   disliked?: boolean;
   favorite?: boolean;
+  feedback?: string;
 }
