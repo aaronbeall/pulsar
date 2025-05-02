@@ -1,13 +1,15 @@
 import React from 'react';
 import { Box, Button, Flex, Heading, Spinner, Text, VStack, Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@chakra-ui/react';
 import { useParams, useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom';
-import { getRoutines, getWorkout, addWorkout, getRoutine, getWorkouts } from '../db/indexedDb';
-import { Routine, Workout, DayOfWeek } from '../models/types';
+import { getRoutines, getWorkout, addWorkout, getRoutine, getWorkouts, getExercises } from '../db/indexedDb';
+import { Routine, Workout, DayOfWeek, Exercise } from '../models/types';
 import { getTodayDayOfWeek, findWorkoutForDay, findExercisesForDay } from '../utils/workoutUtils';
 import { DAYS_OF_WEEK } from '../constants/days';
 import { v4 as uuidv4 } from 'uuid';
 import { generateRandomName } from '../utils/nameUtils';
 import TimeElapsed from '../components/TimeElapsed';
+import WorkoutTimeline from '../components/WorkoutTimeline';
+import ExerciseProgress from '../components/ExerciseProgress';
 
 export const WorkoutSession: React.FC = () => {
   const { sessionId } = useParams();
@@ -15,9 +17,14 @@ export const WorkoutSession: React.FC = () => {
   const navigate = useNavigate();
   const [workout, setWorkout] = React.useState<Workout | null>(null);
   const [routine, setRoutine] = React.useState<Routine | null>(null);
+  const [exercises, setExercises] = React.useState<Exercise[]>([]);
+  const [currentExerciseIndex, setCurrentExerciseIndex] = React.useState(0);
+  const [currentSetIndex, setCurrentSetIndex] = React.useState(0);
 
   React.useEffect(() => {
     const initSession = async () => {
+      const exerciseData = await getExercises();
+      setExercises(exerciseData);
       
       // Load existing workout by sessionId
       if (sessionId) {
@@ -72,6 +79,24 @@ export const WorkoutSession: React.FC = () => {
     initSession();
   }, [sessionId, navigate]);
 
+  const handleNext = () => {
+    const routineExercises = findExercisesForDay(routine!, workout!.day);
+    const currentExercise = routineExercises[currentExerciseIndex];
+    
+    if (currentSetIndex + 1 < currentExercise.sets) {
+      // Move to next set of current exercise
+      setCurrentSetIndex(currentSetIndex + 1);
+    } else if (currentExerciseIndex + 1 < routineExercises.length) {
+      // Move to next exercise
+      setCurrentExerciseIndex(currentExerciseIndex + 1);
+      setCurrentSetIndex(0);
+    } else {
+      // Workout complete
+      // TODO: Handle workout completion
+      alert('Workout complete!');
+    }
+  };
+
   if (!routine || !workout) {
     return (
       <Flex direction="column" align="center" justify="center" height="100%" width="100%">
@@ -80,8 +105,9 @@ export const WorkoutSession: React.FC = () => {
     );
   }
 
-  // Use the utility function to find exercises for the specific day
-  const exercises = findExercisesForDay(routine, workout.day);
+  const routineExercises = findExercisesForDay(routine, workout.day);
+  const currentExercise = routineExercises[currentExerciseIndex];
+  const currentExerciseDetail = exercises.find(e => e.id === currentExercise?.exerciseId);
 
   return (
     <Flex direction="column" p={4} width="100%">
@@ -100,23 +126,29 @@ export const WorkoutSession: React.FC = () => {
           <BreadcrumbLink>{workout.day}</BreadcrumbLink>
         </BreadcrumbItem>
       </Breadcrumb>
+
       <Flex justify="space-between" align="start" mb={6}>
         <Box>
           <Heading size="lg" mb={2}>{workout.nickname}</Heading>
-          <Text fontSize="md" color="gray.600">
-            {workout.day}'s Workout
-          </Text>
         </Box>
         <TimeElapsed startTime={workout.startedAt} />
       </Flex>
-      <VStack spacing={4} align="stretch">
-        {exercises.map((exercise, idx) => (
-          <Box key={idx} p={4} borderWidth={1} borderRadius="md">
-            <Text fontWeight="bold">Exercise {idx + 1}</Text>
-            <Text>Sets: {exercise.sets} × Reps: {exercise.reps}</Text>
-            {exercise.duration && <Text>Duration: {exercise.duration}s</Text>}
-          </Box>
-        ))}
+
+      <VStack spacing={6} align="stretch">
+        <ExerciseProgress 
+          exercise={currentExercise}
+          currentSet={currentSetIndex}
+          exerciseDetail={currentExerciseDetail}
+          onComplete={() => {}}
+          onNext={handleNext}
+        />
+        
+        <WorkoutTimeline 
+          exercises={routineExercises}
+          currentExerciseIndex={currentExerciseIndex}
+          currentSetIndex={currentSetIndex}
+          exerciseDetails={exercises}
+        />
       </VStack>
     </Flex>
   );
