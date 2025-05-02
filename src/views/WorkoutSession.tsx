@@ -7,6 +7,7 @@ import { getTodayDayOfWeek, findWorkoutForDay, findExercisesForDay } from '../ut
 import { DAYS_OF_WEEK } from '../constants/days';
 import { v4 as uuidv4 } from 'uuid';
 import { generateRandomName } from '../utils/nameUtils';
+import TimeElapsed from '../components/TimeElapsed';
 
 export const WorkoutSession: React.FC = () => {
   const { sessionId } = useParams();
@@ -84,10 +85,15 @@ export const WorkoutSession: React.FC = () => {
 
   return (
     <Flex direction="column" p={4} width="100%">
-      <Heading size="lg" mb={4}>{workout.nickname}</Heading>
-      <Text fontSize="md" color="gray.600" mb={4}>
-        {workout.day}'s Workout
-      </Text>
+      <Flex justify="space-between" align="start" mb={6}>
+        <Box>
+          <Heading size="lg" mb={2}>{workout.nickname}</Heading>
+          <Text fontSize="md" color="gray.600">
+            {workout.day}'s Workout
+          </Text>
+        </Box>
+        <TimeElapsed startTime={workout.startedAt} />
+      </Flex>
       <VStack spacing={4} align="stretch">
         {exercises.map((exercise, idx) => (
           <Box key={idx} p={4} borderWidth={1} borderRadius="md">
