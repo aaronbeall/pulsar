@@ -1,10 +1,11 @@
 import React from 'react';
-import { SimpleGrid, Circle, Flex, Text, Box } from '@chakra-ui/react';
+import { SimpleGrid, Circle, Flex, Text, Box, Icon } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { useNavigate } from 'react-router-dom';
 import { Routine, Workout } from '../models/types';
 import { DAYS_OF_WEEK } from '../constants/days';
 import { hasRoutineForDay, findRoutineForDay, findWorkoutForDay, getWorkoutStatusForDay } from '../utils/workoutUtils';
+import { FaDumbbell, FaCheck, FaTimes, FaBullseye, FaBed } from 'react-icons/fa';
 import StatusBadge from './StatusBadge';
 
 const pulseAnimation = keyframes`
@@ -35,6 +36,14 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
     } else {
       navigate(`/workout/session?routineId=${routineForDay.id}&day=${dayOfWeek}`);
     }
+  };
+
+  const getDayIcon = (isToday: boolean, status: string, hasWorkout: boolean, isPastDay: boolean) => {
+    if (isToday) return FaDumbbell;
+    if (status === 'completed') return FaCheck;
+    if (isPastDay && hasWorkout && status === 'not started') return FaTimes;
+    if (hasWorkout) return FaBullseye;
+    return FaBed;
   };
 
   return (
@@ -118,19 +127,11 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
             };
           };
 
-          const getEmoji = () => {
-            if (isToday) return '💪';
-            if (status === 'completed') return '✨';
-            if (isPastDay && hasWorkout && status === 'not started') return '❌';
-            if (hasWorkout) return '🎯';
-            return '💤';
-          };
-
           return (
             <Flex key={day} direction="column" align="center">
               <Box 
                 position="relative" 
-mb={2}
+                mb={2}
                 transition="all 0.2s"
                 _hover={hasWorkout ? {
                   transform: isToday ? 'scale(1.75)' : 'scale(1.1)',
@@ -143,10 +144,15 @@ mb={2}
                   boxShadow={isToday ? '0 0 12px rgba(0, 200, 255, 0.5)' : undefined}
                   transition="all 0.3s"
                   {...getCircleStyles()}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
                 >
-                  <Text fontSize={isToday ? "xl" : "md"}>
-                    {getEmoji()}
-                  </Text>
+                  <Icon 
+                    as={getDayIcon(isToday, status, hasWorkout, isPastDay)} 
+                    color="white" 
+                    fontSize={isToday ? "xl" : "md"}
+                  />
                 </Circle>
                 {hasWorkout && (isPastDay || isToday) && (
                   <StatusBadge status={status} />

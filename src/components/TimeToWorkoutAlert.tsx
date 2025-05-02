@@ -1,9 +1,17 @@
-import React from 'react';
-import { Box, Button, Flex, Alert, AlertTitle, AlertDescription } from '@chakra-ui/react';
+import React, { useState, useEffect } from 'react';
+import { Box, Button, Flex, Alert, AlertTitle, AlertDescription, SlideFade, Icon } from '@chakra-ui/react';
+import { keyframes } from '@emotion/react';
 import { useNavigate } from 'react-router-dom';
 import { Routine, Workout } from '../models/types';
-import { findRoutineForToday, findWorkoutForToday, getWorkoutStatusForToday } from '../utils/workoutUtils';
+import { findRoutineForToday, findWorkoutForToday, getWorkoutStatusForToday, WorkoutStatus } from '../utils/workoutUtils';
+import { WEIGHTLIFTING_EMOJIS } from '../constants/emojis';
+import { FaPlay, FaPlayCircle, FaChartBar } from 'react-icons/fa';
 import StatusBadge from './StatusBadge';
+
+const bounce = keyframes`
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+`;
 
 interface TimeToWorkoutAlertProps {
   routines: Routine[];
@@ -13,42 +21,94 @@ interface TimeToWorkoutAlertProps {
 const TimeToWorkoutAlert: React.FC<TimeToWorkoutAlertProps> = ({ routines, workouts }) => {
   const navigate = useNavigate();
   const status = getWorkoutStatusForToday(workouts, routines);
+  const [emoji, setEmoji] = useState(WEIGHTLIFTING_EMOJIS[0]);
+
+  // Rotate through emojis every few seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setEmoji(WEIGHTLIFTING_EMOJIS[Math.floor(Math.random() * WEIGHTLIFTING_EMOJIS.length)]);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getButtonIcon = (status: WorkoutStatus) => {
+    switch (status) {
+      case 'not started':
+        return FaPlay;
+      case 'in progress':
+        return FaPlayCircle;
+      case 'completed':
+        return FaChartBar;
+    }
+  };
+
+  const getButtonText = (status: WorkoutStatus) => {
+    switch (status) {
+      case 'not started':
+        return 'Start Workout';
+      case 'in progress':
+        return 'Continue Workout';
+      case 'completed':
+        return 'View Workout';
+    }
+  };
 
   return (
-    <Alert status="success" variant="solid" borderRadius="md" mb={6} p={6}>
-      <Box fontSize="7em" mr={4}>🏋️‍♂️</Box>
-      <Flex direction="column" align="start">
-        <AlertTitle fontSize="2xl" fontWeight="bold">
-          It's time to workout!
-        </AlertTitle>
-        <AlertDescription fontSize="lg">
-          You have an active routine for today. Click below to start your workout now!
-        </AlertDescription>
-        <Box position="relative" mt={4}>
-          <Button
-            size="lg"
-            colorScheme="cyan"
-            onClick={() => {
-              const todayRoutine = findRoutineForToday(routines);
-              if (!todayRoutine) return;
-              const startedWorkout = findWorkoutForToday(workouts, routines);
-              navigate(
-                startedWorkout
-                  ? `/workout/session/${startedWorkout.id}`
-                  : `/workout/session/?routineId=${todayRoutine.id}`
-              );
-            }}
-          >
-            {{
-              "not started": 'Start Workout',
-              "in progress": 'Continue Workout',
-              "completed": 'View Workout',
-            }[status]}
-          </Button>
-          <StatusBadge status={status} />
+    <SlideFade in={true} offsetY="20px">
+      <Alert 
+        status="success" 
+        variant="solid" 
+        borderRadius="xl" 
+        mb={6} 
+        p={8}
+        bgGradient="linear(to-r, cyan.500, blue.500)"
+        boxShadow="xl"
+        _hover={{ transform: 'scale(1.01)', transition: 'transform 0.2s' }}
+      >
+        <Box 
+          fontSize="7em" 
+          mr={6}
+          animation={`${bounce} 2s ease-in-out infinite`}
+          cursor="pointer"
+          onClick={() => setEmoji(WEIGHTLIFTING_EMOJIS[Math.floor(Math.random() * WEIGHTLIFTING_EMOJIS.length)])}
+          transition="transform 0.2s"
+          _hover={{ transform: 'scale(1.1)' }}
+        >
+          {emoji}
         </Box>
-      </Flex>
-    </Alert>
+        <Flex direction="column" align="start">
+          <AlertTitle fontSize="3xl" fontWeight="extrabold" mb={2}>
+            Time to crush your workout! 💪
+          </AlertTitle>
+          <AlertDescription fontSize="lg" mb={6} opacity={0.9}>
+            Your active routine is ready for today. Let's make it count!
+          </AlertDescription>
+          <Box position="relative">
+            <Button
+              size="lg"
+              colorScheme="white"
+              variant="outline"
+              leftIcon={<Icon as={getButtonIcon(status)} />}
+              _hover={{ bg: 'whiteAlpha.200' }}
+              _active={{ transform: 'scale(0.98)' }}
+              onClick={() => {
+                const todayRoutine = findRoutineForToday(routines);
+                if (!todayRoutine) return;
+                const startedWorkout = findWorkoutForToday(workouts, routines);
+                navigate(
+                  startedWorkout
+                    ? `/workout/session/${startedWorkout.id}`
+                    : `/workout/session/?routineId=${todayRoutine.id}`
+                );
+              }}
+            >
+              {getButtonText(status)}
+            </Button>
+            <StatusBadge status={status} />
+          </Box>
+        </Flex>
+      </Alert>
+    </SlideFade>
   );
 };
 
