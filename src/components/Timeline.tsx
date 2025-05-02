@@ -23,8 +23,9 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
   const today = new Date().getDay();
   const navigate = useNavigate();
 
-  const handleDayClick = (index: number, hasWorkout: boolean, isPastDay: boolean) => {
-    if (!hasWorkout || !isPastDay) return;
+  const handleDayClick = (index: number, hasWorkout: boolean, isPastDay: boolean, isToday: boolean) => {
+    // Allow clicking if it's a workout day and either it's in the past or it's today
+    if (!hasWorkout || (!isPastDay && !isToday)) return;
     
     const dayOfWeek = DAYS_OF_WEEK[index];
     const routineForDay = findRoutineForDay(activeRoutines, dayOfWeek);
@@ -99,7 +100,8 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
               return {
                 bg: 'cyan.500',
                 transform: 'scale(1.75)',
-                animation: `${pulseAnimation} 2s infinite ease-in-out`
+                animation: `${pulseAnimation} 2s infinite ease-in-out`,
+                cursor: hasWorkout ? 'pointer' : 'default'
               };
             }
             if (status === 'completed') {
@@ -133,14 +135,14 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
                 position="relative" 
                 mb={2}
                 transition="all 0.2s"
-                _hover={hasWorkout ? {
+                _hover={hasWorkout && (isPastDay || isToday) ? {
                   transform: isToday ? 'scale(1.75)' : 'scale(1.1)',
                 } : undefined}
               >
                 <Circle
                   size="40px"
-                  cursor={hasWorkout ? 'pointer' : 'default'}
-                  onClick={() => handleDayClick(index, hasWorkout, isPastDay)}
+                  cursor={hasWorkout && (isPastDay || isToday) ? 'pointer' : 'default'}
+                  onClick={() => handleDayClick(index, hasWorkout, isPastDay, isToday)}
                   boxShadow={isToday ? '0 0 12px rgba(0, 200, 255, 0.5)' : undefined}
                   transition="all 0.3s"
                   {...getCircleStyles()}
