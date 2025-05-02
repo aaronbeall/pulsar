@@ -1,6 +1,6 @@
 import React from 'react';
-import { Box, Button, Flex, Heading, Spinner, Text, VStack } from '@chakra-ui/react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { Box, Button, Flex, Heading, Spinner, Text, VStack, Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@chakra-ui/react';
+import { useParams, useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom';
 import { getRoutines, getWorkout, addWorkout, getRoutine, getWorkouts } from '../db/indexedDb';
 import { Routine, Workout, DayOfWeek } from '../models/types';
 import { getTodayDayOfWeek, findWorkoutForDay, findExercisesForDay } from '../utils/workoutUtils';
@@ -85,6 +85,21 @@ export const WorkoutSession: React.FC = () => {
 
   return (
     <Flex direction="column" p={4} width="100%">
+      <Breadcrumb mb={4}>
+        <BreadcrumbItem>
+          <BreadcrumbLink as={RouterLink} to="/workout">
+            Workouts
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbItem>
+          <BreadcrumbLink as={RouterLink} to={`/workout/routine/${routine.id}`}>
+            Routine
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrentPage>
+          <BreadcrumbLink>{workout.day}</BreadcrumbLink>
+        </BreadcrumbItem>
+      </Breadcrumb>
       <Flex justify="space-between" align="start" mb={6}>
         <Box>
           <Heading size="lg" mb={2}>{workout.nickname}</Heading>
