@@ -1,10 +1,17 @@
 import React from 'react';
 import { SimpleGrid, Circle, Flex, Text, Box } from '@chakra-ui/react';
+import { keyframes } from '@emotion/react';
 import { useNavigate } from 'react-router-dom';
 import { Routine, Workout } from '../models/types';
 import { DAYS_OF_WEEK } from '../constants/days';
 import { hasRoutineForDay, findRoutineForDay, findWorkoutForDay, getWorkoutStatusForDay } from '../utils/workoutUtils';
 import StatusBadge from './StatusBadge';
+
+const pulseAnimation = keyframes`
+  0% { transform: scale(1.75); }
+  50% { transform: scale(1.85); }
+  100% { transform: scale(1.75); }
+`;
 
 interface TimelineProps {
   activeRoutines: Routine[];
@@ -20,12 +27,9 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
     
     const dayOfWeek = DAYS_OF_WEEK[index];
     const routineForDay = findRoutineForDay(activeRoutines, dayOfWeek);
-
     if (!routineForDay) return;
 
-    // Find workout for this specific day if it exists
     const workoutForDay = findWorkoutForDay(workouts, [routineForDay], dayOfWeek);
-
     if (workoutForDay) {
       navigate(`/workout/session/${workoutForDay.id}`);
     } else {
@@ -37,91 +41,126 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
     <Box
       position="relative"
       width="100%"
-      borderWidth="none"
-      borderRadius="full"
-      p={4}
-      bg="gray.50"
+      borderRadius="2xl"
+      p={6}
+      bg="white"
       _dark={{ bg: "gray.800" }}
-      boxShadow="sm"
+      boxShadow="lg"
       mb={6}
+      overflow="visible"
     >
-      {/* Background line */}
+      {/* Timeline track */}
       <Box
         position="absolute"
-        top="34px"
-        left="7%"
-        right="7%"
-        height="4px"
-        bg="gray.400"
-        zIndex="0"
-        opacity={0.25}
+        top="42px"
+        left="10%"
+        right="10%"
+        height="3px"
+        bg="gray.100"
+        _dark={{ bg: "gray.700" }}
+        zIndex={1}
       />
-      {/* Fill line up to the current day */}
+      
+      {/* Progress fill */}
       <Box
         position="absolute"
-        top="34px"
-        left="7%"
-        right={`${(6 - today) * (100 / 7) + (100 / 14)}%`}
-        height="4px"
-        bg="yellow.400"
-        zIndex="1"
+        top="42px"
+        left="10%"
+        height="3px"
+        width={`${((today + 1) / 7) * 80}%`}
+        bg="linear-gradient(90deg, cyan.400, cyan.500)"
+        boxShadow="0 0 8px rgba(0, 200, 255, 0.4)"
+        zIndex={2}
+        transition="width 0.3s ease-out"
       />
-      <SimpleGrid columns={7} spacing={4} position="relative" zIndex="2">
+
+      <SimpleGrid columns={7} spacing={4} position="relative" zIndex={3}>
         {DAYS_OF_WEEK.map((day, index) => {
           const hasWorkout = hasRoutineForDay(activeRoutines, day);
           const isToday = index === today;
           const isPastDay = index < today;
+          const isFutureDay = index > today;
 
           const status = hasWorkout 
             ? getWorkoutStatusForDay(workouts, activeRoutines, day)
             : 'not started';
 
-          let emoji = '💤';
-          let color = isToday ? 'yellow.100' : isPastDay ? 'yellow.100' : 'gray.400';
-
-          if (hasWorkout) {
-            if (isPastDay && status === 'not started') {
-              emoji = '❌';
-              color = 'red.100';
-            } else {
-              emoji = '🔥';
-              if (status === 'completed') {
-                color = 'orange.200';
-              }
+          const getCircleStyles = () => {
+            if (isToday) {
+              return {
+                bg: 'cyan.500',
+                transform: 'scale(1.75)',
+                animation: `${pulseAnimation} 2s infinite ease-in-out`
+              };
             }
-          }
+            if (status === 'completed') {
+              return {
+                bg: 'cyan.400',
+                opacity: 0.9
+              };
+            }
+            if (isPastDay && hasWorkout && status === 'not started') {
+              return {
+                bg: 'red.400',
+                opacity: 0.7
+              };
+            }
+            if (isFutureDay) {
+              return {
+                bg: 'gray.200',
+                _dark: { bg: 'gray.600' },
+                opacity: 0.5
+              };
+            }
+            return {
+              bg: 'gray.300',
+              _dark: { bg: 'gray.700' }
+            };
+          };
+
+          const getEmoji = () => {
+            if (isToday) return '💪';
+            if (status === 'completed') return '✨';
+            if (isPastDay && hasWorkout && status === 'not started') return '❌';
+            if (hasWorkout) return '🎯';
+            return '💤';
+          };
 
           return (
-            <Flex key={day} direction="column" align="center" position="relative">
-              <Box position="relative">
+            <Flex key={day} direction="column" align="center">
+              <Box 
+                position="relative" 
+mb={2}
+                transition="all 0.2s"
+                _hover={hasWorkout ? {
+                  transform: isToday ? 'scale(1.75)' : 'scale(1.1)',
+                } : undefined}
+              >
                 <Circle
                   size="40px"
-                  bg={color}
-                  color="white"
-                  borderColor="yellow.400"
-                  borderWidth={isToday ? '2px' : 'none'}
-                  boxShadow={isToday ? '0px 0px 8px rgba(236, 201, 75, 0.6)' : 'none'}
-                  transform={isToday ? 'scale(1.75)' : 'scale(1)'}
-                  cursor={hasWorkout && isPastDay ? 'pointer' : 'default'}
+                  cursor={hasWorkout ? 'pointer' : 'default'}
                   onClick={() => handleDayClick(index, hasWorkout, isPastDay)}
-                  _hover={hasWorkout && isPastDay ? {
-                    opacity: 0.8,
-                    transform: isToday ? 'scale(1.75)' : 'scale(1.1)'
-                  } : undefined}
+                  boxShadow={isToday ? '0 0 12px rgba(0, 200, 255, 0.5)' : undefined}
+                  transition="all 0.3s"
+                  {...getCircleStyles()}
                 >
-                  {emoji}
+                  <Text fontSize={isToday ? "xl" : "md"}>
+                    {getEmoji()}
+                  </Text>
                 </Circle>
                 {hasWorkout && (isPastDay || isToday) && (
                   <StatusBadge status={status} />
                 )}
               </Box>
               <Text 
-                fontSize="sm" 
-                position="relative" 
-                top={isToday ? 3 : 0} 
-                mt={2} 
-                fontWeight={isToday ? "bold" : "normal"} 
-                color={isToday ? 'yellow.500' : 'gray.600'}
+                fontSize="sm"
+                fontWeight={isToday ? "bold" : "medium"}
+                color={isToday ? 'cyan.500' : 'gray.600'}
+                _dark={{ color: isToday ? 'cyan.300' : 'gray.400' }}
+                transition="all 0.2s"
+                mt={2}
+                position="relative"
+                top={isToday ? 3 : 0}
               >
                 {day.slice(0, 3)}
               </Text>
