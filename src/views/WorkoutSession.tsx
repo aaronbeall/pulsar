@@ -2,8 +2,9 @@ import React from 'react';
 import { Box, Button, Flex, Heading, Spinner, Text, VStack } from '@chakra-ui/react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { getRoutines, getWorkout, addWorkout, getRoutine, getWorkouts } from '../db/indexedDb';
-import { Routine, Workout } from '../models/types';
-import { findExercisesForToday, findRoutineForToday, findWorkoutForToday, getTodayDayOfWeek } from '../utils/workoutUtils';
+import { Routine, Workout, DayOfWeek } from '../models/types';
+import { getTodayDayOfWeek, findWorkoutForDay, findExercisesForDay } from '../utils/workoutUtils';
+import { DAYS_OF_WEEK } from '../constants/days';
 import { v4 as uuidv4 } from 'uuid';
 import { generateRandomName } from '../utils/nameUtils';
 
@@ -16,7 +17,7 @@ export const WorkoutSession: React.FC = () => {
 
   React.useEffect(() => {
     const initSession = async () => {
-
+      
       // Load existing workout by sessionId
       if (sessionId) {
         const existingWorkout = await getWorkout(sessionId);
@@ -30,29 +31,35 @@ export const WorkoutSession: React.FC = () => {
 
       // Initialize workout by routineId
       const routineId = searchParams.get('routineId');
+      const dayParam = searchParams.get('day') as DayOfWeek | null;
       const routine = await getRoutine(routineId || '');
+      
       if (!routine) {
         navigate('/workout', { replace: true });
         return;
       }
 
-      // Check if there's already a workout for today's routine
+      // Use provided day or today's day, ensuring it's a valid DayOfWeek
+      const workoutDay = dayParam && DAYS_OF_WEEK.includes(dayParam) ? dayParam : getTodayDayOfWeek();
+
+      // Check if there's already a workout for this specific day and routine
       const workouts = await getWorkouts();
-      const existingWorkoutForToday = findWorkoutForToday(workouts, [routine]);
-      if (existingWorkoutForToday) {
-        navigate(`/workout/session/${existingWorkoutForToday.id}`, { replace: true });
+      const existingWorkoutForDay = findWorkoutForDay(workouts, [routine], workoutDay);
+
+      if (existingWorkoutForDay) {
+        navigate(`/workout/session/${existingWorkoutForDay.id}`, { replace: true });
         return;
       }
 
       // Create new workout
       const newWorkout: Workout = {
         id: uuidv4(),
-        day: getTodayDayOfWeek(),
+        day: workoutDay,
         nickname: generateRandomName(),
         routineId: routine.id,
         startedAt: Date.now(),
         completedExercises: []
-      }
+      };
       
       await addWorkout(newWorkout);
 
@@ -72,17 +79,23 @@ export const WorkoutSession: React.FC = () => {
     );
   }
 
+  // Use the utility function to find exercises for the specific day
+  const exercises = findExercisesForDay(routine, workout.day);
+
   return (
     <Flex direction="column" p={4} width="100%">
       <Heading size="lg" mb={4}>{workout.nickname}</Heading>
+      <Text fontSize="md" color="gray.600" mb={4}>
+        {workout.day}'s Workout
+      </Text>
       <VStack spacing={4} align="stretch">
-        {findExercisesForToday(routine).map((exercise, idx) => (
-            <Box key={idx} p={4} borderWidth={1} borderRadius="md">
-              <Text fontWeight="bold">Exercise {idx + 1}</Text>
-              <Text>Sets: {exercise.sets} × Reps: {exercise.reps}</Text>
-              {exercise.duration && <Text>Duration: {exercise.duration}s</Text>}
-            </Box>
-          ))}
+        {exercises.map((exercise, idx) => (
+          <Box key={idx} p={4} borderWidth={1} borderRadius="md">
+            <Text fontWeight="bold">Exercise {idx + 1}</Text>
+            <Text>Sets: {exercise.sets} × Reps: {exercise.reps}</Text>
+            {exercise.duration && <Text>Duration: {exercise.duration}s</Text>}
+          </Box>
+        ))}
       </VStack>
     </Flex>
   );
