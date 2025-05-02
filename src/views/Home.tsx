@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, Flex, Heading, Text, SimpleGrid, useToken, Highlight } from '@chakra-ui/react'; // Import useToken and Highlight
+import { Box, Button, Flex, Heading, Text, useToken, Highlight } from '@chakra-ui/react';
 import { FaDumbbell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { getRoutines, getWorkouts } from '../db/indexedDb';
 import { Routine, Workout } from '../models/types';
 import { findRoutineForToday, findWorkoutForToday } from '../utils/workoutUtils';
+import StreakCalendar from '../components/StreakCalendar';
 
 const Home: React.FC = () => {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const navigate = useNavigate();
-  const [red500] = useToken('colors', ['red.500']); // Retrieve the Chakra theme color
+  const [red500] = useToken('colors', ['red.500']);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -21,41 +22,6 @@ const Home: React.FC = () => {
     };
     fetchData();
   }, []);
-
-  const renderStreakCalendar = () => {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const today = new Date();
-    const streak = Array(7).fill(false);
-
-    workouts.forEach((workout) => {
-      const workoutDate = new Date(workout.date);
-      const diff = today.getDay() - workoutDate.getDay();
-      if (diff >= 0 && diff < 7) {
-        streak[workoutDate.getDay()] = true;
-      }
-    });
-
-    return (
-      <SimpleGrid columns={7} spacing={2}>
-        {days.map((day, index) => (
-          <Box
-            key={day}
-            bg={streak[index] ? 'green.500' : 'gray.300'}
-            w={8}
-            h={8}
-            borderRadius="md"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-          >
-            <Text fontSize="sm" color="white">
-              {day[0]}
-            </Text>
-          </Box>
-        ))}
-      </SimpleGrid>
-    );
-  };
 
   return (
     <Flex direction="column" p={4} align="center" justify="center" height="100%" width="100%">
@@ -102,20 +68,13 @@ const Home: React.FC = () => {
               const todayRoutine = findRoutineForToday(routines);
               const startedWorkout = findWorkoutForToday(workouts, routines);
               navigate(
-                `/workout/session/${startedWorkout?.id ?? `?routineId=${ todayRoutine?.id }`}`
+                `/workout/session/${startedWorkout?.id ?? `?routineId=${todayRoutine?.id}`}`
               );
             }}
           >
             Start Workout
           </Button>
-          {workouts.length > 0 && (
-            <Box>
-              <Heading size="md" mb={2}>
-                Weekly Streak
-              </Heading>
-              {renderStreakCalendar()}
-            </Box>
-          )}
+          {workouts.length > 0 && <StreakCalendar workouts={workouts} />}
         </Box>
       )}
     </Flex>
