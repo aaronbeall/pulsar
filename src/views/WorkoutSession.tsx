@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Flex, Heading, Spinner, Text, VStack, Breadcrumb, BreadcrumbItem, BreadcrumbLink } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Spinner, Text, VStack, Breadcrumb, BreadcrumbItem, BreadcrumbLink, SlideFade } from '@chakra-ui/react';
 import { useParams, useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom';
 import { getRoutines, getWorkout, addWorkout, getRoutine, getWorkouts, getExercises } from '../db/indexedDb';
 import { Routine, Workout, DayOfWeek, Exercise } from '../models/types';
@@ -135,13 +135,20 @@ export const WorkoutSession: React.FC = () => {
       </Flex>
 
       <VStack spacing={6} align="stretch">
-        <ExerciseProgress 
-          exercise={currentExercise}
-          currentSet={currentSetIndex}
-          exerciseDetail={currentExerciseDetail}
-          onComplete={() => {}}
-          onNext={handleNext}
-        />
+        <SlideFade 
+          in={true} 
+          offsetY={20}
+          style={{ width: '100%' }}
+          key={currentExerciseIndex}
+        >
+          <ExerciseProgress 
+            exercise={currentExercise}
+            currentSet={currentSetIndex}
+            exerciseDetail={currentExerciseDetail}
+            onComplete={() => {}}
+            onNext={handleNext}
+          />
+        </SlideFade>
         
         <WorkoutTimeline 
           exercises={routineExercises}

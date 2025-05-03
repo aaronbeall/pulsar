@@ -89,7 +89,7 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
         exercises: [
           { exerciseId: exercises[0].id, reps: 10, sets: 3 },
           { exerciseId: exercises[1].id, reps: 15, sets: 3 },
-          { exerciseId: exercises[2].id, duration: 60 },
+          { exerciseId: exercises[2].id, duration: 60, sets: 1 },
         ],
       },
       {
@@ -97,14 +97,14 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
         kind: 'Cardio',
         exercises: [
           { exerciseId: exercises[3].id, reps: 12, sets: 3 },
-          { exerciseId: exercises[4].id, duration: 90 },
+          { exerciseId: exercises[4].id, duration: 90, sets: 1 },
         ],
       },
       {
         day: 'Friday',
         kind: 'Flexibility',
         exercises: [
-          { exerciseId: exercises[2].id, duration: 120 },
+          { exerciseId: exercises[2].id, duration: 120, sets: 1 },
           { exerciseId: exercises[3].id, reps: 10, sets: 2 },
         ],
       },

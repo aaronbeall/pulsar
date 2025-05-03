@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Box, Button, VStack, Text, CircularProgress, CircularProgressLabel, Flex, HStack, Circle, Icon, Spinner } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { FaCheck } from 'react-icons/fa';
-import { Exercise } from '../models/types';
+import { Exercise, ScheduledExercise } from '../models/types';
 
 const popIn = keyframes`
   0% { transform: scale(0); }
@@ -92,12 +92,7 @@ const SetIndicator: React.FC<SetIndicatorProps> = ({
 };
 
 interface ExerciseProgressProps {
-  exercise: {
-    exerciseId: string;
-    sets: number;
-    reps?: number;
-    duration?: number;
-  };
+  exercise: ScheduledExercise;
   currentSet: number;
   exerciseDetail: Exercise | undefined;
   onComplete: () => void;
@@ -166,6 +161,8 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
     ? (timeElapsed / exercise.duration) * 100
     : (timeElapsed / 60) * 100;
 
+  const isLastSet = currentSet === exercise.sets - 1;
+
   return (
     <Box 
       p={6} 
@@ -176,7 +173,12 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
       width="100%"
     >
       <VStack spacing={4} align="center">
-        <Text fontSize="xl" fontWeight="bold" color={isRestPeriod ? "gray.500" : undefined}>
+        <Text 
+          fontSize="xl" 
+          fontWeight="bold"
+          color={isRestPeriod ? "gray.500" : undefined}
+          transition="color 0.2s"
+        >
           {exerciseDetail?.name || 'Exercise'}
         </Text>
         
@@ -194,41 +196,65 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
         </HStack>
         
         <Text fontSize="sm" color="gray.500" mt={-2}>
-          Set {currentSet + 1} of {exercise.sets}
-          {exercise.reps && ` • ${exercise.reps} reps`}
+          {exercise.sets > 1 ? `Set ${currentSet + 1} of ${exercise.sets}` : ''}
+          {(exercise.reps || exercise.duration) && (
+            <Box 
+              as="span"
+              ml={exercise.sets > 1 ? 2 : 0}
+              color={isActive ? "cyan.500" : undefined}
+              fontSize={isActive ? "md" : "sm"}
+              fontWeight={isActive ? "bold" : "normal"}
+              transition="all 0.2s"
+            >
+              {exercise.sets > 1 ? '• ' : ''}
+              {exercise.reps && `${exercise.reps} reps`}
+              {exercise.reps && exercise.duration && ' • '}
+              {exercise.duration && `${exercise.duration}s`}
+            </Box>
+          )}
         </Text>
 
         {isRestPeriod ? (
           <>
-            <Text fontSize="lg" fontWeight="bold" color="orange.500">
-              Rest
-            </Text>
-            <CircularProgress
-              value={100}
-              color="orange.500"
-              size="120px"
-              thickness="4px"
+            <Box 
+              px={4}
+              py={2}
+              borderRadius="lg"
+              bg="orange.50"
+              _dark={{ bg: 'orange.900' }}
+              opacity={0.9}
             >
-              <CircularProgressLabel color="orange.500">
-                {restTimeElapsed}s
-              </CircularProgressLabel>
-            </CircularProgress>
+              <Text 
+                fontSize="2xl" 
+                fontWeight="medium" 
+                color="orange.500"
+                display="flex"
+                alignItems="baseline"
+                gap={2}
+              >
+                Rest <Text as="span" opacity={0.6}>·</Text> {restTimeElapsed}s
+              </Text>
+            </Box>
             <Button 
               colorScheme="cyan" 
               size="lg" 
               width="100%" 
               onClick={handleNext}
             >
-              Start Next Set
+              {isLastSet ? "Next Exercise" : "Start Next Set"}
             </Button>
           </>
         ) : (
           <>
             <CircularProgress
-              value={isActive ? progress : 0}
+              isIndeterminate={!exercise.duration && isActive}
+              value={exercise.duration ? (isActive ? progress : 0) : 0}
               color="cyan.500"
               size="120px"
               thickness="4px"
+              trackColor="cyan.100"
+              _dark={{ trackColor: 'cyan.900' }}
+              capIsRound
             >
               <CircularProgressLabel>
                 {exercise.duration ? 

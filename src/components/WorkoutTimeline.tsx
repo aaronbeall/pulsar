@@ -1,14 +1,9 @@
 import React from 'react';
 import { Box, VStack, HStack, Text, Circle, Flex } from '@chakra-ui/react';
-import { Exercise } from '../models/types';
+import { Exercise, ScheduledExercise } from '../models/types';
 
 interface WorkoutTimelineProps {
-  exercises: Array<{
-    exerciseId: string;
-    sets: number;
-    reps?: number;
-    duration?: number;
-  }>;
+  exercises: ScheduledExercise[];
   currentExerciseIndex: number;
   currentSetIndex: number;
   exerciseDetails: Exercise[];
@@ -78,7 +73,7 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
                     >
                       {exercise.duration ? 
                         `${exercise.duration}s` : 
-                        `${exercise.sets} × ${exercise.reps}`}
+                        exercise.sets > 1 ? `${exercise.sets} × ${exercise.reps}` : `${exercise.reps} reps`}
                     </Text>
                   </HStack>
 
