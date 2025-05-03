@@ -60,13 +60,19 @@ export const WorkoutSession: React.FC = () => {
       }
 
       // Create new workout
+      const scheduledExercises = findExercisesForDay(routine, workoutDay);
       const newWorkout: Workout = {
         id: uuidv4(),
         day: workoutDay,
         nickname: generateRandomName(),
         routineId: routine.id,
         startedAt: Date.now(),
-        completedExercises: []
+        exercises: scheduledExercises.map(exercise => ({
+          ...exercise,
+          startedAt: undefined,
+          completedAt: undefined,
+          skipped: false
+        }))
       };
       
       await addWorkout(newWorkout);

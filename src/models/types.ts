@@ -66,7 +66,7 @@ export interface Workout {
   day: DayOfWeek;
   startedAt: number;
   completedAt?: number;
-  completedExercises: WorkoutExercise[];
+  exercises: WorkoutExercise[];
   liked?: boolean;
   disliked?: boolean;
   favorite?: boolean;
