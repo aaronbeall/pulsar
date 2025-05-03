@@ -15,7 +15,7 @@ import {
   useBreakpointValue
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FaCheckCircle, FaPlay, FaCheck, FaStopwatch } from 'react-icons/fa';
 import { Exercise, ScheduledExercise } from '../models/types';
 
@@ -26,6 +26,7 @@ const breathe = keyframes`
 `;
 
 const MotionBox = motion(Box);
+const MotionIcon = motion(Icon);
 
 const SetIndicator: React.FC<{
   isCompleted: boolean;
@@ -51,9 +52,31 @@ const SetIndicator: React.FC<{
       }}
       transition={{ duration: 0.2 }}
     >
-      {isCompleted && (
-        <Icon as={FaCheck} color="white" fontSize="xs" />
-      )}
+      <AnimatePresence mode="wait">
+        {isCompleted && (
+          <MotionBox
+            key="check-container"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 600,
+              damping: 10,
+              mass: 0.75
+            }}
+          >
+            <Icon
+              as={FaCheck}
+              color="white"
+              fontSize="xs"
+            />
+          </MotionBox>
+        )}
+      </AnimatePresence>
     </MotionBox>
   );
 };
