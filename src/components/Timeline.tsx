@@ -40,7 +40,11 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
   };
 
   const getDayIcon = (isToday: boolean, status: string, hasWorkout: boolean, isPastDay: boolean) => {
-    if (isToday) return FaDumbbell;
+    if (isToday) {
+      if (status === 'completed') return FaCheck;
+      if (status === 'in progress') return FaDumbbell;
+      return hasWorkout ? FaBullseye : FaBed;
+    }
     if (status === 'completed') return FaCheck;
     if (isPastDay && hasWorkout && status === 'not started') return FaTimes;
     if (hasWorkout) return FaBullseye;
