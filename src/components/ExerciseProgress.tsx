@@ -248,38 +248,30 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
               >
                 <CircularProgressLabel>
                   <VStack spacing={2} align="center">
-                    {exercise.reps && isActive ? (
-                      <>
-                        <ScaleFade in={true} initialScale={0.9}>
-                          <Text 
-                            fontSize={repsFontSize} 
-                            fontWeight="bold"
-                            color={activeColor}
-                            animation={isActive ? `${breathe} 2s ease-in-out infinite` : undefined}
-                          >
-                            {exercise.reps} reps
-                          </Text>
-                        </ScaleFade>
-                        <Text 
-                          fontSize={timeFontSize} 
-                          color="gray.500"
-                          fontWeight="medium"
-                        >
-                          {timeElapsed}s
-                        </Text>
-                      </>
-                    ) : (
+                    {exercise.duration ? (
                       <Text fontSize={fontSize} fontWeight="bold">
-                        {exercise.duration ? 
-                          `${exercise.duration - timeElapsed}s` : 
-                          `${timeElapsed}s`
-                        }
+                        {`${exercise.duration - timeElapsed}s`}
                       </Text>
-                    )}
-                    {exercise.reps && !isActive && (
-                      <Text fontSize="sm" color="gray.500">
-                        {exercise.reps} reps
-                      </Text>
+                    ) : (
+                      <>
+                        <Text 
+                          fontSize={repsFontSize} 
+                          fontWeight="bold"
+                          color={isActive ? activeColor : undefined}
+                          animation={isActive ? `${breathe} 2s ease-in-out infinite` : undefined}
+                        >
+                          {exercise.reps} reps
+                        </Text>
+                        {isActive && (
+                          <Text 
+                            fontSize={timeFontSize} 
+                            color="gray.500"
+                            fontWeight="medium"
+                          >
+                            {timeElapsed}s
+                          </Text>
+                        )}
+                      </>
                     )}
                   </VStack>
                 </CircularProgressLabel>
