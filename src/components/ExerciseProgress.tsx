@@ -77,6 +77,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isRestPeriod, setIsRestPeriod] = useState(false);
   const [restTimeElapsed, setRestTimeElapsed] = useState(0);
+  const [currentSetCompleted, setCurrentSetCompleted] = useState(false);
   
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.100', 'gray.700');
@@ -117,12 +118,14 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
     setIsActive(false);
     setIsRestPeriod(true);
     setRestTimeElapsed(0);
+    setCurrentSetCompleted(true);
     onComplete();
   };
 
   const handleNext = () => {
     setIsRestPeriod(false);
     setRestTimeElapsed(0);
+    setCurrentSetCompleted(false);
     onNext();
     setIsActive(true);
     setTimeElapsed(0);
@@ -170,7 +173,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
           {Array.from({ length: exercise.sets }).map((_, idx) => (
             <SetIndicator
               key={idx}
-              isCompleted={idx < currentSet}
+              isCompleted={idx < currentSet || (idx === currentSet && currentSetCompleted)}
               isActive={isActive}
               isCurrentSet={idx === currentSet}
             />
@@ -242,17 +245,17 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
                           {timeElapsed}s
                         </Text>
                       </>
-                    ) : exercise.duration ? (
-                      <Text fontSize={fontSize} fontWeight="bold">
-                        {exercise.duration - timeElapsed}s
-                      </Text>
-                    ) : exercise.reps ? (
-                      <Text fontSize={repsFontSize} fontWeight="bold" color={activeColor}>
-                        {exercise.reps} reps
-                      </Text>
                     ) : (
                       <Text fontSize={fontSize} fontWeight="bold">
-                        {timeElapsed}s
+                        {exercise.duration ? 
+                          `${exercise.duration - timeElapsed}s` : 
+                          `${timeElapsed}s`
+                        }
+                      </Text>
+                    )}
+                    {exercise.reps && !isActive && (
+                      <Text fontSize="sm" color="gray.500">
+                        {exercise.reps} reps
                       </Text>
                     )}
                   </VStack>
