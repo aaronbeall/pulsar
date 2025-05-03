@@ -13,134 +13,192 @@ import {
   SimpleGrid,
   Image,
   Text,
+  Container,
+  useToken,
 } from '@chakra-ui/react';
-import { FaSun, FaMoon, FaPalette, FaHome, FaDumbbell, FaCog } from 'react-icons/fa'; // Import icons
-import { Routes, Route, Link, useLocation, Link as RouterLink } from 'react-router-dom'; // Import RouterLink
+import { FaSun, FaMoon, FaPalette, FaHome, FaDumbbell, FaCog } from 'react-icons/fa';
+import { Routes, Route, Link, useLocation, Link as RouterLink } from 'react-router-dom';
 import Home from './views/Home';
 import Workout from './views/Workout';
 import Settings from './views/Settings';
 
 const App: React.FC = () => {
-  const { colorMode, toggleColorMode } = useColorMode(); // Hook to toggle between dark and light mode
+  const { colorMode, toggleColorMode } = useColorMode();
   const [colorScheme, setColorScheme] = React.useState<string>(() => {
-    // Load the color scheme from localStorage or default to 'cyan'
     return localStorage.getItem('colorScheme') || 'cyan';
   });
+  const location = useLocation();
+  const [headerBgColor] = useToken('colors', [`${colorScheme}.500`]);
 
   const colorSchemes = [
-    'blue',
-    'cyan',
-    'teal',
-    'green',
-    'yellow',
-    'orange',
-    'red',
-    'pink',
-    'purple',
-    'gray',
-  ]; // List of Chakra default color schemes
+    'blue', 'cyan', 'teal', 'green', 'yellow', 
+    'orange', 'red', 'pink', 'purple', 'gray'
+  ];
 
   const handleColorSchemeChange = (scheme: string) => {
     setColorScheme(scheme);
-    localStorage.setItem('colorScheme', scheme); // Save the selected color scheme to localStorage
+    localStorage.setItem('colorScheme', scheme);
   };
 
-  const location = useLocation(); // Get the current route location
-
   return (
-    <Flex direction="column" height="100vh">
-      <Box bg={`${colorScheme}.500`} p={4}>
-        <Flex justify="space-between" align="center">
-          <Flex align="center" gap={2}>
-            <RouterLink to="/"> {/* Make the logo/title clickable */}
-              <Flex align="center" gap={2}>
-                <Image src="/favicon.svg" alt="App Icon" boxSize="24px" />
-                <Heading size="md" color="white">PULSAR</Heading>
-              </Flex>
-            </RouterLink>
-            <Text fontSize="sm" color="whiteAlpha.800" ml={2}>Your AI Assisted Workout</Text> {/* Subheading */}
-          </Flex>
-          <Flex gap={2}>
-            <IconButton
-              aria-label="Toggle Theme"
-              icon={colorMode === 'light' ? <FaMoon /> : <FaSun />}
-              onClick={toggleColorMode}
-              colorScheme={colorScheme}
-              size="sm"
-            />
-            <Menu>
-              <MenuButton
-                as={IconButton}
-                icon={<FaPalette />}
-                size="sm"
-                colorScheme={colorScheme}
-                aria-label="Select Color Scheme"
-              />
-              <MenuList p={4}>
-                <SimpleGrid columns={5} spacing={2}>
-                  {colorSchemes.map((scheme) => (
-                    <MenuItem
-                      key={scheme}
-                      onClick={() => handleColorSchemeChange(scheme)}
-                      p={0}
-                      m={0}
-                      bg="transparent"
+    <Flex direction="column" height="100vh" overflow="hidden">
+      <Box 
+        bg={`${colorScheme}.500`} 
+        color="white" 
+        transition="all 0.2s ease-in-out"
+        position="relative"
+        zIndex="2"
+        boxShadow="lg"
+      >
+        <Container maxW="container.lg">
+          <Flex py={4} justify="space-between" align="center">
+            <Flex align="center" gap={2}>
+              <RouterLink to="/">
+                <Flex 
+                  align="center" 
+                  gap={3} 
+                  _hover={{ transform: 'translateY(-1px)' }}
+                  transition="transform 0.2s"
+                >
+                  <Image 
+                    src="/favicon.svg" 
+                    alt="App Icon" 
+                    boxSize="32px"
+                    filter="drop-shadow(0 2px 4px rgba(0,0,0,0.2))"
+                  />
+                  <Box>
+                    <Heading size="md" fontWeight="black" textShadow="0 2px 4px rgba(0,0,0,0.1)">
+                      PULSAR
+                    </Heading>
+                    <Text 
+                      fontSize="xs" 
+                      color="whiteAlpha.800" 
+                      letterSpacing="wide"
+                      mt={-1}
                     >
-                      <Box
-                        bg={`${scheme}.500`}
-                        w={6}
-                        h={6}
-                        borderRadius="full"
-                        border={scheme === colorScheme ? '2px solid black' : '2px solid transparent'}
-                        cursor="pointer"
-                      />
-                    </MenuItem>
-                  ))}
-                </SimpleGrid>
-              </MenuList>
-            </Menu>
+                      AI ASSISTED WORKOUT
+                    </Text>
+                  </Box>
+                </Flex>
+              </RouterLink>
+            </Flex>
+
+            <Flex gap={3}>
+              <IconButton
+                aria-label="Toggle Theme"
+                icon={colorMode === 'light' ? <FaMoon /> : <FaSun />}
+                onClick={toggleColorMode}
+                variant="ghost"
+                _hover={{ bg: 'whiteAlpha.300' }}
+                size="md"
+              />
+              <Menu>
+                <MenuButton
+                  as={IconButton}
+                  icon={<FaPalette />}
+                  variant="ghost"
+                  _hover={{ bg: 'whiteAlpha.300' }}
+                  size="md"
+                  aria-label="Select Color Scheme"
+                />
+                <MenuList p={4}>
+                  <SimpleGrid columns={5} spacing={2}>
+                    {colorSchemes.map((scheme) => (
+                      <MenuItem
+                        key={scheme}
+                        onClick={() => handleColorSchemeChange(scheme)}
+                        p={0}
+                        m={0}
+                        bg="transparent"
+                      >
+                        <Box
+                          bg={`${scheme}.500`}
+                          w={6}
+                          h={6}
+                          borderRadius="full"
+                          border={scheme === colorScheme ? '2px solid white' : '2px solid transparent'}
+                          cursor="pointer"
+                          transition="transform 0.2s"
+                          _hover={{ transform: 'scale(1.1)' }}
+                        />
+                      </MenuItem>
+                    ))}
+                  </SimpleGrid>
+                </MenuList>
+              </Menu>
+            </Flex>
           </Flex>
-        </Flex>
+        </Container>
       </Box>
-      <Flex flex="1" p={4} bg="gray.100" _dark={{ bg: `gray.900` }}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/workout/*" element={<Workout />} />
-          <Route
-            path="/settings"
-            element={<Settings colorScheme={colorScheme} onColorSchemeChange={handleColorSchemeChange} />}
-          />
-        </Routes>
-      </Flex>
-      <Flex bg={`${colorScheme}.500`} p={4} justify="space-around">
-        <Button
-          as={Link}
-          to="/"
-          colorScheme={colorScheme}
-          variant={location.pathname === '/' ? 'solid' : 'ghost'} // Active state for Home
-          leftIcon={<FaHome />} // Add Home icon
-        >
-          Home
-        </Button>
-        <Button
-          as={Link}
-          to="/workout"
-          colorScheme={colorScheme}
-          variant={location.pathname.startsWith('/workout') ? 'solid' : 'ghost'} // Active state for Workout
-          leftIcon={<FaDumbbell />} // Add Workout icon
-        >
-          Workout
-        </Button>
-        <Button
-          as={Link}
-          to="/settings"
-          colorScheme={colorScheme}
-          variant={location.pathname === '/settings' ? 'solid' : 'ghost'} // Active state for Settings
-          leftIcon={<FaCog />} // Add Settings icon
-        >
-          Settings
-        </Button>
-      </Flex>
+
+      <Box 
+        flex="1" 
+        bg={colorMode === 'light' ? 'gray.50' : 'gray.900'} 
+        overflow="auto"
+        position="relative"
+        zIndex="1"
+      >
+        <Container maxW="container.lg" py={6}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/workout/*" element={<Workout />} />
+            <Route
+              path="/settings"
+              element={<Settings colorScheme={colorScheme} onColorSchemeChange={handleColorSchemeChange} />}
+            />
+          </Routes>
+        </Container>
+      </Box>
+
+      <Box 
+        bg={`${colorScheme}.500`} 
+        color="white" 
+        py={4} 
+        position="relative" 
+        zIndex="2"
+        boxShadow="0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06)"
+      >
+        <Container maxW="container.lg">
+          <Flex justify="space-around" align="center">
+            <Button
+              as={Link}
+              to="/"
+              variant={location.pathname === '/' ? 'solid' : 'ghost'}
+              leftIcon={<FaHome />}
+              size="lg"
+              _hover={{ bg: 'whiteAlpha.300' }}
+              transition="all 0.2s"
+              fontWeight={location.pathname === '/' ? 'bold' : 'normal'}
+            >
+              Home
+            </Button>
+            <Button
+              as={Link}
+              to="/workout"
+              variant={location.pathname.startsWith('/workout') ? 'solid' : 'ghost'}
+              leftIcon={<FaDumbbell />}
+              size="lg"
+              _hover={{ bg: 'whiteAlpha.300' }}
+              transition="all 0.2s"
+              fontWeight={location.pathname.startsWith('/workout') ? 'bold' : 'normal'}
+            >
+              Workout
+            </Button>
+            <Button
+              as={Link}
+              to="/settings"
+              variant={location.pathname === '/settings' ? 'solid' : 'ghost'}
+              leftIcon={<FaCog />}
+              size="lg"
+              _hover={{ bg: 'whiteAlpha.300' }}
+              transition="all 0.2s"
+              fontWeight={location.pathname === '/settings' ? 'bold' : 'normal'}
+            >
+              Settings
+            </Button>
+          </Flex>
+        </Container>
+      </Box>
     </Flex>
   );
 };

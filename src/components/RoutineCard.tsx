@@ -24,6 +24,8 @@ import {
   useColorModeValue,
   Box,
   Tooltip,
+  VStack,
+  Flex,
 } from '@chakra-ui/react';
 import { Routine } from '../models/types';
 import { DAYS_OF_WEEK } from '../constants/days';
@@ -36,6 +38,7 @@ import {
   FaTrash,
   FaShare,
   FaArrowRight,
+  FaChartLine,
 } from 'react-icons/fa';
 
 interface RoutineCardProps {
@@ -53,6 +56,12 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine, variant }) => {
   const iconColor = useColorModeValue('gray.600', 'gray.400');
   const activeTagColor = useColorModeValue('cyan.50', 'cyan.900');
   const activeTagTextColor = useColorModeValue('cyan.800', 'cyan.100');
+  const statsColor = useColorModeValue('gray.600', 'gray.400');
+
+  const totalExercises = routine.dailySchedule.reduce(
+    (sum, day) => sum + day.exercises.length,
+    0
+  );
   
   return (
     <Card 
@@ -64,28 +73,85 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine, variant }) => {
       transition="all 0.2s"
       _hover={{
         transform: 'translateY(-2px)',
-        boxShadow: 'lg',
+        boxShadow: 'xl',
       }}
+      overflow="visible"
     >
-      <CardHeader>
-        <HStack spacing={4} wrap="wrap" justify="space-between">
-          <HStack spacing={2}>
-            <Heading size="md" color={routine.active ? 'cyan.500' : undefined}>
-              {routine.name}
-            </Heading>
-            {routine.active && (
-              <Tag
-                size="sm"
-                bg={activeTagColor}
-                color={activeTagTextColor}
-                fontWeight="bold"
-                borderRadius="full"
+      <CardHeader pb={2}>
+        <VStack align="stretch" spacing={3}>
+          <Flex justify="space-between" align="flex-start">
+            <VStack align="start" spacing={1}>
+              <Heading 
+                size="md" 
+                color={routine.active ? 'cyan.500' : undefined}
+                _hover={{ color: 'cyan.500' }}
+                transition="color 0.2s"
+                cursor="pointer"
+                onClick={() => navigate(`/workout/routine/${routine.id}`)}
               >
-                Active
-              </Tag>
-            )}
-          </HStack>
-          <HStack spacing={2}>
+                {routine.name}
+              </Heading>
+              {routine.active && (
+                <Tag
+                  size="sm"
+                  bg={activeTagColor}
+                  color={activeTagTextColor}
+                  fontWeight="bold"
+                  borderRadius="full"
+                >
+                  Active
+                </Tag>
+              )}
+            </VStack>
+            
+            <Menu>
+              <MenuButton
+                as={IconButton}
+                icon={<FaEllipsisV />}
+                variant="ghost"
+                size="sm"
+                color={iconColor}
+                _hover={{ bg: 'gray.100', color: 'cyan.500' }}
+                _dark={{ _hover: { bg: 'gray.700' } }}
+              />
+              <MenuList shadow="lg">
+                <MenuItem 
+                  icon={<FaExchangeAlt />} 
+                  color="cyan.500"
+                  _hover={{ bg: 'cyan.50' }}
+                  _dark={{ _hover: { bg: 'cyan.900' } }}
+                >
+                  Switch to this routine
+                </MenuItem>
+                <MenuItem 
+                  icon={<FaStar />} 
+                  color="yellow.500"
+                  _hover={{ bg: 'yellow.50' }}
+                  _dark={{ _hover: { bg: 'yellow.900' } }}
+                >
+                  Add to favorites
+                </MenuItem>
+                <MenuItem 
+                  icon={<FaShare />}
+                  _hover={{ bg: 'gray.50' }}
+                  _dark={{ _hover: { bg: 'gray.700' } }}
+                >
+                  Share routine
+                </MenuItem>
+                <MenuItem 
+                  icon={<FaTrash />} 
+                  color="red.500"
+                  _hover={{ bg: 'red.50' }}
+                  _dark={{ _hover: { bg: 'red.900' } }}
+                  onClick={onOpen}
+                >
+                  Delete routine
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          </Flex>
+
+          <HStack spacing={2} wrap="wrap">
             {DAYS_OF_WEEK.filter(day => 
               routine.dailySchedule.some(schedule => schedule.day === day)
             ).map(day => (
@@ -100,79 +166,66 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine, variant }) => {
               </Tag>
             ))}
           </HStack>
-        </HStack>
+        </VStack>
       </CardHeader>
+
       <CardBody>
-        <Text 
-          fontSize="sm" 
-          color={routine.active ? undefined : "gray.500"} 
-          mb={4}
-          noOfLines={2}
-        >
-          {routine.description}
-        </Text>
-        <HStack justify="space-between">
-          <HStack spacing={1}>
-            <Tooltip label="Like routine" hasArrow>
-              <IconButton
-                aria-label="Like routine"
-                icon={<FaThumbsUp />}
-                size="sm"
-                variant="ghost"
-                color={routine.liked ? "cyan.500" : iconColor}
-                _hover={{ color: "cyan.500" }}
-              />
-            </Tooltip>
-            <Tooltip label="Dislike routine" hasArrow>
-              <IconButton
-                aria-label="Dislike routine"
-                icon={<FaThumbsDown />}
-                size="sm"
-                variant="ghost"
-                color={routine.disliked ? "red.500" : iconColor}
-                _hover={{ color: "red.500" }}
-              />
-            </Tooltip>
-            <Tooltip label="More options" hasArrow>
-              <Box>
-                <Menu>
-                  <MenuButton
-                    as={IconButton}
-                    aria-label="More options"
-                    icon={<FaEllipsisV />}
-                    size="sm"
-                    variant="ghost"
-                    color={iconColor}
-                  />
-                  <MenuList>
-                    <MenuItem icon={<FaExchangeAlt />} color="cyan.500">
-                      Switch to this routine
-                    </MenuItem>
-                    <MenuItem icon={<FaStar />} color="yellow.500">
-                      Add to favorites
-                    </MenuItem>
-                    <MenuItem icon={<FaShare />}>Share routine</MenuItem>
-                    <MenuItem icon={<FaTrash />} color="red.500" onClick={onOpen}>
-                      Delete routine
-                    </MenuItem>
-                  </MenuList>
-                </Menu>
-              </Box>
-            </Tooltip>
-          </HStack>
-          <Button
-            size="sm"
-            colorScheme="cyan"
-            variant="solid"
-            rightIcon={<FaArrowRight />}
-            onClick={() => navigate(`/workout/routine/${routine.id}`)}
-            _hover={{
-              transform: 'translateX(2px)',
-            }}
+        <VStack align="stretch" spacing={4}>
+          <Text 
+            fontSize="sm" 
+            color={routine.active ? undefined : "gray.500"} 
+            noOfLines={2}
           >
-            View Details
-          </Button>
-        </HStack>
+            {routine.description}
+          </Text>
+
+          <HStack spacing={4} color={statsColor} fontSize="sm">
+            <Flex align="center" gap={2}>
+              <FaChartLine />
+              <Text>{totalExercises} exercises</Text>
+            </Flex>
+          </HStack>
+
+          <HStack justify="space-between">
+            <HStack spacing={1}>
+              <Tooltip label="Like routine" hasArrow>
+                <IconButton
+                  aria-label="Like routine"
+                  icon={<FaThumbsUp />}
+                  size="sm"
+                  variant="ghost"
+                  color={routine.liked ? "cyan.500" : iconColor}
+                  _hover={{ color: "cyan.500", bg: "cyan.50" }}
+                  _dark={{ _hover: { bg: "cyan.900" } }}
+                />
+              </Tooltip>
+              <Tooltip label="Dislike routine" hasArrow>
+                <IconButton
+                  aria-label="Dislike routine"
+                  icon={<FaThumbsDown />}
+                  size="sm"
+                  variant="ghost"
+                  color={routine.disliked ? "red.500" : iconColor}
+                  _hover={{ color: "red.500", bg: "red.50" }}
+                  _dark={{ _hover: { bg: "red.900" } }}
+                />
+              </Tooltip>
+            </HStack>
+            
+            <Button
+              size="sm"
+              colorScheme="cyan"
+              variant="solid"
+              rightIcon={<FaArrowRight />}
+              onClick={() => navigate(`/workout/routine/${routine.id}`)}
+              _hover={{
+                transform: 'translateX(2px)',
+              }}
+            >
+              View Details
+            </Button>
+          </HStack>
+        </VStack>
 
         <AlertDialog
           isOpen={isOpen}
@@ -181,7 +234,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine, variant }) => {
           isCentered
         >
           <AlertDialogOverlay>
-            <AlertDialogContent>
+            <AlertDialogContent borderRadius="xl">
               <AlertDialogHeader fontSize="lg" fontWeight="bold">
                 Delete Routine
               </AlertDialogHeader>
