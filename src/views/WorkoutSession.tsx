@@ -129,7 +129,10 @@ export const WorkoutSession: React.FC = () => {
 
       <Flex justify="space-between" align="start" mb={6}>
         <Box>
-          <Heading size="lg" mb={2}>{workout.nickname}</Heading>
+          <Text fontSize="sm" color="gray.500" mb={1}>{routine.name}</Text>
+          <Heading size="lg" mb={2} bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
+            "{workout.nickname}"
+          </Heading>
         </Box>
         <TimeElapsed startTime={workout.startedAt} />
       </Flex>
