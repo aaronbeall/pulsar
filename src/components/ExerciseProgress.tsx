@@ -17,7 +17,7 @@ import {
 import { keyframes } from '@emotion/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCheckCircle, FaPlay, FaCheck, FaStopwatch } from 'react-icons/fa';
-import { Exercise, ScheduledExercise } from '../models/types';
+import { Exercise, WorkoutExercise } from '../models/types';
 
 const breathe = keyframes`
   0% { transform: scale(1); }
@@ -82,7 +82,7 @@ const SetIndicator: React.FC<{
 };
 
 interface ExerciseProgressProps {
-  exercise: ScheduledExercise;
+  exercise: WorkoutExercise;
   currentSet: number;
   exerciseDetail: Exercise | undefined;
   onComplete: () => void;
@@ -97,10 +97,9 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
   onNext
 }) => {
   const [isActive, setIsActive] = useState(false);
-  const [timeElapsed, setTimeElapsed] = useState(0);
+  const [timeElapsed, setTimeElapsed] = useState(exercise.completedDuration || 0);
   const [isRestPeriod, setIsRestPeriod] = useState(false);
   const [restTimeElapsed, setRestTimeElapsed] = useState(0);
-  const [currentSetCompleted, setCurrentSetCompleted] = useState(false);
   
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.100', 'gray.700');
@@ -118,7 +117,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
           if (exercise.duration && next >= exercise.duration) {
             setIsActive(false);
             setIsRestPeriod(true);
-            return 0;
+            return exercise.duration;
           }
           return next;
         });
@@ -134,31 +133,32 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
 
   const handleStart = () => {
     setIsActive(true);
-    setTimeElapsed(0);
+    if (!exercise.startedAt) {
+      onNext(); // This will mark the exercise as started
+    }
   };
 
   const handleComplete = () => {
     setIsActive(false);
     setIsRestPeriod(true);
     setRestTimeElapsed(0);
-    setCurrentSetCompleted(true);
     onComplete();
   };
 
   const handleNext = () => {
     setIsRestPeriod(false);
     setRestTimeElapsed(0);
-    setCurrentSetCompleted(false);
-    onNext();
     setIsActive(true);
     setTimeElapsed(0);
+    onNext();
   };
 
   const progress = exercise.duration 
     ? (timeElapsed / exercise.duration) * 100
-    : (timeElapsed / 60) * 100;
+    : 0;
 
   const isLastSet = currentSet === exercise.sets - 1;
+  const isCompleted = exercise.completedAt !== undefined;
 
   const fontSize = useBreakpointValue({ base: "4xl", md: "5xl" });
   const repsFontSize = useBreakpointValue({ base: "2xl", md: "3xl" });
@@ -196,7 +196,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
           {Array.from({ length: exercise.sets }).map((_, idx) => (
             <SetIndicator
               key={idx}
-              isCompleted={idx < currentSet || (idx === currentSet && currentSetCompleted)}
+              isCompleted={idx < currentSet}
               isActive={isActive}
               isCurrentSet={idx === currentSet}
             />

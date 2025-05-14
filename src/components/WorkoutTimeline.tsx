@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, VStack, HStack, Text, Circle, Flex, useColorModeValue, Icon } from '@chakra-ui/react';
-import { Exercise, ScheduledExercise } from '../models/types';
+import { Exercise, WorkoutExercise } from '../models/types';
 import { motion } from 'framer-motion';
 import { FaCheck } from 'react-icons/fa';
 
@@ -8,7 +8,7 @@ const MotionCircle = motion(Circle);
 const MotionBox = motion(Box);
 
 interface WorkoutTimelineProps {
-  exercises: ScheduledExercise[];
+  exercises: WorkoutExercise[];
   currentExerciseIndex: number;
   currentSetIndex: number;
   exerciseDetails: Exercise[];
@@ -45,7 +45,8 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
         {exercises.map((exercise, exerciseIdx) => {
           const detail = exerciseDetails.find(e => e.id === exercise.exerciseId);
           const isCurrentExercise = exerciseIdx === currentExerciseIndex;
-          const isCompleted = exerciseIdx < currentExerciseIndex;
+          const isCompleted = exercise.completedAt !== undefined;
+          const completedSets = exercise.completedSets || 0;
           
           return (
             <Box
@@ -101,8 +102,9 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
                       transition="all 0.2s"
                     >
                       {exercise.duration ? 
-                        `${exercise.duration}s` : 
-                        exercise.sets > 1 ? `${exercise.sets} × ${exercise.reps}` : `${exercise.reps} reps`}
+                        `${(exercise.completedDuration || 0)}/${exercise.duration}s` : 
+                        exercise.sets > 1 ? `${completedSets}/${exercise.sets} × ${exercise.reps}` : 
+                        `${exercise.reps} reps`}
                     </Text>
                   </HStack>
 
@@ -112,7 +114,7 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
                         key={setIdx}
                         size="6px"
                         bg={
-                          exerciseIdx < currentExerciseIndex ? completedColor :
+                          isCompleted ? completedColor :
                           exerciseIdx === currentExerciseIndex && setIdx < currentSetIndex ? completedColor :
                           exerciseIdx === currentExerciseIndex && setIdx === currentSetIndex ? activeColor :
                           connectorColor
@@ -127,8 +129,8 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
                         alignItems="center"
                         justifyContent="center"
                       >
-                        {exerciseIdx < currentExerciseIndex || 
-                         (exerciseIdx === currentExerciseIndex && setIdx < currentSetIndex) ? (
+                        {(isCompleted || 
+                         (exerciseIdx === currentExerciseIndex && setIdx < currentSetIndex)) ? (
                           <Icon 
                             as={FaCheck} 
                             fontSize="4px" 

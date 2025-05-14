@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Button, Flex, Heading, Spinner, Text, VStack, Breadcrumb, BreadcrumbItem, BreadcrumbLink, SlideFade } from '@chakra-ui/react';
 import { useParams, useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom';
 import { getRoutines, getWorkout, addWorkout, getRoutine, getWorkouts, getExercises } from '../db/indexedDb';
-import { Routine, Workout, DayOfWeek, Exercise } from '../models/types';
+import { Routine, Workout, DayOfWeek, Exercise, WorkoutExercise } from '../models/types';
 import { getTodayDayOfWeek, findWorkoutForDay, findExercisesForDay } from '../utils/workoutUtils';
 import { DAYS_OF_WEEK } from '../constants/days';
 import { v4 as uuidv4 } from 'uuid';
@@ -18,8 +18,6 @@ export const WorkoutSession: React.FC = () => {
   const [workout, setWorkout] = React.useState<Workout | null>(null);
   const [routine, setRoutine] = React.useState<Routine | null>(null);
   const [exercises, setExercises] = React.useState<Exercise[]>([]);
-  const [currentExerciseIndex, setCurrentExerciseIndex] = React.useState(0);
-  const [currentSetIndex, setCurrentSetIndex] = React.useState(0);
 
   React.useEffect(() => {
     const initSession = async () => {
@@ -69,6 +67,8 @@ export const WorkoutSession: React.FC = () => {
         startedAt: Date.now(),
         exercises: scheduledExercises.map(exercise => ({
           ...exercise,
+          completedSets: 0,
+          completedDuration: 0,
           startedAt: undefined,
           completedAt: undefined,
           skipped: false
@@ -85,22 +85,47 @@ export const WorkoutSession: React.FC = () => {
     initSession();
   }, [sessionId, navigate]);
 
-  const handleNext = () => {
-    const routineExercises = findExercisesForDay(routine!, workout!.day);
-    const currentExercise = routineExercises[currentExerciseIndex];
+  const handleComplete = async (exerciseIndex: number) => {
+    if (!workout) return;
     
-    if (currentSetIndex + 1 < currentExercise.sets) {
-      // Move to next set of current exercise
-      setCurrentSetIndex(currentSetIndex + 1);
-    } else if (currentExerciseIndex + 1 < routineExercises.length) {
-      // Move to next exercise
-      setCurrentExerciseIndex(currentExerciseIndex + 1);
-      setCurrentSetIndex(0);
+    const updatedWorkout = { ...workout };
+    const exercise = updatedWorkout.exercises[exerciseIndex];
+    
+    if (exercise.duration) {
+      // For timed exercises, mark the full duration as completed
+      exercise.completedDuration = exercise.duration;
+      exercise.completedAt = Date.now();
     } else {
-      // Workout complete
-      // TODO: Handle workout completion
-      alert('Workout complete!');
+      // For rep-based exercises, increment completed sets
+      exercise.completedSets = (exercise.completedSets || 0) + 1;
+      if (exercise.completedSets === exercise.sets) {
+        exercise.completedAt = Date.now();
+      }
     }
+    
+    // Update the workout in state and database
+    await addWorkout(updatedWorkout);
+    setWorkout(updatedWorkout);
+  };
+
+  const handleStart = (exerciseIndex: number) => {
+    if (!workout) return;
+    
+    const updatedWorkout = { ...workout };
+    const exercise = updatedWorkout.exercises[exerciseIndex];
+    
+    if (!exercise.startedAt) {
+      exercise.startedAt = Date.now();
+      exercise.completedSets = 0;
+      exercise.completedDuration = 0;
+    }
+    
+    setWorkout(updatedWorkout);
+  };
+
+  const getCurrentExercise = () => {
+    if (!workout) return null;
+    return workout.exercises.find(ex => !ex.completedAt) || null;
   };
 
   if (!routine || !workout) {
@@ -111,9 +136,17 @@ export const WorkoutSession: React.FC = () => {
     );
   }
 
-  const routineExercises = findExercisesForDay(routine, workout.day);
-  const currentExercise = routineExercises[currentExerciseIndex];
-  const currentExerciseDetail = exercises.find(e => e.id === currentExercise?.exerciseId);
+  const currentExercise = getCurrentExercise();
+  const currentExerciseIndex = currentExercise ? workout.exercises.indexOf(currentExercise) : -1;
+  const currentExerciseDetail = currentExercise ? exercises.find(e => e.id === currentExercise.exerciseId) : null;
+  const currentSetIndex = currentExercise ? (currentExercise.completedSets || 0) : 0;
+
+  // Check if workout is complete
+  if (currentExerciseIndex === -1 && !workout.completedAt) {
+    const updatedWorkout = { ...workout, completedAt: Date.now() };
+    addWorkout(updatedWorkout);
+    setWorkout(updatedWorkout);
+  }
 
   return (
     <Flex direction="column" p={4} width="100%">
@@ -150,17 +183,19 @@ export const WorkoutSession: React.FC = () => {
           style={{ width: '100%' }}
           key={currentExerciseIndex}
         >
-          <ExerciseProgress 
-            exercise={currentExercise}
-            currentSet={currentSetIndex}
-            exerciseDetail={currentExerciseDetail}
-            onComplete={() => {}}
-            onNext={handleNext}
-          />
+          {currentExercise && currentExerciseDetail && (
+            <ExerciseProgress 
+              exercise={currentExercise}
+              currentSet={currentSetIndex}
+              exerciseDetail={currentExerciseDetail}
+              onComplete={() => handleComplete(currentExerciseIndex)}
+              onNext={() => handleStart(currentExerciseIndex)}
+            />
+          )}
         </SlideFade>
         
         <WorkoutTimeline 
-          exercises={routineExercises}
+          exercises={workout.exercises}
           currentExerciseIndex={currentExerciseIndex}
           currentSetIndex={currentSetIndex}
           exerciseDetails={exercises}
