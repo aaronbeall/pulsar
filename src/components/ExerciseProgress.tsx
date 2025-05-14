@@ -1,98 +1,88 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, VStack, Text, CircularProgress, CircularProgressLabel, Flex, HStack, Circle, Icon, Spinner } from '@chakra-ui/react';
+import { 
+  Box, 
+  Button, 
+  VStack, 
+  Text, 
+  CircularProgress, 
+  CircularProgressLabel, 
+  Flex, 
+  HStack, 
+  useColorModeValue,
+  Heading,
+  Icon,
+  ScaleFade,
+  useBreakpointValue
+} from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
-import { FaCheck } from 'react-icons/fa';
-import { Exercise, ScheduledExercise } from '../models/types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaCheckCircle, FaPlay, FaCheck, FaStopwatch } from 'react-icons/fa';
+import { Exercise, WorkoutExercise } from '../models/types';
 
-const popIn = keyframes`
-  0% { transform: scale(0); }
-  70% { transform: scale(1.2); }
-  100% { transform: scale(1); }
-`;
-
-const pulse = keyframes`
+const breathe = keyframes`
   0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  50% { transform: scale(1.05); }
   100% { transform: scale(1); }
 `;
 
-const activePulse = keyframes`
-  0% { transform: scale(1); background: var(--chakra-colors-cyan-500); }
-  50% { transform: scale(1.1); background: var(--chakra-colors-cyan-500); }
-  100% { transform: scale(1); background: var(--chakra-colors-cyan-500); }
-`;
+const MotionBox = motion(Box);
+const MotionIcon = motion(Icon);
 
-interface SetIndicatorProps {
-  index: number;
-  currentSet: number;
-  completedSetIndex: number;
+const SetIndicator: React.FC<{
+  isCompleted: boolean;
   isActive: boolean;
-  isRestPeriod: boolean;
-}
-
-const SetIndicator: React.FC<SetIndicatorProps> = ({
-  index,
-  currentSet,
-  completedSetIndex,
-  isActive,
-  isRestPeriod,
-}) => {
-  const isCompleted = index <= completedSetIndex;
-  const isCurrent = index === currentSet;
-  const isJustCompleted = index === completedSetIndex && isRestPeriod;
+  isCurrentSet: boolean;
+}> = ({ isCompleted, isActive, isCurrentSet }) => {
+  const activeBg = useColorModeValue('cyan.500', 'cyan.400');
+  const completedBg = useColorModeValue('green.500', 'green.400');
+  const inactiveBg = useColorModeValue('gray.200', 'gray.700');
   
-  // Show completed set with checkmark
-  if (isCompleted) {
-    return (
-      <Circle
-        size="24px"
-        bg="green.500"
-        color="white"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-      >
-        <Box
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          animation={isJustCompleted ? `${popIn} 0.3s ease-out` : undefined}
-        >
-          <Icon as={FaCheck} fontSize="12px" />
-        </Box>
-      </Circle>
-    );
-  }
-
-  // Show current set
-  if (isCurrent) {
-    return (
-      <Circle
-        size="24px"
-        bg={isActive ? undefined : "transparent"}
-        borderWidth="3px"
-        borderColor="cyan.500"
-        animation={isActive ? `${activePulse} 2s ease-in-out infinite` : undefined}
-        sx={{
-          willChange: 'transform',
-        }}
-      />
-    );
-  }
-
-  // Show future set
   return (
-    <Circle
-      size="24px"
-      borderWidth="3px"
-      borderColor="gray.200"
-      _dark={{ borderColor: 'gray.600' }}
-    />
+    <MotionBox
+      width="30px"
+      height="30px"
+      borderRadius="full"
+      bg={isCompleted ? completedBg : isCurrentSet ? activeBg : inactiveBg}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      initial={false}
+      animate={{
+        scale: isCurrentSet && isActive ? 1.1 : 1,
+      }}
+      transition={{ duration: 0.2 }}
+    >
+      <AnimatePresence mode="wait">
+        {isCompleted && (
+          <MotionBox
+            key="check-container"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 600,
+              damping: 10,
+              mass: 0.75
+            }}
+          >
+            <Icon
+              as={FaCheck}
+              color="white"
+              fontSize="xs"
+            />
+          </MotionBox>
+        )}
+      </AnimatePresence>
+    </MotionBox>
   );
 };
 
 interface ExerciseProgressProps {
-  exercise: ScheduledExercise;
+  exercise: WorkoutExercise;
   currentSet: number;
   exerciseDetail: Exercise | undefined;
   onComplete: () => void;
@@ -107,10 +97,15 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
   onNext
 }) => {
   const [isActive, setIsActive] = useState(false);
-  const [timeElapsed, setTimeElapsed] = useState(0);
+  const [timeElapsed, setTimeElapsed] = useState(exercise.completedDuration || 0);
   const [isRestPeriod, setIsRestPeriod] = useState(false);
   const [restTimeElapsed, setRestTimeElapsed] = useState(0);
-  const [completedSetIndex, setCompletedSetIndex] = useState(currentSet - 1);
+  
+  const bgColor = useColorModeValue('white', 'gray.800');
+  const borderColor = useColorModeValue('gray.100', 'gray.700');
+  const activeColor = useColorModeValue('cyan.500', 'cyan.400');
+  const restBgColor = useColorModeValue('orange.50', 'orange.900');
+  const restTextColor = useColorModeValue('orange.600', 'orange.200');
   
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -122,7 +117,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
           if (exercise.duration && next >= exercise.duration) {
             setIsActive(false);
             setIsRestPeriod(true);
-            return 0;
+            return exercise.duration;
           }
           return next;
         });
@@ -138,151 +133,173 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
 
   const handleStart = () => {
     setIsActive(true);
-    setTimeElapsed(0);
+    if (!exercise.startedAt) {
+      onNext(); // This will mark the exercise as started
+    }
   };
 
   const handleComplete = () => {
     setIsActive(false);
     setIsRestPeriod(true);
     setRestTimeElapsed(0);
-    setCompletedSetIndex(currentSet);
+    onComplete();
   };
 
   const handleNext = () => {
     setIsRestPeriod(false);
     setRestTimeElapsed(0);
-    onNext();
-    // Immediately start the next set
     setIsActive(true);
     setTimeElapsed(0);
+    onNext();
   };
 
   const progress = exercise.duration 
     ? (timeElapsed / exercise.duration) * 100
-    : (timeElapsed / 60) * 100;
+    : 0;
 
   const isLastSet = currentSet === exercise.sets - 1;
+  const isCompleted = exercise.completedAt !== undefined;
+
+  const fontSize = useBreakpointValue({ base: "4xl", md: "5xl" });
+  const repsFontSize = useBreakpointValue({ base: "2xl", md: "3xl" });
+  const timeFontSize = useBreakpointValue({ base: "md", md: "lg" });
 
   return (
     <Box 
       p={6} 
-      borderRadius="lg" 
-      borderWidth="1px" 
-      bg="white" 
-      _dark={{ bg: 'gray.800' }}
+      borderRadius="xl"
+      bg={bgColor}
+      borderWidth="1px"
+      borderColor={borderColor}
+      boxShadow="lg"
       width="100%"
+      maxWidth="500px"
+      mx="auto"
+      position="relative"
+      overflow="hidden"
     >
-      <VStack spacing={4} align="center">
-        <Text 
-          fontSize="xl" 
-          fontWeight="bold"
-          color={isRestPeriod ? "gray.500" : undefined}
-          transition="color 0.2s"
-        >
-          {exerciseDetail?.name || 'Exercise'}
-        </Text>
+      <VStack spacing={6} align="center">
+        <VStack spacing={1} textAlign="center">
+          <Heading 
+            size="lg" 
+            color={isRestPeriod ? restTextColor : activeColor}
+            transition="color 0.2s"
+          >
+            {exerciseDetail?.name || 'Exercise'}
+          </Heading>
+          <Text fontSize="sm" color="gray.500" fontWeight="medium">
+            Set {currentSet + 1} of {exercise.sets}
+          </Text>
+        </VStack>
         
-        <HStack spacing={4} my={2}>
+        <HStack spacing={2} justify="center" my={4}>
           {Array.from({ length: exercise.sets }).map((_, idx) => (
             <SetIndicator
-              key={`set-${idx}`}
-              index={idx}
-              currentSet={currentSet}
-              completedSetIndex={completedSetIndex}
+              key={idx}
+              isCompleted={idx < currentSet}
               isActive={isActive}
-              isRestPeriod={isRestPeriod}
+              isCurrentSet={idx === currentSet}
             />
           ))}
         </HStack>
         
-        <Text fontSize="sm" color="gray.500" mt={-2}>
-          {exercise.sets > 1 ? `Set ${currentSet + 1} of ${exercise.sets}` : ''}
-          {(exercise.reps || exercise.duration) && (
-            <Box 
-              as="span"
-              ml={exercise.sets > 1 ? 2 : 0}
-              color={isActive ? "cyan.500" : undefined}
-              fontSize={isActive ? "md" : "sm"}
-              fontWeight={isActive ? "bold" : "normal"}
-              transition="all 0.2s"
-            >
-              {exercise.sets > 1 ? '• ' : ''}
-              {exercise.reps && `${exercise.reps} reps`}
-              {exercise.reps && exercise.duration && ' • '}
-              {exercise.duration && `${exercise.duration}s`}
-            </Box>
-          )}
-        </Text>
-
         {isRestPeriod ? (
-          <>
-            <Box 
-              px={4}
-              py={2}
-              borderRadius="lg"
-              bg="orange.50"
-              _dark={{ bg: 'orange.900' }}
-              opacity={0.9}
-            >
-              <Text 
-                fontSize="2xl" 
-                fontWeight="medium" 
-                color="orange.500"
-                display="flex"
-                alignItems="baseline"
-                gap={2}
+          <MotionBox
+            p={6}
+            borderRadius="xl"
+            bg={restBgColor}
+            width="100%"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <VStack spacing={3}>
+              <Icon as={FaStopwatch} fontSize="2xl" color={restTextColor} />
+              <Text
+                fontSize="3xl"
+                fontWeight="bold"
+                color={restTextColor}
+                animation={`${breathe} 2s ease-in-out infinite`}
               >
-                Rest <Text as="span" opacity={0.6}>·</Text> {restTimeElapsed}s
+                Rest Time: {restTimeElapsed}s
               </Text>
-            </Box>
-            <Button 
-              colorScheme="cyan" 
-              size="lg" 
-              width="100%" 
-              onClick={handleNext}
-            >
-              {isLastSet ? "Next Exercise" : "Start Next Set"}
-            </Button>
-          </>
+              <Button 
+                colorScheme="cyan"
+                size="lg"
+                width="100%"
+                onClick={handleNext}
+                leftIcon={<FaPlay />}
+              >
+                {isLastSet ? "Start Next Exercise" : "Start Next Set"}
+              </Button>
+            </VStack>
+          </MotionBox>
         ) : (
-          <>
-            <CircularProgress
-              isIndeterminate={!exercise.duration && isActive}
-              value={exercise.duration ? (isActive ? progress : 0) : 0}
-              color="cyan.500"
-              size="120px"
-              thickness="4px"
-              trackColor="cyan.100"
-              _dark={{ trackColor: 'cyan.900' }}
-              capIsRound
-            >
-              <CircularProgressLabel>
-                {exercise.duration ? 
-                  `${exercise.duration - timeElapsed}s` : 
-                  `${timeElapsed}s`
-                }
-              </CircularProgressLabel>
-            </CircularProgress>
+          <VStack spacing={6} width="100%">
+            <Box position="relative">
+              <CircularProgress
+                isIndeterminate={!exercise.duration && isActive}
+                value={exercise.duration ? (isActive ? progress : 0) : 0}
+                color={activeColor}
+                size="180px"
+                thickness="4px"
+                trackColor={useColorModeValue('gray.100', 'gray.700')}
+                capIsRound
+              >
+                <CircularProgressLabel>
+                  <VStack spacing={2} align="center">
+                    {exercise.duration ? (
+                      <Text fontSize={fontSize} fontWeight="bold">
+                        {`${exercise.duration - timeElapsed}s`}
+                      </Text>
+                    ) : (
+                      <>
+                        <Text 
+                          fontSize={repsFontSize} 
+                          fontWeight="bold"
+                          color={isActive ? activeColor : undefined}
+                          animation={isActive ? `${breathe} 2s ease-in-out infinite` : undefined}
+                        >
+                          {exercise.reps} reps
+                        </Text>
+                        {isActive && (
+                          <Text 
+                            fontSize={timeFontSize} 
+                            color="gray.500"
+                            fontWeight="medium"
+                          >
+                            {timeElapsed}s
+                          </Text>
+                        )}
+                      </>
+                    )}
+                  </VStack>
+                </CircularProgressLabel>
+              </CircularProgress>
+            </Box>
+
             {!isActive ? (
               <Button 
-                colorScheme="cyan" 
-                size="lg" 
-                width="100%" 
+                colorScheme="cyan"
+                size="lg"
+                width="100%"
                 onClick={handleStart}
+                leftIcon={<FaPlay />}
               >
-                Start
+                Start Set {currentSet + 1}
               </Button>
             ) : (
               <Button 
-                colorScheme="green" 
-                size="lg" 
-                width="100%" 
+                colorScheme="green"
+                size="lg"
+                width="100%"
                 onClick={handleComplete}
+                leftIcon={<FaCheckCircle />}
               >
-                Done
+                Complete {exercise.reps} Reps
               </Button>
             )}
-          </>
+          </VStack>
         )}
       </VStack>
     </Box>

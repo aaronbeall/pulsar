@@ -17,7 +17,7 @@ export interface Exercise {
 
 export interface ScheduledExercise {
   exerciseId: string;
-  sets: number;  // Changed from optional to required
+  sets: number;
   reps?: number;
   duration?: number;  // In seconds
 }
@@ -27,6 +27,8 @@ export interface WorkoutExercise extends ScheduledExercise {
   startedAt?: number;
   completedAt?: number;
   skipped?: boolean;
+  completedSets?: number; // Track completed sets
+  completedDuration?: number; // Track completed duration for timed exercises
 }
 
 export interface Routine {
@@ -66,7 +68,7 @@ export interface Workout {
   day: DayOfWeek;
   startedAt: number;
   completedAt?: number;
-  completedExercises: WorkoutExercise[];
+  exercises: WorkoutExercise[];
   liked?: boolean;
   disliked?: boolean;
   favorite?: boolean;
