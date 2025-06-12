@@ -76,7 +76,7 @@ const App: React.FC = () => {
                       letterSpacing="wide"
                       mt={-1}
                     >
-                      AI ASSISTED WORKOUT
+                      PERSONALIZED WORKOUTS SIMPLIFIED
                     </Text>
                   </Box>
                 </Flex>

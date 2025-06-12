@@ -4,7 +4,10 @@ import { FaDumbbell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { getRoutines, getWorkouts } from '../db/indexedDb';
 import { Routine, Workout } from '../models/types';
-import { findRoutineForToday, findWorkoutForToday } from '../utils/workoutUtils';
+import TimeToWorkoutAlert from '../components/TimeToWorkoutAlert';
+import FinishedWorkoutAlert from '../components/FinishedWorkoutAlert';
+import RestDayAlert from '../components/RestDayAlert';
+import { findRoutineForToday, findWorkoutForToday, getWorkoutStatusForToday, hasRoutineForToday } from '../utils/workoutUtils';
 import StreakCalendar from '../components/StreakCalendar';
 
 const Home: React.FC = () => {
@@ -23,58 +26,43 @@ const Home: React.FC = () => {
     fetchData();
   }, []);
 
+  const todayStatus = routines.length > 0 && hasRoutineForToday(routines)
+    ? getWorkoutStatusForToday(workouts, routines)
+    : 'rest';
+
   return (
     <Flex direction="column" p={4} align="center" justify="center" height="100%" width="100%">
-      <Box textAlign="center" mb={6}>
-        <FaDumbbell size="100px" color={red500} />
-      </Box>
       {routines.length === 0 ? (
-        <Box textAlign="center">
-          <Heading size="lg" mb={4}>
-            <Highlight
-              query="Pulsar"
-              styles={{
-                display: 'inline-block',
-                color: 'cyan.500',
-                fontWeight: 'bold',
-              }}
-            >
-              Welcome to Pulsar PWA!
-            </Highlight>
-          </Heading>
-          <Text mb={4}>Get started by creating your first workout routine.</Text>
-          <Button colorScheme="cyan" onClick={() => navigate('/workout')}>
-            Create My First Workout
-          </Button>
-        </Box>
+        <>
+          <Box textAlign="center" mb={6}>
+            <FaDumbbell size="100px" color={red500} />
+          </Box>
+          <Box textAlign="center">
+            <Heading size="lg" mb={4}>
+              <Highlight
+                query="Pulsar"
+                styles={{
+                  display: 'inline-block',
+                  color: 'cyan.500',
+                  fontWeight: 'bold',
+                }}
+              >
+                Welcome to Pulsar!
+              </Highlight>
+            </Heading>
+            <Text mb={4}>Get started by creating your first workout routine.</Text>
+            <Button colorScheme="cyan" onClick={() => navigate('/workout')}>
+              Create My First Workout
+            </Button>
+          </Box>
+        </>
       ) : (
-        <Box textAlign="center">
-          <Heading size="lg" mb={4}>
-            <Highlight
-              query="Pulsar"
-              styles={{
-                display: 'inline-block',
-                color: 'cyan.500',
-                fontWeight: 'bold',
-              }}
-            >
-              Ready to Workout with Pulsar?
-            </Highlight>
-          </Heading>
-          <Button 
-            colorScheme="cyan" 
-            mb={4} 
-            onClick={() => {
-              const todayRoutine = findRoutineForToday(routines);
-              const startedWorkout = findWorkoutForToday(workouts, routines);
-              navigate(
-                `/workout/session/${startedWorkout?.id ?? `?routineId=${todayRoutine?.id}`}`
-              );
-            }}
-          >
-            Start Workout
-          </Button>
-          {workouts.length > 0 && <StreakCalendar workouts={workouts} />}
+        <Box>
+          {todayStatus === 'rest' && <RestDayAlert />}
+          {todayStatus === 'not started' && <TimeToWorkoutAlert routines={routines} workouts={workouts} />}
+          {todayStatus === 'in progress' && <TimeToWorkoutAlert routines={routines} workouts={workouts} />}
+          {todayStatus === 'completed' && <FinishedWorkoutAlert routines={routines} workouts={workouts} />}
+          {workouts.length > 0 && <StreakCalendar workouts={workouts} routines={routines} />}
         </Box>
       )}
     </Flex>

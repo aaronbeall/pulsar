@@ -15,22 +15,6 @@ export interface Exercise {
   favorite?: boolean;
 }
 
-export interface ScheduledExercise {
-  exerciseId: string;
-  sets: number;
-  reps?: number;
-  duration?: number;  // In seconds
-}
-
-export interface WorkoutExercise extends ScheduledExercise {
-  weight?: number;
-  startedAt?: number;
-  completedAt?: number;
-  skipped?: boolean;
-  completedSets?: number; // Track completed sets
-  completedDuration?: number; // Track completed duration for timed exercises
-}
-
 export interface Routine {
   id: string; // Unique identifier
   name: string;
@@ -48,7 +32,7 @@ export interface Routine {
     time: string; // Time available for workouts
     additionalInfo: string; // Additional information provided by the user
   };
-  aiResponses: Array<{
+  responses: Array<{
     date: number;
     prompt: string;
     response: string;
@@ -57,6 +41,13 @@ export interface Routine {
   liked?: boolean;
   disliked?: boolean;
   favorite?: boolean;
+}
+
+export interface ScheduledExercise {
+  exerciseId: string;
+  sets: number;
+  reps?: number;
+  duration?: number;  // In seconds
 }
 
 export type RoutinePromptKey = keyof Routine["prompts"];
@@ -73,4 +64,13 @@ export interface Workout {
   disliked?: boolean;
   favorite?: boolean;
   feedback?: string;
+}
+
+export interface WorkoutExercise extends ScheduledExercise {
+  weight?: number;
+  startedAt?: number;
+  completedAt?: number;
+  skipped?: boolean; // Counts as completed but not or partially performed
+  completedSets?: number; // Track completed sets
+  completedDuration?: number; // Track completed duration for timed exercises
 }

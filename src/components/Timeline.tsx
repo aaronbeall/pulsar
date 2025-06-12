@@ -4,7 +4,7 @@ import { keyframes } from '@emotion/react';
 import { useNavigate } from 'react-router-dom';
 import { Routine, Workout } from '../models/types';
 import { DAYS_OF_WEEK } from '../constants/days';
-import { hasRoutineForDay, findRoutineForDay, findWorkoutForDay, getWorkoutStatusForDay } from '../utils/workoutUtils';
+import { hasRoutineForDay, findRoutineForDay, findWorkoutForDay, getWorkoutStatusForDay, WorkoutStatus } from '../utils/workoutUtils';
 import { FaDumbbell, FaCheck, FaTimes, FaBullseye, FaBed } from 'react-icons/fa';
 import StatusBadge from './StatusBadge';
 
@@ -39,14 +39,14 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
     }
   };
 
-  const getDayIcon = (isToday: boolean, status: string, hasWorkout: boolean, isPastDay: boolean) => {
+  const getDayIcon = (isToday: boolean, status: WorkoutStatus, hasWorkout: boolean, isPastDay: boolean) => {
     if (isToday) {
       if (status === 'completed') return FaCheck;
       if (status === 'in progress') return FaDumbbell;
       return hasWorkout ? FaBullseye : FaBed;
     }
     if (status === 'completed') return FaCheck;
-    if (isPastDay && hasWorkout && status === 'not started') return FaTimes;
+    if (isPastDay && hasWorkout) return FaTimes;
     if (hasWorkout) return FaBullseye;
     return FaBed;
   };
@@ -114,7 +114,7 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
                 opacity: 0.9
               };
             }
-            if (isPastDay && hasWorkout && status === 'not started') {
+            if (isPastDay && hasWorkout) {
               return {
                 bg: 'red.400',
                 opacity: 0.7

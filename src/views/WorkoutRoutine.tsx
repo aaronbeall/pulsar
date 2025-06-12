@@ -48,7 +48,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom'; // Import Ro
 const WorkoutRoutine: React.FC = () => {
   const { routineId } = useParams<{ routineId: string }>();
   const [routine, setRoutine] = useState<Routine | null>(null);
-  const [newResponses, setNewResponses] = useState<Routine['aiResponses']>([]);
+  const [newResponses, setNewResponses] = useState<Routine['responses']>([]);
   const [activeRoutines, setActiveRoutines] = useState<Routine[]>([]); // State for active routines
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [exercises, setExercises] = useState<Exercise[]>([]);
@@ -63,7 +63,7 @@ const WorkoutRoutine: React.FC = () => {
       setActiveRoutines(active);
 
       if (selectedRoutine) {
-        setNewResponses(selectedRoutine.aiResponses.filter((response) => !response.dismissed));
+        setNewResponses(selectedRoutine.responses.filter((response) => !response.dismissed));
       }
     };
     fetchRoutine();
@@ -81,7 +81,7 @@ const WorkoutRoutine: React.FC = () => {
     if (!routine) return;
 
     // Update the dismissed status in the Routine object
-    const updatedResponses = [...routine.aiResponses];
+    const updatedResponses = [...routine.responses];
     const dismissedResponse = newResponses[index];
     const responseIndex = updatedResponses.findIndex((r) => r.date === dismissedResponse.date);
 
@@ -89,7 +89,7 @@ const WorkoutRoutine: React.FC = () => {
       updatedResponses[responseIndex].dismissed = true;
     }
 
-    const updatedRoutine = { ...routine, aiResponses: updatedResponses };
+    const updatedRoutine = { ...routine, responses: updatedResponses };
     setRoutine(updatedRoutine); // Update local state
     setNewResponses((prev) => prev.filter((_, i) => i !== index)); // Remove from newResponses state
     await addRoutine(updatedRoutine); // Persist the updated Routine to the database
@@ -245,7 +245,7 @@ const WorkoutRoutine: React.FC = () => {
                 </Box>
               ))}
               <VStack align="start" spacing={4}>
-                {routine.aiResponses.map((aiResponse, index) => (
+                {routine.responses.map((aiResponse, index) => (
                   <Box key={index} width="100%" textAlign="right">
                     <Text fontSize="sm" color="gray.500" mb={2}>
                       {format(new Date(aiResponse.date), 'MMMM d, yyyy')}

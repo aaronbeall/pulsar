@@ -115,7 +115,7 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
       time: responses.time || '',
       additionalInfo: responses.additionalInfo || '',
     },
-    aiResponses: [
+    responses: [
       {
         date: Date.now(),
         prompt: 'Make my routine!',

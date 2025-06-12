@@ -17,10 +17,11 @@ import { Routine, Workout } from '../models/types';
 import { getRoutines, getWorkouts } from '../db/indexedDb';
 import { FaPlus, FaDumbbell } from 'react-icons/fa';
 import Timeline from '../components/Timeline';
-import { hasRoutineForToday } from '../utils/workoutUtils';
+import { hasRoutineForToday, getWorkoutStatusForToday } from '../utils/workoutUtils';
 import RoutineCard from '../components/RoutineCard';
 import TimeToWorkoutAlert from '../components/TimeToWorkoutAlert';
 import RestDayAlert from '../components/RestDayAlert';
+import FinishedWorkoutAlert from '../components/FinishedWorkoutAlert';
 
 export const WorkoutLanding: React.FC = () => {
   const [routines, setRoutines] = useState<Routine[]>([]);
@@ -71,7 +72,11 @@ export const WorkoutLanding: React.FC = () => {
       <SlideFade in={true} offsetY="20px">
         <VStack spacing={6} align="stretch" width="100%">
           {hasRoutineForToday(activeRoutines) ? (
-            <TimeToWorkoutAlert routines={activeRoutines} workouts={workouts} />
+            getWorkoutStatusForToday(workouts, activeRoutines) === 'completed' ? (
+              <FinishedWorkoutAlert routines={activeRoutines} workouts={workouts} />
+            ) : (
+              <TimeToWorkoutAlert routines={activeRoutines} workouts={workouts} />
+            )
           ) : (
             <RestDayAlert />
           )}

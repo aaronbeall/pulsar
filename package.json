@@ -11,6 +11,7 @@
     "@chakra-ui/react": "^2.10.7",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@types/react": "^19.1.8",
     "date-fns": "^4.1.0",
     "framer-motion": "^10.18.0",
     "lucide-react": "^0.503.0",
