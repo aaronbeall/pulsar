@@ -1,9 +1,12 @@
 import React from 'react';
-import { Box, Flex, Text, useColorModeValue } from '@chakra-ui/react';
+import { Box, Flex, Text, useColorModeValue, useToken } from '@chakra-ui/react';
 import { CheckIcon } from '@chakra-ui/icons';
+import { FaTimes } from 'react-icons/fa';
 import { Workout, Routine } from '../models/types';
-import { getWorkoutStatusForToday, hasRoutineForToday, getStreakInfo, StreakDay } from '../utils/workoutUtils';
+import { getWorkoutStatusForToday, hasRoutineForToday, getStreakInfo, StreakDay, getDayOfWeek, findRoutineForDay, findExercisesForDay, findWorkoutForDay, findScheduleForDay } from '../utils/workoutUtils';
 import { DAYS_OF_WEEK } from '../constants/days';
+import { addWorkout } from '../db/indexedDb';
+import { v4 as uuidv4 } from 'uuid';
 
 interface StreakCalendarProps {
   workouts: Workout[];
@@ -12,11 +15,11 @@ interface StreakCalendarProps {
 
 const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) => {
   const { days, streak, status } = getStreakInfo(workouts, routines, 28);
-  console.log("Streak", { days, streak, status });
-  const workoutStatus = getWorkoutStatusForToday(workouts, routines);
-  const isGrayed = workoutStatus !== 'completed' && hasRoutineForToday(routines);
+  const isGrayed = status !== 'up_to_date';
   const flameColor = isGrayed ? 'gray.400' : 'orange.400';
   const streakTextColor = isGrayed ? 'gray.400' : 'orange.500';
+  const [bgActiveColor] = useToken('colors', [useColorModeValue('orange.300', 'orange.700')]);
+  const [bgInactiveColor] = useToken('colors', [useColorModeValue('gray.200', 'gray.600')]);
   const bgActive = useColorModeValue('orange.300', 'orange.700');
   const bgInactive = useColorModeValue('gray.200', 'gray.600');
   const borderActive = useColorModeValue('orange.400', 'orange.300');
@@ -53,11 +56,76 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
   // Find today's date string for highlight
   const todayStr = new Date().toDateString();
 
+  const handleDayClick = async (date: Date) => {
+    // Only allow for past or today
+    if (date > new Date()) return;
+    // Use findRoutineForDay and findExercisesForDay from workoutUtils
+    const dayOfWeek = getDayOfWeek(date);
+    const routine = findRoutineForDay(routines, dayOfWeek);
+    if (!routine) return;
+    const exercises = findExercisesForDay(routine, dayOfWeek);
+    if (!exercises.length) return;
+    // Check if a workout already exists for this day
+    const existing = findWorkoutForDay(workouts, [routine], dayOfWeek, date);
+    if (existing) return;
+    // Create a completed workout object
+    const workout = {
+      id: uuidv4(),
+      nickname: 'Manual Entry',
+      routineId: routine.id,
+      day: dayOfWeek,
+      startedAt: new Date(date.setHours(0,0,0,0)).getTime(),
+      completedAt: new Date(date.setHours(23,59,59,999)).getTime(),
+      exercises: exercises.map(ex => ({ ...ex })),
+    };
+    await addWorkout(workout);
+    location.reload(); // Reload to reflect changes
+  };
+
   return (
     <Box mt={6} mb={2}>
-      <Flex align="center" justify="center" mb={2} alignItems='baseline'>
-        <Text fontSize="2xl" fontWeight="bold" color={streakTextColor} mr={2}>
-          <span role="img" aria-label="flame" style={{ color: flameColor, fontSize: '1.5em', filter: isGrayed ? 'grayscale(1)' : 'none' }}>🔥</span> {streak}
+      <Flex align="center" justify="center" mb={2} alignItems='center'>
+        <Text
+          fontSize="2xl"
+          fontWeight="bold"
+          color={streakTextColor}
+          mr={2}
+          display="flex"
+          alignItems="center"
+          sx={{
+            textShadow: isGrayed
+              ? undefined
+              : '0 0 16px #FFD600, 0 0 32px #FFA500, 0 0 48px #FF9100, 0 0 64px #FF9100',
+            filter: isGrayed ? 'grayscale(1)' : undefined,
+          }}
+        >
+          <span
+            role="img"
+            aria-label="flame"
+            style={{
+              color: flameColor,
+              fontSize: '1.5em',
+              marginRight: 6,
+              filter: isGrayed ? 'grayscale(1)' : undefined,
+              textShadow: isGrayed
+                ? undefined
+                : '0 0 8px #FFD600, 0 0 16px #FFA500, 0 0 32px #FF9100',
+              verticalAlign: 'middle',
+            }}
+          >
+            🔥
+          </span>
+          <span style={{
+            display: 'inline-block',
+            textShadow: isGrayed
+              ? undefined
+              : '0 0 24px #FFD600, 0 0 48px #FFA500, 0 0 96px #FF9100, 0 0 128px #FF9100',
+            filter: isGrayed ? 'grayscale(1)' : undefined,
+            fontWeight: 900,
+            fontSize: '1.3em',
+            letterSpacing: '0.05em',
+            lineHeight: 1,
+          }}>{streak}</span>
         </Text>
         <Text color={streakTextColor} fontWeight="medium">day streak</Text>
       </Flex>
@@ -91,7 +159,11 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
               const isCompleted = streakDay?.completed;
               // Styling for all cases
               const bg = isFuture ? useColorModeValue('gray.100', 'gray.700') : isStreak ? bgActive : bgInactive;
-              const color = isStreak ? 'orange.700' : 'gray.400';
+              const bgColor = isFuture
+                ? useColorModeValue('gray.100', 'gray.700')
+                : isStreak
+                ? bgActiveColor
+                : bgInactiveColor;
               let border = isFuture ? 'none' : isStreak ? `2.5px solid ${borderActive}` : `1.5px solid ${borderInactive}`;
               if (isToday && !isFuture) border = isStreak ? `2.5px solid ${borderActive}` : `2.5px solid ${borderInactive}`;
               let borderRadius = '9999px';
@@ -124,37 +196,55 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                   alignItems="center"
                   justifyContent="center"
                   title={date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  onClick={() => handleDayClick(date)}
+                  cursor={findRoutineForDay(routines, getDayOfWeek(date)) ? 'pointer' : undefined}
                 >
                   {/* Inner pill/dot for all days, style toggled by state */}
-                  <Box
-                    w={isStreak && !isFuture ? '100%' : '60%'}
-                    h={isStreak && !isFuture ? '100%' : '60%'}
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    borderRadius={borderRadius}
-                    bg={bg}
-                    borderLeft={borderLeft}
-                    borderRight={borderRight}
-                    borderTop={border}
-                    borderBottom={border}
-                    color={color}
-                    fontWeight="bold"
-                    fontSize="md"
-                    boxShadow={isStreak && !isFuture ? 'md' : undefined}
-                    opacity={isFuture ? 0.3 : isGrayed ? 0.5 : 1}
-                    position="relative"
-                    transition="background 0.2s, border 0.2s"
-                    zIndex={isStreak && isCompleted ? 1 : 0}
-                  >
-                    {isCompleted && !isFuture && (
-                      <CheckIcon
-                        boxSize={isStreak ? 5 : 4}
-                        color={isStreak ? 'white' : 'gray.300'}
-                        sx={isStreak ? { filter: 'drop-shadow(0 0 6px #FFD600) drop-shadow(0 0 12px #FFD600)' } : undefined}
+                  {(!isCompleted && !isFuture && streakDay && !streakDay.rest) ? (
+                    <Box
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      w={isStreak && !isFuture ? '100%' : '60%'}
+                      h={isStreak && !isFuture ? '100%' : '60%'}
+                      position="relative"
+                      zIndex={isStreak ? 1 : 0}
+                    >
+                      <FaTimes
+                        size={22}
+                        color={bgColor}
                       />
-                    )}
-                  </Box>
+                    </Box>
+                  ) : (
+                    <Box
+                      w={isStreak && !isFuture ? '100%' : '60%'}
+                      h={isStreak && !isFuture ? '100%' : '60%'}
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      borderRadius={borderRadius}
+                      bg={bg}
+                      borderLeft={borderLeft}
+                      borderRight={borderRight}
+                      borderTop={border}
+                      borderBottom={border}
+                      color={bgColor}
+                      fontWeight="bold"
+                      fontSize="md"
+                      boxShadow={isStreak && !isFuture ? 'md' : undefined}
+                      opacity={isFuture ? 0.3 : 1}
+                      position="relative"
+                      zIndex={isStreak && isCompleted ? 1 : 0}
+                    >
+                      {isCompleted && !isFuture && (
+                        <CheckIcon
+                          boxSize={isStreak ? 5 : 4}
+                          color={isStreak ? 'white' : 'gray.300'}
+                          sx={isStreak ? { filter: 'drop-shadow(0 0 6px #FFD600) drop-shadow(0 0 12px #FFD600)' } : undefined}
+                        />
+                      )}
+                    </Box>
+                  )}
                 </Box>
               );
             })}

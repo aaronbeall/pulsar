@@ -23,6 +23,13 @@ export const findRoutineForDay = (routines: Routine[], day: DayOfWeek): Routine 
   );
 };
 
+export const findScheduleForDay = (routines: Routine[], day: DayOfWeek) => {
+  const routine = findRoutineForDay(routines, day);
+  return routine?.dailySchedule.find(schedule => 
+    schedule.day === day
+  );
+}
+
 export const findWorkoutForDay = (
   workouts: Workout[], 
   routines: Routine[], 
@@ -108,7 +115,9 @@ function getScheduledDate(workout: Workout): Date {
 
 export function getStreakInfo(workouts: Workout[], routines: Routine[], daysBack?: number): StreakInfo {
   // 1. Convert workouts to workoutDates, preserving the scheduled date
-  const workoutDates: Date[] = workouts.map(getScheduledDate);
+  const workoutDates: Date[] = workouts
+    .filter(w => !!w.completedAt)
+    .map(getScheduledDate);
   workoutDates.sort((a, b) => b.getTime() - a.getTime());
   const completedMap = new Map<string, boolean>();
   for (const d of workoutDates) {
