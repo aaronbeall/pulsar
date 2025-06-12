@@ -86,7 +86,7 @@ export const WorkoutLanding: React.FC = () => {
           <Box bg={bgColor} borderRadius="xl" p={6} boxShadow="sm" borderWidth="1px" borderColor={borderColor}>
             <Flex justify="space-between" align="center" mb={6}>
               <Heading size="lg" bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
-                My Workouts
+                My Workout
               </Heading>
               <Button
                 variant="solid"
@@ -110,9 +110,6 @@ export const WorkoutLanding: React.FC = () => {
 
             {activeRoutines.length > 0 && (
               <Box mb={8}>
-                <Heading size="md" mb={4} color="cyan.500">
-                  Active Routines
-                </Heading>
                 <VStack spacing={4} align="stretch">
                   {activeRoutines.map((routine) => (
                     <SlideFade in={true} offsetY="20px" key={routine.id}>

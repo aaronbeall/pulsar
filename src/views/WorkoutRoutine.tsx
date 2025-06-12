@@ -136,7 +136,7 @@ const WorkoutRoutine: React.FC = () => {
       <Breadcrumb mb={4} width="100%">
         <BreadcrumbItem>
           <BreadcrumbLink as={RouterLink} to="/workout">
-            Workouts
+            Workout
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbItem isCurrentPage>

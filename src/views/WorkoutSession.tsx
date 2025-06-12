@@ -153,12 +153,7 @@ export const WorkoutSession: React.FC = () => {
       <Breadcrumb mb={4}>
         <BreadcrumbItem>
           <BreadcrumbLink as={RouterLink} to="/workout">
-            Workouts
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbItem>
-          <BreadcrumbLink as={RouterLink} to={`/workout/routine/${routine.id}`}>
-            Routine
+            Workout
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbItem isCurrentPage>
@@ -168,7 +163,7 @@ export const WorkoutSession: React.FC = () => {
 
       <Flex justify="space-between" align="start" mb={6}>
         <Box>
-          <Text fontSize="sm" color="gray.500" mb={1}>{routine.name}</Text>
+          <Text as={RouterLink} to={`/workout/routine/${routine.id}`} fontSize="sm" color="gray.500" mb={1}>{routine.name}</Text>
           <Heading size="lg" mb={2} bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
             "{workout.nickname}"
           </Heading>
