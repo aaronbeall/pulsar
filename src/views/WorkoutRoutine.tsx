@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -44,6 +44,7 @@ import { workoutPrompts } from '../constants/prompts'; // Import prompts
 import { format } from 'date-fns'; // Import date-fns for formatting dates
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
 import { Link as RouterLink, useNavigate } from 'react-router-dom'; // Import RouterLink and useNavigate
+import RoutineChat, { ChatMessage } from '../components/RoutineChat';
 
 const WorkoutRoutine: React.FC = () => {
   const { routineId } = useParams<{ routineId: string }>();
@@ -52,6 +53,9 @@ const WorkoutRoutine: React.FC = () => {
   const [activeRoutines, setActiveRoutines] = useState<Routine[]>([]); // State for active routines
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchRoutine = async () => {
@@ -64,6 +68,8 @@ const WorkoutRoutine: React.FC = () => {
 
       if (selectedRoutine) {
         setNewResponses(selectedRoutine.responses.filter((response) => !response.dismissed));
+        // Add all responses (dismissed or not) to chat history as AI messages
+        setChatHistory(selectedRoutine.responses.map(r => ({ role: 'ai', message: r.response })));
       }
     };
     fetchRoutine();
@@ -123,6 +129,18 @@ const WorkoutRoutine: React.FC = () => {
     setActiveRoutines(updatedActiveRoutines);
   };
 
+  const handleSend = async () => {
+    if (!chatInput.trim()) return;
+    const userMessage = chatInput.trim();
+    setChatHistory((prev) => [...prev, { role: 'user', message: userMessage }]);
+    setChatInput('');
+    // Simulate AI response (replace with real AI call if available)
+    setTimeout(() => {
+      setChatHistory((prev) => [...prev, { role: 'ai', message: `AI: I received your message: "${userMessage}"` }]);
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 600);
+  };
+
   if (!routine) {
     return (
       <Box textAlign="center" p={4}>
@@ -143,44 +161,8 @@ const WorkoutRoutine: React.FC = () => {
           <BreadcrumbLink>Routine</BreadcrumbLink>
         </BreadcrumbItem>
       </Breadcrumb>
-      <Flex
-              gap={4}
-              width="100%"
-              alignItems="center"
-              justifyContent="center"
-              mb={4}
-              direction={{ base: 'column', md: 'row' }}
-            >
-              <Box p={4} borderWidth="1px" borderRadius="full" bg="gray.50" _dark={{ bg: "gray.700" }}>
-                <Flex align="baseline" gap={2}>
-                  <Text fontSize="md">
-                    Let me know if you want to
-                  </Text>
-                  <Button
-                    variant="solid"
-                    size="md"
-                    colorScheme="cyan"
-                    borderRadius="full"
-                    leftIcon={<FaMagic />}
-                    onClick={() => alert('Navigate to edit routine functionality')} // Placeholder for edit action
-                  >
-                    Make Changes
-                  </Button>
-                </Flex>
-              </Box>
-              <Text> or you're </Text>
-              <Button
-                variant="solid"
-                size="lg"
-                height={16}
-                colorScheme="red"
-                borderRadius="full"
-                leftIcon={<FaDumbbell />}
-                onClick={() => alert('Start workout functionality')} // Placeholder for start workout action
-              >
-                Ready to Workout!
-              </Button>
-            </Flex>
+      {/* AI Chat Interface */}
+      <RoutineChat chatHistory={chatHistory} setChatHistory={setChatHistory} />
       <Box width="100%" maxWidth="1200px">
         <Flex justify="space-between" align="center" mb={4}>
           <Heading size="lg">{routine.name}</Heading>
@@ -209,31 +191,13 @@ const WorkoutRoutine: React.FC = () => {
             />
           </Flex>
         </Flex>
-        {newResponses.map((response, index) => (
-          <Alert
-            key={index}
-            status="success"
-            variant="solid"
-            borderRadius="md"
-            mb={4}
-            p={4}
-          >
-            <AlertIcon />
-            <Flex justify="space-between" width="100%">
-                <AlertDescription fontSize="md">
-                    {response.response}
-                </AlertDescription>
-                <CloseButton onClick={() => dismissResponse(index)} />
-            </Flex>
-          </Alert>
-        ))}
         <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
           <DrawerOverlay />
           <DrawerContent>
             <DrawerCloseButton />
             <DrawerHeader>Routine Details</DrawerHeader>
             <DrawerBody>
-              {workoutPrompts.map((prompt) => (
+              {routine && workoutPrompts.map((prompt) => (
                 <Box key={prompt.key} mb={4}>
                   <Text fontWeight="bold" fontSize="lg" mb={1}>
                     {prompt.question}
@@ -245,7 +209,7 @@ const WorkoutRoutine: React.FC = () => {
                 </Box>
               ))}
               <VStack align="start" spacing={4}>
-                {routine.responses.map((aiResponse, index) => (
+                {routine && routine.responses.map((aiResponse, index) => (
                   <Box key={index} width="100%" textAlign="right">
                     <Text fontSize="sm" color="gray.500" mb={2}>
                       {format(new Date(aiResponse.date), 'MMMM d, yyyy')}
@@ -264,7 +228,7 @@ const WorkoutRoutine: React.FC = () => {
                           {aiResponse.response}
                         </AlertDescription>
                         {!aiResponse.dismissed && (
-                          <Badge colorScheme="cyan" variant="solid" mt={2}>New</Badge> // Highlight non-dismissed responses
+                          <Badge colorScheme="cyan" variant="solid" mt={2}>New</Badge>
                         )}
                       </Flex>
                     </Alert>
