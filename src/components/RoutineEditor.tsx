@@ -21,6 +21,8 @@ import ExerciseDetailsDialog from './ExerciseDetailsDialog'; // Import ExerciseD
 import NumericStepper from './NumericStepper';
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
 import { Exercise, Routine } from '../models/types';
+import DayKindBadge from './DayKindBadge';
+import DayKindEditor from './DayKindBadgeEditor';
 
 // Helper to ensure all days are present in the schedule
 function ensureAllDays(schedule: Routine['dailySchedule']): Routine['dailySchedule'] {
@@ -137,6 +139,10 @@ export const RoutineEditor: React.FC<{
   const openExerciseDetails = (exerciseId: string) => setExerciseDetailsId(exerciseId);
   const closeExerciseDetails = () => setExerciseDetailsId(null);
 
+  // Add state and handler for editing kind
+  const [editKindIdx, setEditKindIdx] = useState<number | null>(null);
+  const [editKindValue, setEditKindValue] = useState('');
+
   const isMdOrLarger = useBreakpointValue({ base: false, md: true });
 
   return (
@@ -229,7 +235,29 @@ export const RoutineEditor: React.FC<{
                   </MenuList>
                 </Menu>
                 <Heading size="sm" mr={2}>{schedule.day}</Heading>
-                <Badge colorScheme="cyan" fontSize="0.8em">{schedule.kind}</Badge>
+                {editKindIdx === dayIdx ? (
+                  <DayKindEditor
+                    value={editKindValue}
+                    onChange={setEditKindValue}
+                    onSave={() => {
+                      const newRoutine = cloneRoutine(editRoutine);
+                      newRoutine.dailySchedule[dayIdx].kind = editKindValue;
+                      setEditRoutine(newRoutine);
+                      setEditChanged(true);
+                      setEditKindIdx(null);
+                    }}
+                    onCancel={() => setEditKindIdx(null)}
+                  />
+                ) : (
+                  <DayKindBadge
+                    kind={schedule.kind}
+                    editable
+                    onClick={() => {
+                      setEditKindIdx(dayIdx);
+                      setEditKindValue(schedule.kind || '');
+                    }}
+                  />
+                )}
               </Flex>
               <Droppable droppableId={`day-${dayIdx}`}>
                 {(provided, snapshot) => (

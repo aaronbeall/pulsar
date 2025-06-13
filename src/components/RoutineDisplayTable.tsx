@@ -1,5 +1,4 @@
 import {
-  Badge,
   Box,
   Card,
   CardBody,
@@ -20,6 +19,7 @@ import React from 'react';
 import { FaDumbbell, FaQuestionCircle, FaRegCalendarAlt } from 'react-icons/fa'; // Import icons
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
 import { Exercise, Routine } from '../models/types';
+import DayKindBadge from './DayKindBadge';
 
 // Routine display table (read-only)
 export const RoutineDisplayTable: React.FC<{
@@ -41,9 +41,7 @@ export const RoutineDisplayTable: React.FC<{
                     <Heading size="sm" fontWeight="normal" bgGradient="linear(to-r, gray.400, gray.500)" bgClip="text" color="gray.400" _dark={{ color: 'gray.600' }}>
                       {day}
                     </Heading>
-                    <Badge fontSize="0.8em" bg="gray.100" _dark={{ bg: 'gray.800', color: 'gray.500' }} ml={2}>
-                      Rest day
-                    </Badge>
+                    <DayKindBadge variant="rest" />
                   </Flex>
                 </Flex>
               </CardBody>
@@ -67,7 +65,7 @@ export const RoutineDisplayTable: React.FC<{
                     {day}
                   </Heading>
                   {scheduleForDay.kind && (
-                    <Badge colorScheme="cyan" fontSize="0.8em" ml={2}>{scheduleForDay.kind}</Badge>
+                    <DayKindBadge kind={scheduleForDay.kind} />
                   )}
                 </Flex>
               </Flex>
