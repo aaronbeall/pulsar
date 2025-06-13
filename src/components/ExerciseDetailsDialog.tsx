@@ -123,38 +123,50 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
               flexShrink={0}
             >
               <Box
+                position="relative"
+                w="100%"
+                aspectRatio={16/9}
+                borderRadius="md"
+                overflow="hidden"
+                borderWidth="1px"
+                borderColor="gray.200"
                 bg="white"
-                _dark={{ bg: 'gray.800' }}
-                borderRadius="lg"
-                boxShadow="md"
-                p={3}
-                display="flex"
-                flexDirection="column"
-                alignItems="center"
-                justifyContent="center"
-                minH="160px"
+                mb={2}
               >
                 {edit.coverImageUrl ? (
-                  <Box w="160px" h="110px" borderRadius="md" overflow="hidden" borderWidth="1px" borderColor="gray.200" bg="white" mb={2}>
-                    <img src={edit.coverImageUrl} alt={edit.name} style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'white' }} />
-                  </Box>
+                  <img
+                    src={edit.coverImageUrl}
+                    alt={edit.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
                 ) : (
-                  <Box w="160px" h="110px" borderRadius="md" bg="gray.100" _dark={{ bg: 'gray.700' }} display="flex" alignItems="center" justifyContent="center" mb={2}>
+                  <Box w="100%" h="100%" display="flex" alignItems="center" justifyContent="center" bg="gray.100" _dark={{ bg: 'gray.700' }}>
                     <FaDumbbell size={40} color="#A0AEC0" />
                   </Box>
                 )}
-                <Button
-                  size="sm"
-                  colorScheme="cyan"
-                  variant="outline"
-                  leftIcon={<FaQuestionCircle />} // Add question icon
-                  onClick={() => edit.howToUrl && openUrl(edit.howToUrl)}
-                  isDisabled={!edit.howToUrl}
-                  w="140px"
-                  mb={1}
-                >
-                  How To
-                </Button>
+                {edit.howToUrl && (
+                  <IconButton
+                    as="a"
+                    href={edit.howToUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    size="sm"
+                    colorScheme="cyan"
+                    variant="ghost"
+                    aria-label="How To (help)"
+                    icon={<FaQuestionCircle />}
+                    position="absolute"
+                    top={2}
+                    right={2}
+                    zIndex={2}
+                    bg="rgba(255,255,255,0.7)"
+                    _dark={{ bg: 'rgba(26,32,44,0.7)' }}
+                    _hover={{ bg: 'rgba(56,189,248,0.8)', opacity: 1 }}
+                    opacity={0.7}
+                    boxShadow="sm"
+                    transition="opacity 0.2s"
+                  />
+                )}
               </Box>
               <Box
                 bg="white"

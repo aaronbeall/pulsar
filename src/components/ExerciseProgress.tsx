@@ -12,11 +12,12 @@ import {
   Heading,
   Icon,
   ScaleFade,
-  useBreakpointValue
+  useBreakpointValue,
+  IconButton
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaCheckCircle, FaPlay, FaCheck, FaStopwatch } from 'react-icons/fa';
+import { FaCheckCircle, FaPlay, FaCheck, FaStopwatch, FaQuestionCircle } from 'react-icons/fa';
 import { Exercise, WorkoutExercise } from '../models/types';
 
 const breathe = keyframes`
@@ -178,6 +179,48 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
       position="relative"
       overflow="hidden"
     >
+      {/* Exercise image background and How To button overlay */}
+      {exerciseDetail?.coverImageUrl && (
+        <Box
+          position="absolute"
+          top={0}
+          left={0}
+          w="100%"
+          h="100%"
+          zIndex={0}
+          bg="gray.100"
+          _dark={{ bg: 'gray.800' }}
+        >
+          <img
+            src={exerciseDetail.coverImageUrl}
+            alt={exerciseDetail.name}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.18 }}
+          />
+        </Box>
+      )}
+      {exerciseDetail?.howToUrl && (
+        <IconButton
+          as="a"
+          href={exerciseDetail.howToUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          size="sm"
+          colorScheme="cyan"
+          variant="ghost"
+          aria-label="How To (help)"
+          icon={<FaQuestionCircle />}
+          position="absolute"
+          top={2}
+          right={2}
+          zIndex={2}
+          bg="rgba(255,255,255,0.7)"
+          _dark={{ bg: 'rgba(26,32,44,0.7)' }}
+          _hover={{ bg: 'rgba(56,189,248,0.8)', opacity: 1 }}
+          opacity={0.7}
+          boxShadow="sm"
+          transition="opacity 0.2s"
+        />
+      )}
       <VStack spacing={6} align="center">
         <VStack spacing={1} textAlign="center">
           <Heading 
