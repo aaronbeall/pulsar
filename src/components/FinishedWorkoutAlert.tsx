@@ -67,15 +67,6 @@ const FinishedWorkoutAlert: React.FC<FinishedWorkoutAlertProps> = ({ routines, w
             >
               View Workout
             </Button>
-            <Button
-              size="lg"
-              colorScheme="orange"
-              variant="outline"
-              leftIcon={<Icon as={FaRedo} />}
-              onClick={() => navigate('/workout/session')}
-            >
-              Start Again
-            </Button>
           </Flex>
         </Flex>
       </Alert>

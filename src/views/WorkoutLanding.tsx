@@ -11,6 +11,7 @@ import {
   useColorModeValue,
   Icon,
   Divider,
+  Spinner,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { Routine, Workout } from '../models/types';
@@ -61,8 +62,7 @@ export const WorkoutLanding: React.FC = () => {
   if (isLoading) {
     return (
       <Flex direction="column" align="center" justify="center" height="100%" width="100%">
-        <Icon as={FaDumbbell} fontSize="4xl" color="cyan.500" mb={4} />
-        <Text color="gray.500" fontSize="lg">Loading your fitness journey...</Text>
+        <Spinner size="xl" color="cyan.400" thickness="4px" speed="0.7s" mb={4} />
       </Flex>
     );
   }

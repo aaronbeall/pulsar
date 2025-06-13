@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, Container, Flex, Heading, Text, useToken, Highlight } from '@chakra-ui/react';
+import { Box, Button, Container, Flex, Heading, Text, useToken, Highlight, Spinner } from '@chakra-ui/react';
 import { FaDumbbell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { getRoutines, getWorkouts } from '../db/indexedDb';
@@ -13,6 +13,7 @@ import StreakCalendar from '../components/StreakCalendar';
 const Home: React.FC = () => {
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const [red500] = useToken('colors', ['red.500']);
 
@@ -22,6 +23,7 @@ const Home: React.FC = () => {
       const workoutsData = await getWorkouts();
       setRoutines(routinesData);
       setWorkouts(workoutsData);
+      setIsLoading(false);
     };
     fetchData();
   }, []);
@@ -29,6 +31,15 @@ const Home: React.FC = () => {
   const todayStatus = routines.length > 0 && hasRoutineForToday(routines)
     ? getWorkoutStatusForToday(workouts, routines)
     : 'rest';
+
+  if (isLoading) {
+    return (
+      <Flex direction="column" align="center" justify="center" minH="60vh" w="100%">
+        <Spinner size="xl" color="cyan.400" thickness="4px" speed="0.7s" mb={4} />
+        <Text color="gray.500" fontSize="lg">Loading your fitness journey...</Text>
+      </Flex>
+    );
+  }
 
   return (
     <Container maxW="container.lg" p={4}>

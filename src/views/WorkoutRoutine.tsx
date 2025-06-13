@@ -47,6 +47,7 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
+  Spinner,
 } from '@chakra-ui/react';
 import { FaInfoCircle, FaEdit, FaMagic, FaDumbbell, FaPlus, FaSave, FaUndo, FaGripVertical, FaArrowsAltV, FaExchangeAlt, FaRegCalendarAlt, FaTimes, FaCheck, FaCog, FaStopwatch, FaSync, FaExternalLinkAlt, FaRegEye, FaQuestionCircle } from 'react-icons/fa'; // Import icons
 import { Routine, Exercise } from '../models/types';
@@ -615,8 +616,6 @@ const WorkoutRoutine: React.FC = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState('');
-  const chatEndRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
 
@@ -703,24 +702,6 @@ const WorkoutRoutine: React.FC = () => {
     setActiveRoutines(updatedActiveRoutines);
   };
 
-  const handleSend = async () => {
-    if (!chatInput.trim()) return;
-    const userMessage = chatInput.trim();
-    setChatHistory((prev) => [...prev, { role: 'user', message: userMessage }]);
-    setChatInput('');
-    // Simulate AI response (replace with real AI call if available)
-    setTimeout(() => {
-      setChatHistory((prev) => [...prev, { role: 'ai', message: `AI: I received your message: "${userMessage}"` }]);
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 600);
-  };
-
-  // Start editing
-  const handleEdit = () => {
-    if (!routine) return;
-    setIsEditing(true);
-  };
-
   // Save changes from EditableRoutine
   const handleSave = async (edited: Routine) => {
     await addRoutine(edited);
@@ -735,9 +716,11 @@ const WorkoutRoutine: React.FC = () => {
 
   if (!routine) {
     return (
-      <Box textAlign="center" p={4}>
-        <Heading size="lg">Routine Not Found</Heading>
-      </Box>
+      <Flex align="center" justify="center" h="60vh" w="100%">
+        <Box textAlign="center">
+          <Spinner size="xl" color="cyan.400" thickness="4px" speed="0.7s" />
+        </Box>
+      </Flex>
     );
   }
 
