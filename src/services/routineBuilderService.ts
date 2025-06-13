@@ -29,6 +29,7 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
       liked: false,
       disliked: false,
       favorite: false,
+      timed: false,
     },
     {
       id: uuidv4(),
@@ -40,6 +41,7 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
       liked: false,
       disliked: false,
       favorite: false,
+      timed: false,
     },
     {
       id: uuidv4(),
@@ -51,6 +53,7 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
       liked: false,
       disliked: false,
       favorite: false,
+      timed: true, // Timed exercise
     },
     {
       id: uuidv4(),
@@ -62,6 +65,7 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
       liked: false,
       disliked: false,
       favorite: false,
+      timed: false,
     },
     {
       id: uuidv4(),
@@ -73,6 +77,7 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
       liked: false,
       disliked: false,
       favorite: false,
+      timed: true, // Timed exercise
     },
   ];
 

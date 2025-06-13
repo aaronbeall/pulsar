@@ -12,10 +12,13 @@
   - [ ] Completion
   - [ ] Streak animation
   - [ ] Skip
+  - [ ] Image/how-to link
 - [ ] Streak calendar
 - [ ] Archive/delete routine
 - [ ] Switch routine
-- [ ] Handle multiple active routines
+- [ ] Handle multiple routines
+  - [ ] Allow multiple active routines, switch between routines
+  - [ ] Streak calendar for specific routines, inluding inactive ones
 - [ ] Import/export data
 
 ## MMP
@@ -33,3 +36,12 @@
 - [ ] Add notes to workouts
 - [ ] Notifications
 - [ ] JSONBin to transfer data
+- [ ] Best Streak / All Streaks
+- [ ] Preserve streak history even if workout routine is changed
+- [ ] Optional days (not required for streaks)
+- [ ] Leaderboards
+- [ ] Graphs and charts
+- [ ] Weight tracking
+- [ ] Diet tracking
+- [ ] Print/Export PDF support
+- [ ] Timeline

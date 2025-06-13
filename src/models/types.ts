@@ -13,6 +13,7 @@ export interface Exercise {
   liked?: boolean;
   disliked?: boolean;
   favorite?: boolean;
+  timed?: boolean;
 }
 
 export interface Routine {
