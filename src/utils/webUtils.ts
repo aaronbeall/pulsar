@@ -27,15 +27,12 @@ export const getHowToQuery = (exerciseName: string) => {
  * Use Google Programmable Search Engine (CSE) to search for images for an exercise and return the top image URL.
  * Requires a CSE API key and cx (search engine ID).
  */
-// VITE_GOOGLE_CSE_ID and VITE_GOOGLE_CSE_API_KEY should be defined in your .env file
-const GOOGLE_CSE_ID = import.meta.env.VITE_GOOGLE_CSE_ID;
-const GOOGLE_CSE_API_KEY = import.meta.env.VITE_GOOGLE_CSE_API_KEY;
-
 export const fetchExerciseSearchImageUrl = async (
   exerciseName: string
 ): Promise<string | null> => {
-  const searchCx = GOOGLE_CSE_ID;
-  const apiKey = GOOGLE_CSE_API_KEY;
+  // VITE_GOOGLE_CSE_ID and VITE_GOOGLE_CSE_API_KEY should be defined in your .env file
+  const searchCx = import.meta.env.VITE_GOOGLE_CSE_ID;
+  const apiKey = import.meta.env.VITE_GOOGLE_CSE_API_KEY;
   if (!apiKey || !searchCx) return null;
   const query = `${exerciseName} exercise`;
   const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&searchType=image&num=1&key=${apiKey}&cx=${searchCx}`;

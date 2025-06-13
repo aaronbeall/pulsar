@@ -187,7 +187,6 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
           left={0}
           w="100%"
           h="100%"
-          zIndex={0}
           bg="gray.100"
           _dark={{ bg: 'gray.800' }}
         >
@@ -221,7 +220,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
           transition="opacity 0.2s"
         />
       )}
-      <VStack spacing={6} align="center">
+      <VStack spacing={6} align="center" position="relative">
         <VStack spacing={1} textAlign="center">
           <Heading 
             size="lg" 
