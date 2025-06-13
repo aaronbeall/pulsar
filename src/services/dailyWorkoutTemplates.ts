@@ -3,7 +3,12 @@
 // Sets/reps are moderate, can be adjusted later. Use exercise names from the suggestion list.
 
 const dailyWorkoutTemplatesData = `
-Leg Day             | Squat: 3 x 12           | Lunge: 2 x 12            | Calf Raise: 3 x 15           | Glute Bridge: 2 x 15         |
+Arms                | Bicep Curl: 3 x 15      | Tricep Dip: 3 x 12        | Hammer Curl: 2 x 15           | Tricep Kickback: 2 x 12      |
+Abs                 | Crunch: 3 x 20          | Plank: 3 x 30s            | Leg Raise: 2 x 15             | Russian Twist: 2 x 20        |
+Butt                | Glute Bridge: 3 x 15    | Hip Thrust: 3 x 12        | Donkey Kick: 2 x 15           | Clamshell: 2 x 15            |
+Core                | Plank: 3 x 30s          | Dead Bug: 3 x 15          | Bird Dog: 3 x 12              | Side Plank: 2 x 30s          |
+Legs                | Squat: 3 x 15           | Lunge: 3 x 12             | Calf Raise: 3 x 15            | Step-up: 2 x 12              |
+Leg Day             | Squat: 3 x 12           | Lunge: 2 x 12             | Calf Raise: 3 x 15            | Glute Bridge: 2 x 15         |
 Push Day            | Push-up: 3 x 12         | Bench Press: 3 x 10       | Overhead Press: 2 x 10        | Tricep Dip: 2 x 12           |
 Pull Day            | Pull-up: 3 x 8          | Bent-over Row: 3 x 10     | Bicep Curl: 2 x 12            | Face Pull: 2 x 15            |
 Full Body           | Burpee: 2 x 15          | Jumping Jack: 2 x 30s     | Plank: 2 x 30s                | Mountain Climber: 2 x 30s    |
