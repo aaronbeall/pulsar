@@ -41,10 +41,10 @@ export const RoutineDisplayTable: React.FC<{
                     <Heading size="sm" fontWeight="normal" bgGradient="linear(to-r, gray.400, gray.500)" bgClip="text" color="gray.400" _dark={{ color: 'gray.600' }}>
                       {day}
                     </Heading>
+                    <Badge fontSize="0.8em" bg="gray.100" _dark={{ bg: 'gray.800', color: 'gray.500' }} ml={2}>
+                      Rest day
+                    </Badge>
                   </Flex>
-                  <Badge fontSize="0.8em" px={3} py={1} borderRadius="full" bg="gray.100" _dark={{ bg: 'gray.800', color: 'gray.500' }}>
-                    Rest day
-                  </Badge>
                 </Flex>
               </CardBody>
             </Card>
@@ -66,10 +66,10 @@ export const RoutineDisplayTable: React.FC<{
                   <Heading size="sm" bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
                     {day}
                   </Heading>
+                  {scheduleForDay.kind && (
+                    <Badge colorScheme="cyan" fontSize="0.8em" ml={2}>{scheduleForDay.kind}</Badge>
+                  )}
                 </Flex>
-                <Badge colorScheme="cyan" fontSize="0.8em" px={3} py={1} borderRadius="full">
-                  {scheduleForDay.kind}
-                </Badge>
               </Flex>
             </CardHeader>
             <CardBody>

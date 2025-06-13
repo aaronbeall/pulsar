@@ -23,10 +23,10 @@ import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
 import { Exercise, Routine } from '../models/types';
 
 // Helper to ensure all days are present in the schedule
-function ensureAllDays(schedule: any[]) {
+function ensureAllDays(schedule: Routine['dailySchedule']): Routine['dailySchedule'] {
   return DAYS_OF_WEEK.map(day => {
     const found = schedule.find(s => s.day === day);
-    return found ? found : { day, kind: 'Workout', exercises: [] };
+    return found ? found : { day, kind: '', exercises: [] };
   });
 }
 
