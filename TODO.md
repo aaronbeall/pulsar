@@ -18,7 +18,8 @@
 - [ ] Switch routine
 - [ ] Handle multiple routines
   - [ ] Allow multiple active routines, switch between routines
-  - [ ] Streak calendar for specific routines, inluding inactive ones
+  - [ ] Streak calendar for specific routines, including inactive ones
+  - [ ] Routines should have activity (start, end) for use with streak calendar
 - [ ] Import/export data
 
 ## MMP

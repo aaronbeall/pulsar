@@ -48,7 +48,7 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
 } from '@chakra-ui/react';
-import { FaInfoCircle, FaEdit, FaMagic, FaDumbbell, FaPlus, FaSave, FaUndo, FaGripVertical, FaArrowsAltV, FaExchangeAlt, FaRegCalendarAlt, FaTimes, FaCheck } from 'react-icons/fa'; // Import icons
+import { FaInfoCircle, FaEdit, FaMagic, FaDumbbell, FaPlus, FaSave, FaUndo, FaGripVertical, FaArrowsAltV, FaExchangeAlt, FaRegCalendarAlt, FaTimes, FaCheck, FaCog } from 'react-icons/fa'; // Import icons
 import { Routine, Exercise } from '../models/types';
 import { getRoutines, addRoutine, getExercises } from '../db/indexedDb'; // Import addRoutine to update the Routine
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
@@ -58,6 +58,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom'; // Import Ro
 import RoutineChat, { ChatMessage } from '../components/RoutineChat';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import NumericStepper from '../components/NumericStepper';
+import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 
 // Helper to ensure all days are present in the schedule
 function ensureAllDays(schedule: any[]) {
@@ -277,6 +278,11 @@ const EditableRoutine: React.FC<{
     setAddExerciseInput(prev => ({ ...prev, [dayIdx]: value }));
   };
 
+  // Add state and handler for exercise details dialog
+  const [exerciseDetailsId, setExerciseDetailsId] = useState<string | null>(null);
+  const openExerciseDetails = (exerciseId: string) => setExerciseDetailsId(exerciseId);
+  const closeExerciseDetails = () => setExerciseDetailsId(null);
+
   return (
     <Box>
       <Box
@@ -411,35 +417,60 @@ const EditableRoutine: React.FC<{
                             <Box mr={2} color="gray.400" _dark={{ color: 'gray.500' }} p={1}>
                               <FaGripVertical />
                             </Box>
-                            <Input size="sm" value={ex.exerciseId} placeholder="Exercise ID" onChange={e => handleEditExercise(dayIdx, exIdx, { ...ex, exerciseId: e.target.value })} mr={2} />
-                            <NumericStepper
-                              value={ex.sets || 1}
-                              onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, sets: val })}
-                              label="sets"
-                            />
-                            {/* Optionally add reps/duration input if needed */}
-                            {ex.reps !== undefined && (
-                              <NumericStepper
-                                value={ex.reps}
-                                onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, reps: val })}
-                                label="reps"
+                            {/* Show exercise name and gear icon beside each other */}
+                            <Flex align="center" flex={1} minW={0} mr={2}>
+                              <Text
+                                fontWeight="semibold"
+                                color="cyan.700"
+                                _dark={{ color: 'cyan.300' }}
+                                minW={0}
+                                isTruncated
+                              >
+                                {(() => {
+                                  const details = exercises.find(e => e.id === ex.exerciseId);
+                                  return details ? details.name : ex.exerciseId;
+                                })()}
+                              </Text>
+                              <IconButton
+                                aria-label="Exercise details"
+                                icon={<FaInfoCircle />}
+                                size="sm"
+                                colorScheme="gray"
+                                variant="ghost"
+                                ml={2}
+                                onClick={() => openExerciseDetails(ex.exerciseId)}
                               />
-                            )}
-                            {ex.duration !== undefined && (
+                            </Flex>
+                            {/* Right-aligned controls */}
+                            <Flex align="center" ml="auto">
                               <NumericStepper
-                                value={ex.duration}
-                                onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, duration: val })}
-                                label="sec"
+                                value={ex.sets || 1}
+                                onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, sets: val })}
+                                label="sets"
                               />
-                            )}
-                            <IconButton
-                              size="sm"
-                              colorScheme="red"
-                              aria-label="Remove exercise"
-                              icon={<FaTimes />}
-                              onClick={() => handleEditExercise(dayIdx, exIdx, null)}
-                              ml={1}
-                            />
+                              {ex.reps !== undefined && (
+                                <NumericStepper
+                                  value={ex.reps}
+                                  onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, reps: val })}
+                                  label="reps"
+                                />
+                              )}
+                              {ex.duration !== undefined && (
+                                <NumericStepper
+                                  value={ex.duration}
+                                  onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, duration: val })}
+                                  label="sec"
+                                />
+                              )}
+                              <IconButton
+                                size="sm"
+                                colorScheme="red"
+                                aria-label="Remove exercise"
+                                icon={<FaTimes />}
+                                onClick={() => handleEditExercise(dayIdx, exIdx, null)}
+                                ml={1}
+                              />
+                            </Flex>
                           </Flex>
                         )}
                       </Draggable>
@@ -494,6 +525,14 @@ const EditableRoutine: React.FC<{
             </Box>
           ))}
         </VStack>
+        {/* Exercise details dialog */}
+        {exerciseDetailsId && (
+          <ExerciseDetailsDialog
+            exerciseId={exerciseDetailsId}
+            exercises={exercises}
+            onClose={closeExerciseDetails}
+          />
+        )}
       </DragDropContext>
     </Box>
   );
