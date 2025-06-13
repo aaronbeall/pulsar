@@ -41,7 +41,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <Flex direction="column" height="100vh" overflow="hidden">
+    <Flex direction="column" minHeight="100dvh" overflow="hidden">
       <Box 
         bg={`${colorScheme}.500`} 
         color="white" 
@@ -132,11 +132,12 @@ const App: React.FC = () => {
       </Box>
 
       <Box 
-        flex="1" 
+        flex="1 1 auto" 
         bg={colorMode === 'light' ? 'gray.50' : 'gray.900'} 
         overflow="auto"
         position="relative"
         zIndex="1"
+        pb={24}
       >
         <Container maxW="container.lg" py={6}>
           <Routes>
@@ -153,10 +154,16 @@ const App: React.FC = () => {
       <Box 
         bg={`${colorScheme}.500`} 
         color="white" 
-        py={4} 
-        position="relative" 
-        zIndex="2"
+        pt={4}
+        pb={4}
+        position="fixed" 
+        left={0}
+        right={0}
+        bottom={0}
+        zIndex={100}
         boxShadow="0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06)"
+        flexShrink={0}
+        width="100vw"
       >
         <Container maxW="container.lg">
           <Flex justify="space-around" align="center">

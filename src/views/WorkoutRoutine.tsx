@@ -59,6 +59,7 @@ import RoutineChat, { ChatMessage } from '../components/RoutineChat';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import NumericStepper from '../components/NumericStepper';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
+import { useBreakpointValue } from '@chakra-ui/react';
 
 // Helper to ensure all days are present in the schedule
 function ensureAllDays(schedule: any[]) {
@@ -306,6 +307,8 @@ const EditableRoutine: React.FC<{
   const openExerciseDetails = (exerciseId: string) => setExerciseDetailsId(exerciseId);
   const closeExerciseDetails = () => setExerciseDetailsId(null);
 
+  const isMdOrLarger = useBreakpointValue({ base: false, md: true });
+
   return (
     <Box>
       <Box
@@ -448,7 +451,10 @@ const EditableRoutine: React.FC<{
                                 color="cyan.700"
                                 _dark={{ color: 'cyan.300' }}
                                 minW={0}
-                                isTruncated
+                                isTruncated={isMdOrLarger}
+                                fontSize={{ base: 'sm', md: 'md' }}
+                                whiteSpace={isMdOrLarger ? 'nowrap' : 'normal'}
+                                wordBreak="break-word"
                               >
                                 {(() => {
                                   const details = exercises.find(e => e.id === ex.exerciseId);
@@ -467,25 +473,27 @@ const EditableRoutine: React.FC<{
                             </Flex>
                             {/* Right-aligned controls */}
                             <Flex align="center" ml="auto">
-                              <NumericStepper
-                                value={ex.sets || 1}
-                                onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, sets: val })}
-                                label="sets"
-                              />
-                              {ex.reps !== undefined && (
+                              <Flex direction={{ base: 'column', sm: 'row' }} gap={{ base: 1, sm: 2 }}>
                                 <NumericStepper
-                                  value={ex.reps}
-                                  onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, reps: val })}
-                                  label="reps"
+                                  value={ex.sets || 1}
+                                  onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, sets: val })}
+                                  label="sets"
                                 />
-                              )}
-                              {ex.duration !== undefined && (
-                                <NumericStepper
-                                  value={ex.duration}
-                                  onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, duration: val })}
-                                  label="sec"
-                                />
-                              )}
+                                {ex.reps !== undefined && (
+                                  <NumericStepper
+                                    value={ex.reps}
+                                    onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, reps: val })}
+                                    label="reps"
+                                  />
+                                )}
+                                {ex.duration !== undefined && (
+                                  <NumericStepper
+                                    value={ex.duration}
+                                    onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, duration: val })}
+                                    label="sec"
+                                  />
+                                )}
+                              </Flex>
                               <Menu>
                                 <MenuButton
                                   as={IconButton}
@@ -493,7 +501,8 @@ const EditableRoutine: React.FC<{
                                   colorScheme="gray"
                                   aria-label="More options"
                                   icon={<FaCog />} // Use a gear icon for the menu
-                                  ml={1}
+                                  ml={{ base: 0, sm: 1 }}
+                                  mt={{ base: 1, sm: 0 }}
                                   variant="ghost"
                                 />
                                 <MenuList>
