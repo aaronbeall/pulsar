@@ -24,16 +24,57 @@ import TimeToWorkoutAlert from '../components/TimeToWorkoutAlert';
 import RestDayAlert from '../components/RestDayAlert';
 import FinishedWorkoutAlert from '../components/FinishedWorkoutAlert';
 
+const AddRoutineCard: React.FC<{ onClick: () => void }> = ({ onClick }) => {
+  return (
+    <Box
+      as="button"
+      onClick={onClick}
+      borderWidth="2px"
+      borderStyle="dashed"
+      borderColor={useColorModeValue('gray.200', 'gray.700')}
+      borderRadius="xl"
+      p={8}
+      mb={8}
+      w="100%"
+      bg={useColorModeValue('gray.50', 'gray.900')}
+      boxShadow="none"
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      transition="box-shadow 0.2s, border-color 0.2s, transform 0.2s"
+      _hover={{
+        borderColor: 'cyan.400',
+        boxShadow: 'sm',
+        transform: 'translateY(-2px) scale(1.02)',
+        bg: useColorModeValue('white', 'gray.800'),
+      }}
+      _active={{
+        borderColor: 'cyan.600',
+        boxShadow: 'none',
+        transform: 'scale(0.98)',
+      }}
+    >
+      <Icon as={FaPlus} boxSize={12} color={useColorModeValue('gray.300', 'gray.600')} mb={2} />
+      <Heading size="md" color={useColorModeValue('gray.400', 'gray.500')} fontWeight="semibold">
+        Create New Routine
+      </Heading>
+    </Box>
+  );
+};
+
 export const WorkoutLanding: React.FC = () => {
   const [routines, setRoutines] = useState<Routine[]>([]);
-  const [activeRoutines, setActiveRoutines] = useState<Routine[]>([]);
-  const [inactiveRoutines, setInactiveRoutines] = useState<Routine[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-  
+
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+
+  // Use useMemo for active/inactive routines
+  const activeRoutines = React.useMemo(() => routines.filter(r => r.active), [routines]);
+  const inactiveRoutines = React.useMemo(() => routines.filter(r => !r.active), [routines]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,12 +86,7 @@ export const WorkoutLanding: React.FC = () => {
           navigate('setup', { replace: true });
         }
 
-        const active = routinesData.filter((routine) => routine.active);
-        const inactive = routinesData.filter((routine) => !routine.active);
-
         setRoutines(routinesData);
-        setActiveRoutines(active);
-        setInactiveRoutines(inactive);
         setWorkouts(workoutsData);
       } finally {
         setIsLoading(false);
@@ -103,40 +139,7 @@ export const WorkoutLanding: React.FC = () => {
             )}
 
             {/* Add Routine Placeholder Card */}
-            <Box
-              as="button"
-              onClick={() => navigate('/workout/setup')}
-              borderWidth="2px"
-              borderStyle="dashed"
-              borderColor={useColorModeValue('gray.200', 'gray.700')}
-              borderRadius="xl"
-              p={8}
-              mb={8}
-              w="100%"
-              bg={useColorModeValue('gray.50', 'gray.900')}
-              boxShadow="none"
-              display="flex"
-              flexDirection="column"
-              alignItems="center"
-              justifyContent="center"
-              transition="box-shadow 0.2s, border-color 0.2s, transform 0.2s"
-              _hover={{
-                borderColor: 'cyan.400',
-                boxShadow: 'sm',
-                transform: 'translateY(-2px) scale(1.02)',
-                bg: useColorModeValue('white', 'gray.800'),
-              }}
-              _active={{
-                borderColor: 'cyan.600',
-                boxShadow: 'none',
-                transform: 'scale(0.98)',
-              }}
-            >
-              <Icon as={FaPlus} boxSize={12} color={useColorModeValue('gray.300', 'gray.600')} mb={2} />
-              <Heading size="md" color={useColorModeValue('gray.400', 'gray.500')} fontWeight="semibold">
-                Create New Routine
-              </Heading>
-            </Box>
+            <AddRoutineCard onClick={() => navigate('/workout/setup')} />
 
             {inactiveRoutines.length > 0 && (
               <>
