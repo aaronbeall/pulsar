@@ -746,7 +746,7 @@ const WorkoutRoutine: React.FC = () => {
               icon={<FaEdit />}
               colorScheme="cyan"
               variant="ghost"
-              onClick={handleEdit}
+              onClick={() => setIsEditing(isEditing ? false : true)}
             />
           </Flex>
         </Flex>

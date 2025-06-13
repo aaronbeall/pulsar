@@ -75,7 +75,7 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
   };
 
   return (
-    <Modal isOpen onClose={handleCancel} size="md" isCentered>
+    <Modal isOpen onClose={handleCancel} size="md" isCentered autoFocus={false}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>
@@ -91,7 +91,6 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
             _dark={{ borderColor: 'cyan.600' }}
             px={0}
             mb={-2}
-            autoFocus
           />
         </ModalHeader>
         <ModalCloseButton />
