@@ -134,7 +134,6 @@ const App: React.FC = () => {
       <Box 
         flex="1 1 auto" 
         bg={colorMode === 'light' ? 'gray.50' : 'gray.900'} 
-        overflow="auto"
         position="relative"
         zIndex="1"
         pb={24}
