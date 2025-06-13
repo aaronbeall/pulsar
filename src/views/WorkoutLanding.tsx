@@ -88,24 +88,6 @@ export const WorkoutLanding: React.FC = () => {
               <Heading size="lg" bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
                 My Workout
               </Heading>
-              <Button
-                variant="solid"
-                colorScheme="cyan"
-                leftIcon={<FaPlus />}
-                onClick={() => navigate('/workout/setup')}
-                size="md"
-                boxShadow="sm"
-                _hover={{
-                  transform: 'translateY(-2px)',
-                  boxShadow: 'md',
-                }}
-                _active={{
-                  transform: 'translateY(0)',
-                  boxShadow: 'sm',
-                }}
-              >
-                New Routine
-              </Button>
             </Flex>
 
             {activeRoutines.length > 0 && (
@@ -120,6 +102,42 @@ export const WorkoutLanding: React.FC = () => {
               </Box>
             )}
 
+            {/* Add Routine Placeholder Card */}
+            <Box
+              as="button"
+              onClick={() => navigate('/workout/setup')}
+              borderWidth="2px"
+              borderStyle="dashed"
+              borderColor={useColorModeValue('gray.200', 'gray.700')}
+              borderRadius="xl"
+              p={8}
+              mb={8}
+              w="100%"
+              bg={useColorModeValue('gray.50', 'gray.900')}
+              boxShadow="none"
+              display="flex"
+              flexDirection="column"
+              alignItems="center"
+              justifyContent="center"
+              transition="box-shadow 0.2s, border-color 0.2s, transform 0.2s"
+              _hover={{
+                borderColor: 'cyan.400',
+                boxShadow: 'sm',
+                transform: 'translateY(-2px) scale(1.02)',
+                bg: useColorModeValue('white', 'gray.800'),
+              }}
+              _active={{
+                borderColor: 'cyan.600',
+                boxShadow: 'none',
+                transform: 'scale(0.98)',
+              }}
+            >
+              <Icon as={FaPlus} boxSize={12} color={useColorModeValue('gray.300', 'gray.600')} mb={2} />
+              <Heading size="md" color={useColorModeValue('gray.400', 'gray.500')} fontWeight="semibold">
+                Create New Routine
+              </Heading>
+            </Box>
+
             {inactiveRoutines.length > 0 && (
               <>
                 <Divider my={6} />
@@ -130,7 +148,7 @@ export const WorkoutLanding: React.FC = () => {
                   <VStack spacing={4} align="stretch">
                     {inactiveRoutines.map((routine) => (
                       <SlideFade in={true} offsetY="20px" key={routine.id}>
-                        <RoutineCard routine={routine} variant="outline" />
+                        <RoutineCard routine={routine} />
                       </SlideFade>
                     ))}
                   </VStack>

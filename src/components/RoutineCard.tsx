@@ -43,10 +43,9 @@ import {
 
 interface RoutineCardProps {
   routine: Routine;
-  variant?: string;
 }
 
-const RoutineCard: React.FC<RoutineCardProps> = ({ routine, variant }) => {
+const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
@@ -66,16 +65,38 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine, variant }) => {
   return (
     <Card 
       width="100%" 
-      variant={variant || (routine.active ? "elevated" : "outline")} 
+      variant={routine.active ? "elevated" : "outline"} 
       borderRadius="xl"
       bg={bgColor}
       borderColor={borderColor}
       transition="all 0.2s"
       _hover={{
-        transform: 'translateY(-2px)',
-        boxShadow: 'xl',
+        transform: 'translateY(-2px) scale(1.01)',
+        boxShadow: '2xl',
+        cursor: 'pointer',
+        borderColor: 'cyan.400',
+        borderWidth: '2px',
+        bg: routine.active ? useColorModeValue('cyan.50', 'gray.700') : useColorModeValue('gray.50', 'gray.800'),
+        filter: 'brightness(1.03)',
       }}
       overflow="visible"
+      onClick={e => {
+        // Only navigate if the click target is not a button or inside a button (but allow the card itself)
+        if (
+          e.target instanceof HTMLElement &&
+          (e.target === e.currentTarget || !e.target.closest('button, [role="button"]'))
+        ) {
+          navigate(`/workout/routine/${routine.id}`);
+        }
+      }}
+      tabIndex={0}
+      role="group"
+      aria-label={`View details for ${routine.name}`}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          navigate(`/workout/routine/${routine.id}`);
+        }
+      }}
     >
       <CardHeader pb={2}>
         <VStack align="stretch" spacing={3}>
@@ -83,7 +104,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine, variant }) => {
             <VStack align="start" spacing={1}>
               <Heading 
                 size="md" 
-                color={routine.active ? 'cyan.500' : undefined}
+                color={routine.active ? 'cyan.500' : 'gray.400'}
                 _hover={{ color: 'cyan.500' }}
                 transition="color 0.2s"
                 cursor="pointer"
@@ -211,19 +232,6 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine, variant }) => {
                 />
               </Tooltip>
             </HStack>
-            
-            <Button
-              size="sm"
-              colorScheme="cyan"
-              variant="solid"
-              rightIcon={<FaArrowRight />}
-              onClick={() => navigate(`/workout/routine/${routine.id}`)}
-              _hover={{
-                transform: 'translateX(2px)',
-              }}
-            >
-              View Details
-            </Button>
           </HStack>
         </VStack>
 
