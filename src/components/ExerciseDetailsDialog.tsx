@@ -290,9 +290,7 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
                           cursor="pointer"
                           onClick={() => {
                             // Open Wikipedia search for this muscle
-                            import('../utils/webUtils').then(({ openSearchQuery }) => {
-                              openSearchQuery(`${muscle} muscle site:wikipedia.org`);
-                            });
+                            openSearchQuery(`${muscle} muscle site:wikipedia.org`);
                           }}
                           _hover={{ bg: 'cyan.100', _dark: { bg: 'cyan.700' } }}
                           _active={{ bg: 'cyan.200', _dark: { bg: 'cyan.800' } }}
