@@ -48,11 +48,11 @@ const NumericStepper: React.FC<NumericStepperProps> = ({ value, min = 1, max, on
   React.useEffect(() => () => clearHold(), []);
 
   return (
-    <HStack gap={1} mr={2} align="center">
+    <HStack gap={{ base: 0.5, md: 1 }} mr={2} align="center">
       <IconButton
         aria-label={`Decrement ${label || ''}`}
         icon={<LuMinus />}
-        size="sm"
+        size={{ base: "xs", md: "sm" }}
         variant="solid"
         colorScheme="gray"
         borderRadius="full"
@@ -60,11 +60,12 @@ const NumericStepper: React.FC<NumericStepperProps> = ({ value, min = 1, max, on
         onPointerDown={() => handleHold('dec')}
         onPointerUp={clearHold}
         onPointerLeave={clearHold}
+        px={{ base: 1, md: 2 }}
       />
-      <Text fontSize="md" fontWeight="medium" minW="2.5em" textAlign="center" px={2}>
+      <Text fontSize={{ base: "sm", md: "md" }} fontWeight="medium" minW="2.2em" textAlign="center" px={{ base: 1, md: 2 }}>
         {display}
         {label && (
-          <Text as="span" fontSize="10px" color="gray.400" fontWeight="normal" ml={1} textTransform="uppercase" letterSpacing="wider">
+          <Text as="span" fontSize={{ base: "8px", md: "10px" }} color="gray.400" fontWeight="normal" ml={1} textTransform="uppercase" letterSpacing="wider">
             {label}
           </Text>
         )}
@@ -72,7 +73,7 @@ const NumericStepper: React.FC<NumericStepperProps> = ({ value, min = 1, max, on
       <IconButton
         aria-label={`Increment ${label || ''}`}
         icon={<LuPlus />}
-        size="sm"
+        size={{ base: "xs", md: "sm" }}
         variant="solid"
         colorScheme="gray"
         borderRadius="full"
@@ -80,6 +81,7 @@ const NumericStepper: React.FC<NumericStepperProps> = ({ value, min = 1, max, on
         onPointerDown={() => handleHold('inc')}
         onPointerUp={clearHold}
         onPointerLeave={clearHold}
+        px={{ base: 1, md: 2 }}
       />
     </HStack>
   );
