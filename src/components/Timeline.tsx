@@ -139,6 +139,7 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
                 position="relative" 
                 mb={2}
                 transition="all 0.2s"
+                zIndex={isToday ? 2 : 1}
                 _hover={hasWorkout && (isPastDay || isToday) ? {
                   transform: isToday ? 'scale(1.75)' : 'scale(1.1)',
                 } : undefined}
