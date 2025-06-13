@@ -77,20 +77,42 @@ const TimeToWorkoutAlert: React.FC<TimeToWorkoutAlertProps> = ({ routines, worko
           {emoji}
         </Box>
         <Flex direction="column" align="start">
-          <AlertTitle fontSize="3xl" fontWeight="extrabold" mb={2}>
+          <AlertTitle
+            fontSize="3xl"
+            fontWeight="extrabold"
+            mb={2}
+          >
             Time to crush your workout! 💪
           </AlertTitle>
-          <AlertDescription fontSize="lg" mb={6} opacity={0.9}>
+          <AlertDescription
+            fontSize="lg"
+            mb={6}
+            opacity={1}
+            color={{ base: 'gray.900', _dark: 'orange.100' }}
+            textShadow={{ base: '0 1px 6px #fff', _dark: '0 1px 6px #7c2d12' }}
+          >
             Your active routine is ready for today. Let's make it count!
           </AlertDescription>
           <Box position="relative">
             <Button
               size="lg"
-              colorScheme="white"
-              variant="outline"
-              leftIcon={<Icon as={getButtonIcon(status)} />}
-              _hover={{ bg: 'whiteAlpha.200' }}
+              variant="solid"
+              color={{ base: 'white', _dark: 'orange.400' }}
+              bgGradient={{ base: 'linear(to-r, cyan.600, blue.400, pink.400)', _dark: 'linear(to-r, orange.500, orange.400, yellow.400)' }}
+              fontWeight="extrabold"
+              letterSpacing="wide"
+              boxShadow={{ base: '0 4px 24px 0 #90cdf4', _dark: '0 4px 24px 0 #fbbf24' }}
+              _hover={{
+                bgGradient: {
+                  base: 'linear(to-r, cyan.700, blue.500, pink.500)',
+                  _dark: 'linear(to-r, orange.400, yellow.400, yellow.300)'
+                },
+                color: { base: 'white', _dark: 'gray.900' },
+                boxShadow: { base: '0 6px 32px 0 #38bdf8', _dark: '0 6px 32px 0 #f59e42' }
+              }}
               _active={{ transform: 'scale(0.98)' }}
+              leftIcon={<Icon as={getButtonIcon(status)} />}
+              transition="all 0.2s"
               onClick={() => {
                 const todayRoutine = findRoutineForToday(routines);
                 if (!todayRoutine) return;
