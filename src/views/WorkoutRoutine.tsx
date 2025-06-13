@@ -48,7 +48,7 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
 } from '@chakra-ui/react';
-import { FaInfoCircle, FaEdit, FaMagic, FaDumbbell, FaPlus, FaSave, FaUndo, FaGripVertical, FaArrowsAltV, FaExchangeAlt, FaRegCalendarAlt, FaTimes, FaCheck, FaCog, FaStopwatch, FaSync } from 'react-icons/fa'; // Import icons
+import { FaInfoCircle, FaEdit, FaMagic, FaDumbbell, FaPlus, FaSave, FaUndo, FaGripVertical, FaArrowsAltV, FaExchangeAlt, FaRegCalendarAlt, FaTimes, FaCheck, FaCog, FaStopwatch, FaSync, FaExternalLinkAlt, FaRegEye, FaQuestionCircle } from 'react-icons/fa'; // Import icons
 import { Routine, Exercise } from '../models/types';
 import { getRoutines, addRoutine, getExercises } from '../db/indexedDb'; // Import addRoutine to update the Routine
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
@@ -72,7 +72,8 @@ function ensureAllDays(schedule: any[]) {
 const RoutineDisplayTable: React.FC<{
   routine: Routine;
   exercises: Exercise[];
-}> = ({ routine, exercises }) => {
+  onShowExerciseDetails: (exerciseId: string) => void;
+}> = ({ routine, exercises, onShowExerciseDetails }) => {
   return (
     <VStack align="start" spacing={4}>
       {DAYS_OF_WEEK.map((day) => {
@@ -145,15 +146,37 @@ const RoutineDisplayTable: React.FC<{
                         <Td>
                           {exerciseDetails ? (
                             <Flex align="center" gap={2}>
-                              <Text fontWeight="semibold" color="cyan.700" _dark={{ color: 'cyan.300' }}>{exerciseDetails.name}</Text>
-                              <Button
-                                size="xs"
-                                variant="ghost"
-                                colorScheme="cyan"
-                                onClick={() => window.open(exerciseDetails.howToUrl, '_blank', 'noopener,noreferrer')}
+                              <Text
+                                as="button"
+                                onClick={() => onShowExerciseDetails && onShowExerciseDetails(exerciseDetails.id)}
+                                fontWeight="semibold"
+                                color="cyan.700"
+                                _dark={{ color: 'cyan.300' }}
+                                textDecoration="none"
+                                cursor="pointer"
+                                background="none"
+                                border="none"
+                                p={0}
+                                m={0}
+                                borderRadius="md"
+                                transition="background 0.15s"
+                                _hover={{ background: 'cyan.50', _dark: { background: 'cyan.900' } }}
                               >
-                                How To
-                              </Button>
+                                {exerciseDetails.name}
+                              </Text>
+                              {exerciseDetails.howToUrl && (
+                                <IconButton
+                                  as="a"
+                                  href={exerciseDetails.howToUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  size="xs"
+                                  colorScheme="cyan"
+                                  variant="ghost"
+                                  aria-label="How To (help)"
+                                  icon={<FaQuestionCircle />}
+                                />
+                              )}
                             </Flex>
                           ) : (
                             <Text color="gray.400">Unknown Exercise</Text>
@@ -302,6 +325,7 @@ const EditableRoutine: React.FC<{
         <Flex align="center" justify="space-between" w="100%">
           <Input
             value={editRoutine.name}
+            variant="flushed"
             onChange={e => {
               const newName = e.target.value;
               setEditRoutine(r => ({ ...r, name: newName }));
@@ -432,8 +456,8 @@ const EditableRoutine: React.FC<{
                                 })()}
                               </Text>
                               <IconButton
-                                aria-label="Exercise details"
-                                icon={<FaInfoCircle />}
+                                aria-label="Edit exercise details"
+                                icon={<FaEdit />}
                                 size="sm"
                                 colorScheme="gray"
                                 variant="ghost"
@@ -566,6 +590,7 @@ const EditableRoutine: React.FC<{
             exerciseId={exerciseDetailsId}
             exercises={exercises}
             onClose={closeExerciseDetails}
+            mode="edit"
           />
         )}
       </DragDropContext>
@@ -584,6 +609,7 @@ const WorkoutRoutine: React.FC = () => {
   const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRoutine = async () => {
@@ -798,7 +824,23 @@ const WorkoutRoutine: React.FC = () => {
           </DrawerContent>
         </Drawer>
         {/* Routine display table and editable routine */}
-        {!isEditing && <RoutineDisplayTable routine={routine} exercises={exercises} />}
+        {!isEditing && (
+          <>
+            <RoutineDisplayTable
+              routine={routine}
+              exercises={exercises}
+              onShowExerciseDetails={setDisplayExerciseId}
+            />
+            {displayExerciseId && (
+              <ExerciseDetailsDialog
+                exerciseId={displayExerciseId}
+                exercises={exercises}
+                onClose={() => setDisplayExerciseId(null)}
+                mode="view"
+              />
+            )}
+          </>
+        )}
         {isEditing && routine && (
           <EditableRoutine
             initialRoutine={routine}

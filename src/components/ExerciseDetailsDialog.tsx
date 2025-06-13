@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Text, Box, VStack, Input, Textarea, Checkbox, Button, HStack, Tag, IconButton, useToast, Flex, Switch, ButtonGroup } from "@chakra-ui/react";
-import { FaChartBar, FaCalendarAlt, FaDumbbell, FaTimes, FaCheck, FaListOl, FaClock, FaSync } from "react-icons/fa";
+import { FaChartBar, FaCalendarAlt, FaDumbbell, FaTimes, FaCheck, FaListOl, FaClock, FaSync, FaQuestionCircle } from "react-icons/fa";
 import { Exercise } from "../models/types";
 import { getRoutines, getWorkouts } from '../db/indexedDb';
 import LikeDislikeButtons from "../components/LikeDislikeButtons";
@@ -11,9 +11,10 @@ interface ExerciseDetailsDialogProps {
   exerciseId: string;
   exercises: Exercise[];
   onClose: () => void;
+  mode: "edit" | "view";
 }
 
-const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseId, exercises, onClose }) => {
+const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseId, exercises, onClose, mode = "edit" }) => {
   const toast = useToast();
   const original = exercises.find(e => e.id === exerciseId)!;
   const [edit, setEdit] = React.useState({ ...original });
@@ -68,158 +69,279 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
     onClose();
   };
 
-  // Helper for target muscles input (comma separated)
-  const handleTargetMusclesInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    handleChange('targetMuscles', value.split(',').map(s => s.trim()).filter(Boolean));
-  };
-
   return (
-    <Modal isOpen onClose={handleCancel} size="md" isCentered autoFocus={false}>
+    <Modal isOpen onClose={handleCancel} size="lg" isCentered autoFocus={false}>
       <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>
-          <Input
-            value={edit.name}
-            onChange={e => handleChange('name', e.target.value)}
-            fontWeight="bold"
-            fontSize="lg"
-            placeholder="Exercise Name"
-            variant="flushed"
-            borderBottomWidth="2px"
-            borderColor="cyan.400"
-            _dark={{ borderColor: 'cyan.600' }}
-            px={0}
-            mb={-2}
-          />
+      <ModalContent borderRadius="2xl" boxShadow="2xl" overflow="hidden">
+        <ModalHeader px={{ base: 4, md: 8 }} pt={6} pb={2}>
+          <VStack align="start" spacing={1}>
+            {mode === "edit" ? (
+              <Input
+                value={edit.name}
+                onChange={e => handleChange('name', e.target.value)}
+                fontWeight="bold"
+                fontSize="lg"
+                placeholder="Exercise Name"
+                variant="flushed"
+                borderBottomWidth="2px"
+                borderColor="cyan.400"
+                _dark={{ borderColor: 'cyan.600' }}
+                px={0}
+                mb={-2}
+              />
+            ) : (
+              <Text
+                fontWeight="extrabold"
+                fontSize={{ base: 'xl', md: '2xl' }}
+                bgGradient="linear(to-r, cyan.400, blue.400, purple.400)"
+                bgClip="text"
+                letterSpacing="tight"
+                lineHeight={1.1}
+                mb={-1}
+                textShadow="0 2px 8px rgba(0,0,0,0.10)"
+              >
+                {edit.name}
+              </Text>
+            )}
+            {mode === "view" && (
+              <HStack spacing={2}>
+                {edit.liked && <Tag colorScheme="green" borderRadius="full" fontWeight="bold">Liked</Tag>}
+                {edit.disliked && <Tag colorScheme="red" borderRadius="full" fontWeight="bold">Disliked</Tag>}
+              </HStack>
+            )}
+          </VStack>
         </ModalHeader>
         <ModalCloseButton />
-        <ModalBody>
-          <VStack align="stretch" spacing={5}>
-            {/* Stats across the top */}
-            <HStack spacing={4} w="100%" justify="center" mb={2}>
-              <Flex align="center" gap={1} color="cyan.600" _dark={{ color: 'cyan.300' }}>
-                <FaChartBar />
-                <Text fontSize="sm">{stats.routines} routines</Text>
-              </Flex>
-              <Flex align="center" gap={1} color="blue.500" _dark={{ color: 'blue.200' }}>
-                <FaCalendarAlt />
-                <Text fontSize="sm">{stats.days} days</Text>
-              </Flex>
-              <Flex align="center" gap={1} color="purple.500" _dark={{ color: 'purple.200' }}>
-                <FaDumbbell />
-                <Text fontSize="sm">{stats.workouts} workouts</Text>
-              </Flex>
-            </HStack>
-            {/* Description and image/how-to side by side */}
-            <HStack align="start" spacing={4} w="100%">
-              <Textarea
-                value={edit.description}
-                onChange={e => handleChange('description', e.target.value)}
-                placeholder="Description"
-                rows={4}
-                flex={1}
-              />
-              <VStack spacing={2} align="center" minW="90px">
+        <ModalBody px={{ base: 4, md: 8 }} pb={6}>
+          <Flex direction={{ base: 'column', md: 'row' }} gap={8} align="flex-start">
+            {/* Left: Image, How To, Stats */}
+            <VStack
+              spacing={5}
+              align="stretch"
+              minW={{ md: '220px' }}
+              w={{ base: '100%', md: '220px' }}
+              flexShrink={0}
+            >
+              <Box
+                bg="white"
+                _dark={{ bg: 'gray.800' }}
+                borderRadius="lg"
+                boxShadow="md"
+                p={3}
+                display="flex"
+                flexDirection="column"
+                alignItems="center"
+                justifyContent="center"
+                minH="160px"
+              >
                 {edit.coverImageUrl ? (
-                  <Box w="90px" h="90px" borderRadius="md" overflow="hidden" borderWidth="1px" borderColor="gray.200" bg="white">
+                  <Box w="160px" h="110px" borderRadius="md" overflow="hidden" borderWidth="1px" borderColor="gray.200" bg="white" mb={2}>
                     <img src={edit.coverImageUrl} alt={edit.name} style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'white' }} />
                   </Box>
-                ) : null}
+                ) : (
+                  <Box w="160px" h="110px" borderRadius="md" bg="gray.100" _dark={{ bg: 'gray.700' }} display="flex" alignItems="center" justifyContent="center" mb={2}>
+                    <FaDumbbell size={40} color="#A0AEC0" />
+                  </Box>
+                )}
                 <Button
                   size="sm"
                   colorScheme="cyan"
                   variant="outline"
+                  leftIcon={<FaQuestionCircle />} // Add question icon
                   onClick={() => edit.howToUrl && openUrl(edit.howToUrl)}
                   isDisabled={!edit.howToUrl}
-                  w="90px"
+                  w="140px"
+                  mb={1}
                 >
                   How To
                 </Button>
-              </VStack>
-            </HStack>
-            <Box w="100%">
-              <Text fontWeight="bold" mb={1}>Target Muscles</Text>
-              <TagInput
-                tags={edit.targetMuscles || []}
-                onChange={tags => handleChange('targetMuscles', tags)}
-                placeholder="e.g. Chest, Triceps"
-              />
-            </Box>
-            <HStack spacing={3} w="100%" justify="flex-start">
-              <Text fontWeight="bold">Default Type:</Text>
-              <ButtonGroup isAttached variant="outline" size="sm">
-                <Button
-                  leftIcon={<FaSync />} // Use cycle icon for reps
-                  colorScheme={!edit.timed ? 'cyan' : 'gray'}
-                  variant={!edit.timed ? 'solid' : 'outline'}
-                  onClick={() => handleChange('timed', false)}
-                  isActive={!edit.timed}
-                  aria-pressed={!edit.timed}
+              </Box>
+              <Box
+                bg="white"
+                _dark={{ bg: 'gray.800' }}
+                borderRadius="lg"
+                boxShadow="md"
+                p={3}
+                w={{ base: '100%', md: 'auto' }}
+              >
+                <HStack spacing={4} w="100%" justify="center">
+                  <VStack spacing={0} align="center" minW="60px">
+                    <HStack spacing={1} align="center">
+                      <Box color="cyan.600" _dark={{ color: 'cyan.300' }}>
+                        <FaChartBar />
+                      </Box>
+                      <Text fontSize="md" fontWeight="bold" color="cyan.600" _dark={{ color: 'cyan.300' }}>{stats.routines}</Text>
+                    </HStack>
+                    <Text fontSize="xs" color="gray.500" mt={1}>routines</Text>
+                  </VStack>
+                  <VStack spacing={0} align="center" minW="60px">
+                    <HStack spacing={1} align="center">
+                      <Box color="blue.500" _dark={{ color: 'blue.200' }}>
+                        <FaCalendarAlt />
+                      </Box>
+                      <Text fontSize="md" fontWeight="bold" color="blue.500" _dark={{ color: 'blue.200' }}>{stats.days}</Text>
+                    </HStack>
+                    <Text fontSize="xs" color="gray.500" mt={1}>days</Text>
+                  </VStack>
+                  <VStack spacing={0} align="center" minW="60px">
+                    <HStack spacing={1} align="center">
+                      <Box color="purple.500" _dark={{ color: 'purple.200' }}>
+                        <FaDumbbell />
+                      </Box>
+                      <Text fontSize="md" fontWeight="bold" color="purple.500" _dark={{ color: 'purple.200' }}>{stats.workouts}</Text>
+                    </HStack>
+                    <Text fontSize="xs" color="gray.500" mt={1}>workouts</Text>
+                  </VStack>
+                </HStack>
+              </Box>
+              {mode === "edit" && (
+                <Box
+                  bg="white"
+                  _dark={{ bg: 'gray.800' }}
+                  borderRadius="lg"
+                  boxShadow="md"
+                  p={3}
+                  display="flex"
+                  justifyContent="center"
                 >
-                  Reps
-                </Button>
-                <Button
-                  leftIcon={<FaClock />} // Keep clock for duration
-                  colorScheme={edit.timed ? 'cyan' : 'gray'}
-                  variant={edit.timed ? 'solid' : 'outline'}
-                  onClick={() => handleChange('timed', true)}
-                  isActive={!!edit.timed}
-                  aria-pressed={!!edit.timed}
-                >
-                  Duration
-                </Button>
-              </ButtonGroup>
-            </HStack>
-            {edit.timed !== original.timed && (
-              <Text fontSize="xs" color="gray.500" mt={-2} mb={2} ml={1}>
-                This sets the default type when adding this exercise to a routine. To change the type for an existing exercise in a routine, use that exercise's gear menu.
-              </Text>
-            )}
-          </VStack>
+                  <LikeDislikeButtons
+                    liked={!!edit.liked}
+                    disliked={!!edit.disliked}
+                    onLike={() => {
+                      if (edit.liked) {
+                        handleChange('liked', false);
+                      } else {
+                        handleChange('liked', true);
+                        handleChange('disliked', false);
+                      }
+                    }}
+                    onDislike={() => {
+                      if (edit.disliked) {
+                        handleChange('disliked', false);
+                      } else {
+                        handleChange('disliked', true);
+                        handleChange('liked', false);
+                      }
+                    }}
+                    iconColor="gray.400"
+                    size="md"
+                  />
+                </Box>
+              )}
+            </VStack>
+            {/* Right: Details */}
+            <VStack align="stretch" spacing={6} flex={1} mt={{ base: 6, md: 0 }}>
+              {/* Description */}
+              <Box>
+                <HStack align="center" spacing={2} mb={1}>
+                  <Box w={1} h={5} bgGradient="linear(to-b, cyan.400, blue.400)" borderRadius="full" />
+                  <Text fontWeight="bold" fontSize="md">Description</Text>
+                </HStack>
+                {mode === "edit" ? (
+                  <Textarea
+                    value={edit.description}
+                    onChange={e => handleChange('description', e.target.value)}
+                    placeholder="Description"
+                    rows={4}
+                    bg="white"
+                    _dark={{ bg: 'gray.900' }}
+                  />
+                ) : (
+                  <Box minH="80px" bg="gray.50" _dark={{ bg: 'gray.900' }} borderRadius="md" p={3}>
+                    <Text color="gray.700" _dark={{ color: 'gray.200' }} whiteSpace="pre-line">
+                      {edit.description || <span style={{ color: '#A0AEC0' }}>No description</span>}
+                    </Text>
+                  </Box>
+                )}
+              </Box>
+              {/* Target Muscles */}
+              <Box>
+                <HStack align="center" spacing={2} mb={1}>
+                  <Box w={1} h={5} bgGradient="linear(to-b, cyan.400, blue.400)" borderRadius="full" />
+                  <Text fontWeight="bold" fontSize="md">Target Muscles</Text>
+                </HStack>
+                {mode === "edit" ? (
+                  <TagInput
+                    tags={edit.targetMuscles || []}
+                    onChange={tags => handleChange('targetMuscles', tags)}
+                    placeholder="e.g. Chest, Triceps"
+                  />
+                ) : (
+                  <HStack wrap="wrap" spacing={2}>
+                    {(edit.targetMuscles && edit.targetMuscles.length > 0) ? (
+                      edit.targetMuscles.map((muscle, i) => (
+                        <Tag key={i} colorScheme="cyan" borderRadius="full">{muscle}</Tag>
+                      ))
+                    ) : (
+                      <Text color="gray.400" fontSize="sm">None</Text>
+                    )}
+                  </HStack>
+                )}
+              </Box>
+              {/* Default Type */}
+              <Box>
+                <HStack align="center" spacing={2} mb={1}>
+                  <Box w={1} h={5} bgGradient="linear(to-b, cyan.400, blue.400)" borderRadius="full" />
+                  <Text fontWeight="bold" fontSize="md">Default Type</Text>
+                </HStack>
+                {mode === "edit" ? (
+                  <ButtonGroup isAttached variant="outline" size="sm">
+                    <Button
+                      leftIcon={<FaSync />} // Use cycle icon for reps
+                      colorScheme={!edit.timed ? 'cyan' : 'gray'}
+                      variant={!edit.timed ? 'solid' : 'outline'}
+                      onClick={() => handleChange('timed', false)}
+                      isActive={!edit.timed}
+                      aria-pressed={!edit.timed}
+                    >
+                      Reps
+                    </Button>
+                    <Button
+                      leftIcon={<FaClock />} // Keep clock for duration
+                      colorScheme={edit.timed ? 'cyan' : 'gray'}
+                      variant={edit.timed ? 'solid' : 'outline'}
+                      onClick={() => handleChange('timed', true)}
+                      isActive={!!edit.timed}
+                      aria-pressed={!!edit.timed}
+                    >
+                      Duration
+                    </Button>
+                  </ButtonGroup>
+                ) : (
+                  <Tag colorScheme="cyan" borderRadius="full" fontSize="sm" px={3} py={1} display="flex" alignItems="center" gap={1}>
+                    {edit.timed ? <FaClock style={{ marginRight: 4 }} /> : <FaSync style={{ marginRight: 4 }} />}
+                    {edit.timed ? 'Duration' : 'Reps'}
+                  </Tag>
+                )}
+                {edit.timed !== original.timed && mode === "edit" && (
+                  <Text fontSize="xs" color="gray.500" mt={1} ml={1}>
+                    This sets the default type when adding this exercise to a routine. To change the type for an existing exercise in a routine, use that exercise's gear menu.
+                  </Text>
+                )}
+              </Box>
+            </VStack>
+          </Flex>
         </ModalBody>
-        <Box
-          position="sticky"
-          bottom={0}
-          zIndex={10}
-          bgGradient="linear(to-r, cyan.50, blue.50, white)"
-          _dark={{ bgGradient: 'linear(to-r, gray.800, gray.900, gray.800)', borderColor: 'cyan.700' }}
-          borderTopWidth="2px"
-          borderColor="cyan.300"
-          boxShadow="lg"
-          py={3}
-          px={4}
-          borderBottomRadius="md"
-        >
-          <HStack justify="space-between" spacing={3}>
-            <LikeDislikeButtons
-              liked={!!edit.liked}
-              disliked={!!edit.disliked}
-              onLike={() => {
-                if (edit.liked) {
-                  handleChange('liked', false);
-                } else {
-                  handleChange('liked', true);
-                  handleChange('disliked', false);
-                }
-              }}
-              onDislike={() => {
-                if (edit.disliked) {
-                  handleChange('disliked', false);
-                } else {
-                  handleChange('disliked', true);
-                  handleChange('liked', false);
-                }
-              }}
-              iconColor="gray.400"
-              size="md"
-            />
-            <HStack spacing={3}>
+        {mode === "edit" && (
+          <Box
+            position="sticky"
+            bottom={0}
+            zIndex={10}
+            bgGradient="linear(to-r, cyan.50, blue.50, white)"
+            _dark={{ bgGradient: 'linear(to-r, gray.800, gray.900, gray.800)', borderColor: 'cyan.700' }}
+            borderTopWidth="2px"
+            borderColor="cyan.300"
+            boxShadow="lg"
+            py={3}
+            px={4}
+            borderBottomRadius="md"
+          >
+            <HStack justify="flex-end" spacing={3}>
               <Button leftIcon={<FaTimes />} colorScheme="gray" onClick={handleCancel}>Cancel</Button>
               <Button leftIcon={<FaCheck />} colorScheme="green" onClick={handleSave} isDisabled={!changed}>Save</Button>
             </HStack>
-          </HStack>
-        </Box>
+          </Box>
+        )}
       </ModalContent>
     </Modal>
   );
