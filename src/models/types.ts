@@ -16,17 +16,19 @@ export interface Exercise {
   timed?: boolean;
 }
 
+export interface RoutineDay {
+    day: DayOfWeek; // e.g., "Monday", "Tuesday"
+    kind: string;
+    exercises: ScheduledExercise[];
+  }
+
 export interface Routine {
   id: string; // Unique identifier
   name: string;
   description: string;
   active: boolean;
   createdAt: number;
-  dailySchedule: Array<{
-    day: DayOfWeek; // e.g., "Monday", "Tuesday"
-    kind: string;
-    exercises: ScheduledExercise[];
-  }>;
+  dailySchedule: Array<RoutineDay>;
   prompts: {
     goals: string; // User's workout goals
     equipment: string; // Equipment the user will use
