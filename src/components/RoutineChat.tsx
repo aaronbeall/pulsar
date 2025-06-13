@@ -15,7 +15,15 @@ interface RoutineChatProps {
 const RoutineChat: React.FC<RoutineChatProps> = ({ chatHistory, setChatHistory }) => {
   const [chatInput, setChatInput] = useState('');
   const [isOpen, setIsOpen] = useState(true);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll chat container to bottom when chatHistory changes
+  React.useEffect(() => {
+    if (isOpen && chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatHistory, isOpen]);
 
   const handleSend = async () => {
     if (!chatInput.trim()) return;
@@ -25,7 +33,6 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ chatHistory, setChatHistory }
     // Simulate AI response (replace with real AI call if available)
     setTimeout(() => {
       setChatHistory((prev) => [...prev, { role: 'ai', message: `AI: I received your message: "${userMessage}"` }]);
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 600);
   };
 
@@ -45,7 +52,13 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ chatHistory, setChatHistory }
         />
       </Flex>
       <Collapse in={isOpen} animateOpacity>
-        <VStack align="stretch" spacing={3} maxH="300px" overflowY="auto">
+        <VStack
+          align="stretch"
+          spacing={3}
+          maxH="300px"
+          overflowY="auto"
+          ref={chatContainerRef}
+        >
           {chatHistory.length === 0 && (
             <Text color="gray.500" fontSize="sm">Ask anything about this routine, or request changes!</Text>
           )}

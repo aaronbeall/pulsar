@@ -48,7 +48,7 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
 } from '@chakra-ui/react';
-import { FaInfoCircle, FaEdit, FaMagic, FaDumbbell, FaPlus, FaSave, FaUndo, FaGripVertical, FaArrowsAltV, FaExchangeAlt, FaRegCalendarAlt, FaTimes, FaCheck, FaCog } from 'react-icons/fa'; // Import icons
+import { FaInfoCircle, FaEdit, FaMagic, FaDumbbell, FaPlus, FaSave, FaUndo, FaGripVertical, FaArrowsAltV, FaExchangeAlt, FaRegCalendarAlt, FaTimes, FaCheck, FaCog, FaStopwatch, FaSync } from 'react-icons/fa'; // Import icons
 import { Routine, Exercise } from '../models/types';
 import { getRoutines, addRoutine, getExercises } from '../db/indexedDb'; // Import addRoutine to update the Routine
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
@@ -462,14 +462,49 @@ const EditableRoutine: React.FC<{
                                   label="sec"
                                 />
                               )}
-                              <IconButton
-                                size="sm"
-                                colorScheme="red"
-                                aria-label="Remove exercise"
-                                icon={<FaTimes />}
-                                onClick={() => handleEditExercise(dayIdx, exIdx, null)}
-                                ml={1}
-                              />
+                              <Menu>
+                                <MenuButton
+                                  as={IconButton}
+                                  size="sm"
+                                  colorScheme="gray"
+                                  aria-label="More options"
+                                  icon={<FaCog />} // Use a gear icon for the menu
+                                  ml={1}
+                                  variant="ghost"
+                                />
+                                <MenuList>
+                                  <MenuItem
+                                    icon={<FaTimes color="#E53E3E" />} // Red X icon
+                                    onClick={() => handleEditExercise(dayIdx, exIdx, null)}
+                                  >
+                                    Remove Exercise
+                                  </MenuItem>
+                                  <MenuItem
+                                    onClick={() => {
+                                      // Toggle between reps and duration
+                                      if (ex.reps !== undefined) {
+                                        // Switch to duration, remove reps
+                                        handleEditExercise(dayIdx, exIdx, { ...ex, duration: 30, reps: undefined });
+                                      } else if (ex.duration !== undefined) {
+                                        // Switch to reps, remove duration
+                                        handleEditExercise(dayIdx, exIdx, { ...ex, reps: 10, duration: undefined });
+                                      }
+                                    }}
+                                  >
+                                    {ex.reps !== undefined ? (
+                                      <Flex align="center">
+                                        <Box as={FaStopwatch} color="#3182CE" mr={2} />
+                                        Switch to Duration
+                                      </Flex>
+                                    ) : (
+                                      <Flex align="center">
+                                        <Box as={FaSync} color="#3182CE" mr={2} />
+                                        Switch to Reps
+                                      </Flex>
+                                    )}
+                                  </MenuItem>
+                                </MenuList>
+                              </Menu>
                             </Flex>
                           </Flex>
                         )}
@@ -561,8 +596,19 @@ const WorkoutRoutine: React.FC = () => {
 
       if (selectedRoutine) {
         setNewResponses(selectedRoutine.responses.filter((response) => !response.dismissed));
-        // Add all responses (dismissed or not) to chat history as AI messages
-        setChatHistory(selectedRoutine.responses.map(r => ({ role: 'ai', message: r.response })));
+        // Build chat history as a conversation: AI prompt, then user response, for each prompt
+        const introChat: ChatMessage[] = [];
+        workoutPrompts.forEach((prompt) => {
+          const userVal = selectedRoutine.prompts[prompt.key];
+          if (userVal) {
+            introChat.push({ role: 'ai', message: prompt.question });
+            introChat.push({ role: 'user', message: userVal });
+          }
+        });
+        setChatHistory([
+          ...introChat,
+          ...selectedRoutine.responses.map(r => ({ role: 'ai' as const, message: r.response }))
+        ]);
       }
     };
     fetchRoutine();

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Text, Box, VStack, Input, Textarea, Checkbox, Button, HStack, Tag, IconButton, useToast, Flex, Switch, ButtonGroup } from "@chakra-ui/react";
-import { FaChartBar, FaCalendarAlt, FaDumbbell, FaTimes, FaCheck, FaListOl, FaClock } from "react-icons/fa";
+import { FaChartBar, FaCalendarAlt, FaDumbbell, FaTimes, FaCheck, FaListOl, FaClock, FaSync } from "react-icons/fa";
 import { Exercise } from "../models/types";
 import { getRoutines, getWorkouts } from '../db/indexedDb';
 import LikeDislikeButtons from "../components/LikeDislikeButtons";
@@ -148,10 +148,10 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
               />
             </Box>
             <HStack spacing={3} w="100%" justify="flex-start">
-              <Text fontWeight="bold">Type:</Text>
+              <Text fontWeight="bold">Default Type:</Text>
               <ButtonGroup isAttached variant="outline" size="sm">
                 <Button
-                  leftIcon={<FaListOl />}
+                  leftIcon={<FaSync />} // Use cycle icon for reps
                   colorScheme={!edit.timed ? 'cyan' : 'gray'}
                   variant={!edit.timed ? 'solid' : 'outline'}
                   onClick={() => handleChange('timed', false)}
@@ -161,7 +161,7 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
                   Reps
                 </Button>
                 <Button
-                  leftIcon={<FaClock />}
+                  leftIcon={<FaClock />} // Keep clock for duration
                   colorScheme={edit.timed ? 'cyan' : 'gray'}
                   variant={edit.timed ? 'solid' : 'outline'}
                   onClick={() => handleChange('timed', true)}
@@ -172,6 +172,11 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
                 </Button>
               </ButtonGroup>
             </HStack>
+            {edit.timed !== original.timed && (
+              <Text fontSize="xs" color="gray.500" mt={-2} mb={2} ml={1}>
+                This sets the default type when adding this exercise to a routine. To change the type for an existing exercise in a routine, use that exercise's gear menu.
+              </Text>
+            )}
           </VStack>
         </ModalBody>
         <Box
