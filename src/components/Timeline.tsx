@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Routine, Workout } from '../models/types';
 import { DAYS_OF_WEEK } from '../constants/days';
 import { hasRoutineForDay, findRoutineForDay, findWorkoutForDay, getWorkoutStatusForDay, WorkoutStatus } from '../utils/workoutUtils';
-import { FaDumbbell, FaCheck, FaTimes, FaBullseye, FaBed } from 'react-icons/fa';
+import { FaTimes, FaBed, FaFire } from 'react-icons/fa';
 import StatusBadge from './StatusBadge';
 
 const pulseAnimation = keyframes`
@@ -41,13 +41,13 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
 
   const getDayIcon = (isToday: boolean, status: WorkoutStatus, hasWorkout: boolean, isPastDay: boolean) => {
     if (isToday) {
-      if (status === 'completed') return FaCheck;
-      if (status === 'in progress') return FaDumbbell;
-      return hasWorkout ? FaBullseye : FaBed;
+      if (status === 'completed') return FaFire;
+      if (status === 'in progress') return FaFire;
+      return hasWorkout ? FaFire : FaBed;
     }
-    if (status === 'completed') return FaCheck;
+    if (status === 'completed') return FaFire;
     if (isPastDay && hasWorkout) return FaTimes;
-    if (hasWorkout) return FaBullseye;
+    if (hasWorkout) return FaFire;
     return FaBed;
   };
 

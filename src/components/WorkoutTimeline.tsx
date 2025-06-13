@@ -54,7 +54,6 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
               width="100%"
               opacity={isCompleted ? 0.7 : 1}
               transition="all 0.3s ease"
-              initial={false}
             >
               <Flex 
                 p={4} 
