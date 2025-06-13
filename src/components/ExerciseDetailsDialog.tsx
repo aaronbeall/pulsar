@@ -4,7 +4,7 @@ import { FaChartBar, FaCalendarAlt, FaDumbbell, FaTimes, FaCheck, FaListOl, FaCl
 import { Exercise } from "../models/types";
 import { getRoutines, getWorkouts } from '../db/indexedDb';
 import LikeDislikeButtons from "../components/LikeDislikeButtons";
-import { openUrl } from '../utils/webUtils';
+import { openUrl, openSearchQuery } from '../utils/webUtils';
 import TagInput from "./TagInput";
 
 interface ExerciseDetailsDialogProps {
@@ -282,7 +282,24 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
                   <HStack wrap="wrap" spacing={2}>
                     {(edit.targetMuscles && edit.targetMuscles.length > 0) ? (
                       edit.targetMuscles.map((muscle, i) => (
-                        <Tag key={i} colorScheme="cyan" borderRadius="full">{muscle}</Tag>
+                        <Tag
+                          key={i}
+                          colorScheme="cyan"
+                          borderRadius="full"
+                          as="button"
+                          cursor="pointer"
+                          onClick={() => {
+                            // Open Wikipedia search for this muscle
+                            import('../utils/webUtils').then(({ openSearchQuery }) => {
+                              openSearchQuery(`${muscle} muscle site:wikipedia.org`);
+                            });
+                          }}
+                          _hover={{ bg: 'cyan.100', _dark: { bg: 'cyan.700' } }}
+                          _active={{ bg: 'cyan.200', _dark: { bg: 'cyan.800' } }}
+                          tabIndex={0}
+                        >
+                          {muscle}
+                        </Tag>
                       ))
                     ) : (
                       <Text color="gray.400" fontSize="sm">None</Text>
