@@ -6,7 +6,7 @@ import { exerciseTemplates, ExerciseTemplate } from './exerciseTemplates';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// --- Create a new Exercise from a template ---
+// --- Create a new Exercise from a suggestion ---
 export async function createNewExercise(template: ExerciseTemplate): Promise<Exercise> {
   const howToUrl = getSearchUrl(getHowToQuery(template.name));
   const imageUrl = await fetchExerciseSearchImageUrl(template.name);
@@ -25,7 +25,7 @@ export async function createNewExercise(template: ExerciseTemplate): Promise<Exe
   };
 }
 
-// --- Forgiving search for an existing exercise or template ---
+// --- Forgiving search for an existing exercise or suggestion ---
 function normalize(str: string) {
   return str
     .toLowerCase()
@@ -39,14 +39,14 @@ export function findExistingExercise(name: string, exercises: Exercise[]): Exerc
   for (const ex of exercises) {
     if (normalize(ex.name) === norm) return ex;
   }
-  // Search in templates
-  for (const template of exerciseTemplates) {
-    if (normalize(template.name) === norm) return template;
+  // Search in suggestions
+  for (const suggestion of exerciseTemplates) {
+    if (normalize(suggestion.name) === norm) return suggestion;
   }
   return null;
 }
 
-// --- Suggestions for exercises/templates matching a search ---
+// --- Suggestions for exercises/suggestions matching a search ---
 export function getExerciseSuggestions(search: string, exercises: Exercise[]): Array<Exercise | ExerciseTemplate> {
   const norm = normalize(search);
   // Helper to match name or targetMuscles
@@ -55,15 +55,15 @@ export function getExerciseSuggestions(search: string, exercises: Exercise[]): A
     if (ex.targetMuscles && ex.targetMuscles.some(m => normalize(m).includes(norm))) return true;
     return false;
   }
-  // Gather all matches (existing and templates not already in exercises)
+  // Gather all matches (existing and suggestions not already in exercises)
   const existingMatches = exercises.filter(matches);
-  const templateMatches = exerciseTemplates.filter(template => matches(template) && !exercises.some(ex => normalize(ex.name) === normalize(template.name)));
+  const suggestionMatches = exerciseTemplates.filter(suggestion => matches(suggestion) && !exercises.some(ex => normalize(ex.name) === normalize(suggestion.name)));
   // Sort: liked first, then neutral, then disliked
   function sortFn(a: Exercise | ExerciseTemplate, b: Exercise | ExerciseTemplate) {
     const getScore = (x: any) => x.liked ? 2 : x.disliked ? 0 : 1;
     return getScore(b) - getScore(a);
   }
-  return [...existingMatches, ...templateMatches].sort(sortFn);
+  return [...existingMatches, ...suggestionMatches].sort(sortFn);
 }
 
 // --- Routine generation (placeholder for API) ---
@@ -82,20 +82,20 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
   const routineId = uuidv4();
   const routineName = generateRandomName();
   // Pick a few exercises randomly
-  const shuffledTemplates = exerciseTemplates.slice().sort(() => Math.random() - 0.5);
-  const pickedTemplates = shuffledTemplates.slice(0, 5);
+  const shuffledSuggestions = exerciseTemplates.slice().sort(() => Math.random() - 0.5);
+  const pickedSuggestions = shuffledSuggestions.slice(0, 5);
 
   // Fetch all existing exercises from the db
   const existingExercises = await getExercises();
   const exercises: Exercise[] = [];
 
-  for (const template of pickedTemplates) {
+  for (const suggestion of pickedSuggestions) {
     // Try to find an existing exercise (forgiving match)
-    let found = existingExercises.find(ex => normalize(ex.name) === normalize(template.name));
+    let found = existingExercises.find(ex => normalize(ex.name) === normalize(suggestion.name));
     if (found) {
       exercises.push(found);
     } else {
-      exercises.push(await createNewExercise(template));
+      exercises.push(await createNewExercise(suggestion));
     }
   }
 
