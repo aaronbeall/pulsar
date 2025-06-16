@@ -128,6 +128,11 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
           </span>
           <span style={{
             display: 'inline-block',
+            background: isGrayed
+              ? undefined
+              : 'linear-gradient(90deg, #FFD600 0%, #FF9100 60%, #FF3C00 100%)',
+            backgroundClip: isGrayed ? undefined : 'text',
+            color: isGrayed ? streakTextColor : 'transparent',
             textShadow: isGrayed
               ? undefined
               : '0 0 24px #FFD600, 0 0 48px #FFA500, 0 0 96px #FF9100, 0 0 128px #FF9100',
