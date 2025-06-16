@@ -77,7 +77,7 @@ export const dailyWorkoutTemplates = dailyWorkoutTemplatesData
     };
   });
 
-  // Helper to parse an exercise string like 'Plank: 3 x 30s' or 'Push-up: 3 x 12'
+// Helper to parse an exercise string like 'Plank: 3 x 30s' or 'Push-up: 3 x 12'
 function parseExercise(str: string) {
   // Example: 'Plank: 3 x 30s' or 'Push-up: 3 x 12'
   const [namePart, rest] = str.split(':').map(s => s.trim());

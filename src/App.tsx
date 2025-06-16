@@ -41,7 +41,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <Flex direction="column" minHeight="100dvh" overflow="hidden">
+    <Flex direction="column" minHeight="100dvh">
       <Box 
         bg={`${colorScheme}.500`} 
         color="white" 

@@ -16,13 +16,16 @@ import {
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Draggable, Droppable, DropResult } from 'react-beautiful-dnd';
-import { FaCheck, FaCog, FaEdit, FaExchangeAlt, FaGripVertical, FaPlus, FaRegCalendarAlt, FaStopwatch, FaSync, FaTimes, FaUndo } from 'react-icons/fa'; // Import icons
+import { FaCheck, FaCog, FaDumbbell, FaEdit, FaExchangeAlt, FaGripVertical, FaPlus, FaRegCalendarAlt, FaSearch, FaStopwatch, FaSync, FaTimes, FaUndo } from 'react-icons/fa'; // Import icons
 import ExerciseDetailsDialog from './ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import NumericStepper from './NumericStepper';
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
 import { Exercise, Routine } from '../models/types';
 import DayKindBadge from './DayKindBadge';
 import DayKindEditor from './DayKindBadgeEditor';
+import { Autocomplete } from './Autocomplete';
+import { getAddedExercise, normalizeExerciseName, searchExerciseSuggestions } from '../services/routineBuilderService';
+import { exerciseTemplates, ExerciseTemplate } from '../services/exerciseTemplates';
 
 // Helper to ensure all days are present in the schedule
 function ensureAllDays(schedule: Routine['dailySchedule']): Routine['dailySchedule'] {
@@ -87,9 +90,15 @@ export const RoutineEditor: React.FC<{
   };
 
   // Add exercise handler
-  const handleAddExercise = (dayIdx: number, exerciseId: string) => {
+  const handleAddExercise = (dayIdx: number, exercise: Exercise) => {
     const newRoutine = cloneRoutine(editRoutine);
-    newRoutine.dailySchedule[dayIdx].exercises.push({ exerciseId, sets: 1 });
+    const { id: exerciseId, timed } = exercise;
+    newRoutine.dailySchedule[dayIdx].exercises.push({ 
+      exerciseId, 
+      sets: 1, 
+      // TODO: find a default value from exercises
+      ...(timed ? { duration: 30 } : { reps: 10 }) 
+    });
     setEditRoutine(newRoutine);
     setEditChanged(true);
   };
@@ -144,6 +153,13 @@ export const RoutineEditor: React.FC<{
   const [editKindValue, setEditKindValue] = useState('');
 
   const isMdOrLarger = useBreakpointValue({ base: false, md: true });
+
+  const exerciseSuggestions = React.useMemo(() => {
+    const exerciseNames = new Set(exercises.map(e => normalizeExerciseName(e.name)));
+    const uniqueTemplates = exerciseTemplates
+      .filter(t => !exerciseNames.has(normalizeExerciseName(t.name)));
+    return [...exercises, ...uniqueTemplates];
+  }, [exercises]);
 
   return (
     <Box>
@@ -415,33 +431,64 @@ export const RoutineEditor: React.FC<{
                       <Box mr={2} color="gray.300" _dark={{ color: 'gray.600' }} p={1}>
                         <FaGripVertical style={{ opacity: 0.3 }} />
                       </Box>
-                      <Input
-                        size="sm"
+                      <Autocomplete
+                        items={exerciseSuggestions}
+                        getItemLabel={ex => ex.name}
+                        getKey={(ex, idx) => 'id' in ex ? ex.id : `template-${ex.name}`}
                         value={addExerciseInput?.[dayIdx] || ''}
+                        onChange={val => handleAddExerciseInput(dayIdx, val)}
+                        onSelect={async item => {
+                          // If item is an Exercise, add directly; if ExerciseTemplate, create and add
+                          if ('id' in item) {
+                            handleAddExercise(dayIdx, item);
+                          } else {
+                            const newEx = await getAddedExercise(item.name, exercises);
+                            handleAddExercise(dayIdx, newEx);
+                          }
+                          handleAddExerciseInput(dayIdx, '');
+                        }}
+                        onCreate={async input => {
+                          const newEx = await getAddedExercise(input, exercises);
+                          handleAddExercise(dayIdx, newEx);
+                          handleAddExerciseInput(dayIdx, '');
+                        }}
+                        filterItems={searchExerciseSuggestions}
                         placeholder="Add new exercise..."
-                        mr={2}
-                        onChange={e => handleAddExerciseInput(dayIdx, e.target.value)}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter' && addExerciseInput?.[dayIdx]) {
-                            handleAddExercise(dayIdx, addExerciseInput[dayIdx]);
-                            handleAddExerciseInput(dayIdx, '');
-                          }
+                        renderItemLabel={(item, isHighlighted) => {
+                          const isExercise = 'id' in item && item.id && exercises.find(e => e.id === item.id);
+                          const liked = isExercise && item.liked;
+                          const disliked = isExercise && item.disliked;
+                          return (
+                            <Flex align="center" gap={2}>
+                              <Box fontWeight={isHighlighted ? 'bold' : 'normal'}>{item.name}</Box>
+                              {Array.isArray(item.targetMuscles) && item.targetMuscles.length > 0 && (
+                                <Flex gap={1} flexWrap="wrap">
+                                  {item.targetMuscles.map(muscle => (
+                                    <Box
+                                      key={muscle}
+                                      fontSize="xs"
+                                      px={2}
+                                      py={0.5}
+                                      borderRadius="full"
+                                      bg={isHighlighted ? 'cyan.100' : 'gray.100'}
+                                      color={isHighlighted ? 'cyan.700' : 'gray.600'}
+                                      _dark={{ bg: isHighlighted ? 'cyan.900' : 'gray.700', color: isHighlighted ? 'cyan.200' : 'gray.300' }}
+                                    >
+                                      {muscle}
+                                    </Box>
+                                  ))}
+                                </Flex>
+                              )}
+                              {isExercise && (
+                                <Box ml={1} fontSize="lg">
+                                  {liked && <span role="img" aria-label="liked">👍</span>}
+                                  {disliked && <span role="img" aria-label="disliked">👎</span>}
+                                </Box>
+                              )}
+                            </Flex>
+                          );
                         }}
-                        type="text"
-                      />
-                      <IconButton
-                        size="sm"
-                        colorScheme={addExerciseInput?.[dayIdx] ? 'cyan' : 'gray'}
-                        aria-label="Add exercise"
-                        icon={<FaPlus />}
-                        onClick={() => {
-                          if (addExerciseInput?.[dayIdx]) {
-                            handleAddExercise(dayIdx, addExerciseInput[dayIdx]);
-                            handleAddExerciseInput(dayIdx, '');
-                          }
-                        }}
-                        isDisabled={!addExerciseInput?.[dayIdx]}
-                        ml={1}
+                        renderCreateLabel={input => `Create "${input}"`}
                       />
                     </Flex>
                     {provided.placeholder}

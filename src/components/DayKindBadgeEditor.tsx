@@ -21,7 +21,7 @@ export const DayKindEditor: React.FC<{
     buttonClicked.current = false;
   };
   return (
-    <Flex align="center" ml={2} gap={1} w="100%">
+    <Flex align="center" ml={2} gap={1} w="100%" maxW={'300px'}>
       <Input
         size="xs"
         value={value}

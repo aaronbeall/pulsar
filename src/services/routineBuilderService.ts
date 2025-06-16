@@ -1,12 +1,15 @@
 import { Routine, Exercise } from '../models/types';
 import { v4 as uuidv4 } from 'uuid';
 import { getSearchUrl, getHowToQuery, fetchExerciseSearchImageUrl } from '../utils/webUtils';
-import { getExercises } from '../db/indexedDb';
+import { getExercises, addExercise } from '../db/indexedDb';
 import { exerciseTemplates, ExerciseTemplate } from './exerciseTemplates';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// --- Create a new Exercise from a suggestion ---
+/**
+ * Create a new Exercise from a template (ExerciseTemplate).
+ * Fetches how-to and image URLs, and returns a new Exercise object.
+ */
 export async function createNewExercise(template: ExerciseTemplate): Promise<Exercise> {
   const howToUrl = getSearchUrl(getHowToQuery(template.name));
   const imageUrl = await fetchExerciseSearchImageUrl(template.name);
@@ -25,48 +28,94 @@ export async function createNewExercise(template: ExerciseTemplate): Promise<Exe
   };
 }
 
-// --- Forgiving search for an existing exercise or suggestion ---
-function normalize(str: string) {
+/**
+ * Normalize a string for forgiving search (lowercase, alphanum, no trailing plural 's').
+ */
+export function normalizeExerciseName(str: string) {
   return str
+    .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '') // Remove non-alphanum
     .replace(/s$/, ''); // Remove trailing plural s
 }
 
+/**
+ * Find an existing Exercise or ExerciseTemplate by name (forgiving match).
+ * Returns the Exercise or ExerciseTemplate if found, otherwise null.
+ */
 export function findExistingExercise(name: string, exercises: Exercise[]): Exercise | ExerciseTemplate | null {
-  const norm = normalize(name);
+  const norm = normalizeExerciseName(name);
   // Search in existing exercises
   for (const ex of exercises) {
-    if (normalize(ex.name) === norm) return ex;
+    if (normalizeExerciseName(ex.name) === norm) return ex;
   }
   // Search in suggestions
   for (const suggestion of exerciseTemplates) {
-    if (normalize(suggestion.name) === norm) return suggestion;
+    if (normalizeExerciseName(suggestion.name) === norm) return suggestion;
   }
   return null;
 }
 
-// --- Suggestions for exercises/suggestions matching a search ---
-export function getExerciseSuggestions(search: string, exercises: Exercise[]): Array<Exercise | ExerciseTemplate> {
-  const norm = normalize(search);
-  // Helper to match name or targetMuscles
-  function matches(ex: { name: string; targetMuscles?: string[] }) {
-    if (normalize(ex.name).includes(norm)) return true;
-    if (ex.targetMuscles && ex.targetMuscles.some(m => normalize(m).includes(norm))) return true;
-    return false;
+/**
+ * Find or create and add an Exercise by name.
+ * Returns an existing Exercise if found, otherwise creates from template or stub and adds to DB.
+ */
+export async function getAddedExercise(name: string, exercises: Exercise[]): Promise<Exercise> {
+  const norm = normalizeExerciseName(name);
+  // 1. Search in existing exercises
+  for (const ex of exercises) {
+    if (normalizeExerciseName(ex.name) === norm) return ex;
   }
-  // Gather all matches (existing and suggestions not already in exercises)
-  const existingMatches = exercises.filter(matches);
-  const suggestionMatches = exerciseTemplates.filter(suggestion => matches(suggestion) && !exercises.some(ex => normalize(ex.name) === normalize(suggestion.name)));
-  // Sort: liked first, then neutral, then disliked
-  function sortFn(a: Exercise | ExerciseTemplate, b: Exercise | ExerciseTemplate) {
-    const getScore = (x: any) => x.liked ? 2 : x.disliked ? 0 : 1;
-    return getScore(b) - getScore(a);
+  // 2. Search in templates
+  let template = exerciseTemplates.find(t => normalizeExerciseName(t.name) === norm);
+  // 3. If not found, create ad hoc template stub
+  if (!template) {
+    template = {
+      name,
+      description: '',
+      targetMuscles: [],
+      timed: false,
+    };
   }
-  return [...existingMatches, ...suggestionMatches].sort(sortFn);
+  // 4. Create and add to db
+  const newExercise = await createNewExercise(template);
+  // Add to db
+  await addExercise(newExercise);
+  return newExercise;
 }
 
-// --- Routine generation (placeholder for API) ---
+/**
+ * Search for exercises or templates matching a search string, sorted by match score.
+ * Score: +2 for name match, +1 for each targetMuscles match, +3 for liked, -3 for disliked.
+ * Only returns matches with score > 0.
+ */
+export function searchExerciseSuggestions(
+  allExercises: Array<Exercise | ExerciseTemplate>,
+  search: string
+): Array<Exercise | ExerciseTemplate> {
+  const norm = normalizeExerciseName(search);
+  // Helper to match name or targetMuscles and tally score
+  function matchScore(ex: { name: string; targetMuscles?: string[]; liked?: boolean; disliked?: boolean }) {
+    let score = 0;
+    if (normalizeExerciseName(ex.name).includes(norm)) score += 2;
+    if (ex.targetMuscles) {
+      for (const m of ex.targetMuscles) {
+        if (normalizeExerciseName(m).includes(norm)) score += 1;
+      }
+    }
+    if (ex.liked) score += 3;
+    if (ex.disliked) score -= 3;
+    return score;
+  }
+  // Only return matches with score > 0
+  const matches = allExercises
+    .map(ex => ({ ex, score: matchScore(ex) }))
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map(({ ex }) => ex);
+  return matches;
+}
+
 const funnyWords = [
   'Wacky', 'Zany', 'Bouncy', 'Funky', 'Snazzy', 'Quirky', 'Spunky', 'Jazzy', 'Peppy', 'Sassy',
   'Loopy', 'Goofy', 'Nutty', 'Cheeky', 'Perky', 'Zippy', 'Bubbly', 'Jolly', 'Frisky', 'Chirpy'
@@ -91,7 +140,7 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
 
   for (const suggestion of pickedSuggestions) {
     // Try to find an existing exercise (forgiving match)
-    let found = existingExercises.find(ex => normalize(ex.name) === normalize(suggestion.name));
+    let found = existingExercises.find(ex => normalizeExerciseName(ex.name) === normalizeExerciseName(suggestion.name));
     if (found) {
       exercises.push(found);
     } else {
