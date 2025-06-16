@@ -84,6 +84,11 @@ export const WorkoutSession: React.FC = () => {
         exercise.completedAt = Date.now();
       }
     }
+    // Set workout.completedAt if all exercises are complete
+    const allCompleted = updatedWorkout.exercises.every(ex => ex.completedAt);
+    if (allCompleted && !updatedWorkout.completedAt) {
+      updatedWorkout.completedAt = Date.now();
+    }
     await updateWorkout(updatedWorkout);
     setWorkout(updatedWorkout);
   };
@@ -117,13 +122,6 @@ export const WorkoutSession: React.FC = () => {
   const currentExerciseIndex = currentExercise ? workout.exercises.indexOf(currentExercise) : -1;
   const currentExerciseDetail = currentExercise ? exercises.find(e => e.id === currentExercise.exerciseId) : null;
   const currentSetIndex = currentExercise ? (currentExercise.completedSets || 0) : 0;
-
-  // Check if workout is complete
-  if (currentExerciseIndex === -1 && !workout.completedAt) {
-    const updatedWorkout = { ...workout, completedAt: Date.now() };
-    addWorkout(updatedWorkout);
-    setWorkout(updatedWorkout);
-  }
 
   return (
     <Flex direction="column" p={4} width="100%">

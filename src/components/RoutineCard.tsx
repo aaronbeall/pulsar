@@ -26,6 +26,7 @@ import {
   Tooltip,
   VStack,
   Flex,
+  useToast,
 } from '@chakra-ui/react';
 import { Routine } from '../models/types';
 import { DAYS_OF_WEEK } from '../constants/days';
@@ -40,6 +41,7 @@ import {
   FaArrowRight,
   FaChartLine,
 } from 'react-icons/fa';
+import { usePulsarStore } from '../store/pulsarStore';
 
 interface RoutineCardProps {
   routine: Routine;
@@ -49,6 +51,8 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
   const navigate = useNavigate();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const cancelRef = React.useRef<HTMLButtonElement>(null);
+  const removeRoutine = usePulsarStore(s => s.removeRoutine);
+  const toast = useToast();
 
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -61,11 +65,23 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
     (sum, day) => sum + day.exercises.length,
     0
   );
-  
+
+  const handleDelete = async () => {
+    await removeRoutine(routine.id);
+    toast({
+      title: 'Routine deleted',
+      description: `${routine.name} has been removed.`,
+      status: 'success',
+      duration: 2000,
+      isClosable: true,
+    });
+    onClose();
+  };
+
   return (
-    <Card 
-      width="100%" 
-      variant={routine.active ? "elevated" : "outline"} 
+    <Card
+      width="100%"
+      variant={routine.active ? "elevated" : "outline"}
       borderRadius="xl"
       bg={bgColor}
       borderColor={borderColor}
@@ -102,8 +118,8 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
         <VStack align="stretch" spacing={3}>
           <Flex justify="space-between" align="flex-start">
             <VStack align="start" spacing={1}>
-              <Heading 
-                size="md" 
+              <Heading
+                size="md"
                 color={routine.active ? 'cyan.500' : 'gray.400'}
                 _hover={{ color: 'cyan.500' }}
                 transition="color 0.2s"
@@ -124,7 +140,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                 </Tag>
               )}
             </VStack>
-            
+
             <Menu>
               <MenuButton
                 as={IconButton}
@@ -136,31 +152,31 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                 _dark={{ _hover: { bg: 'gray.700' } }}
               />
               <MenuList shadow="lg">
-                <MenuItem 
-                  icon={<FaExchangeAlt />} 
+                <MenuItem
+                  icon={<FaExchangeAlt />}
                   color="cyan.500"
                   _hover={{ bg: 'cyan.50' }}
                   _dark={{ _hover: { bg: 'cyan.900' } }}
                 >
                   Switch to this routine
                 </MenuItem>
-                <MenuItem 
-                  icon={<FaStar />} 
+                <MenuItem
+                  icon={<FaStar />}
                   color="yellow.500"
                   _hover={{ bg: 'yellow.50' }}
                   _dark={{ _hover: { bg: 'yellow.900' } }}
                 >
                   Add to favorites
                 </MenuItem>
-                <MenuItem 
+                <MenuItem
                   icon={<FaShare />}
                   _hover={{ bg: 'gray.50' }}
                   _dark={{ _hover: { bg: 'gray.700' } }}
                 >
                   Share routine
                 </MenuItem>
-                <MenuItem 
-                  icon={<FaTrash />} 
+                <MenuItem
+                  icon={<FaTrash />}
                   color="red.500"
                   _hover={{ bg: 'red.50' }}
                   _dark={{ _hover: { bg: 'red.900' } }}
@@ -173,13 +189,13 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
           </Flex>
 
           <HStack spacing={2} wrap="wrap">
-            {DAYS_OF_WEEK.filter(day => 
+            {DAYS_OF_WEEK.filter(day =>
               routine.dailySchedule.some(schedule => schedule.day === day)
             ).map(day => (
-              <Tag 
-                key={day} 
-                size="sm" 
-                colorScheme="cyan" 
+              <Tag
+                key={day}
+                size="sm"
+                colorScheme="cyan"
                 variant="subtle"
                 borderRadius="full"
               >
@@ -192,9 +208,9 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
 
       <CardBody>
         <VStack align="stretch" spacing={4}>
-          <Text 
-            fontSize="sm" 
-            color={routine.active ? undefined : "gray.500"} 
+          <Text
+            fontSize="sm"
+            color={routine.active ? undefined : "gray.500"}
             noOfLines={2}
           >
             {routine.description}
@@ -253,7 +269,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                 <Button ref={cancelRef} onClick={onClose}>
                   Cancel
                 </Button>
-                <Button colorScheme="red" ml={3}>
+                <Button colorScheme="red" ml={3} onClick={handleDelete}>
                   Delete
                 </Button>
               </AlertDialogFooter>
