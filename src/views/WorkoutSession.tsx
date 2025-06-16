@@ -23,6 +23,7 @@ export const WorkoutSession: React.FC = () => {
   const updateWorkout = usePulsarStore(s => s.updateWorkout);
   const [workout, setWorkout] = React.useState<Workout | null>(null);
   const [routine, setRoutine] = React.useState<Routine | null>(null);
+  const [selectedExerciseIndex, setSelectedExerciseIndex] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     // If sessionId is present, find the workout in store
@@ -101,10 +102,12 @@ export const WorkoutSession: React.FC = () => {
     const exercise = updatedWorkout.exercises[exerciseIndex];
     if (exercise.duration) {
       exercise.completedDuration = exercise.duration;
-      exercise.completedAt = Date.now();
+      if (!exercise.completedAt) {
+        exercise.completedAt = Date.now();
+      }
     } else {
       exercise.completedSets = (exercise.completedSets || 0) + 1;
-      if (exercise.completedSets === exercise.sets) {
+      if (exercise.completedSets === exercise.sets && !exercise.completedAt) {
         exercise.completedAt = Date.now();
       }
     }
@@ -115,6 +118,11 @@ export const WorkoutSession: React.FC = () => {
     }
     await updateWorkout(updatedWorkout);
     setWorkout(updatedWorkout);
+    // If the exercise is now completed, auto-advance to the first incomplete exercise (if any)
+    if (exercise.completedAt) {
+      const firstIncompleteIdx = updatedWorkout.exercises.findIndex(ex => !ex.completedAt);
+      setSelectedExerciseIndex(firstIncompleteIdx !== -1 ? firstIncompleteIdx : null);
+    }
   };
 
   const handleStart = (exerciseIndex: number) => {
@@ -131,7 +139,14 @@ export const WorkoutSession: React.FC = () => {
 
   const getCurrentExercise = () => {
     if (!workout) return null;
+    if (selectedExerciseIndex !== null) {
+      return workout.exercises[selectedExerciseIndex];
+    }
     return workout.exercises.find(ex => !ex.completedAt) || null;
+  };
+
+  const handleSelectExercise = (index: number) => {
+    setSelectedExerciseIndex(index);
   };
 
   if (!routine || !workout) {
@@ -193,6 +208,7 @@ export const WorkoutSession: React.FC = () => {
           currentExerciseIndex={currentExerciseIndex}
           currentSetIndex={currentSetIndex}
           exerciseDetails={exercises}
+          onSelectExercise={handleSelectExercise}
         />
       </VStack>
     </Flex>

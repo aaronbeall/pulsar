@@ -12,13 +12,15 @@ interface WorkoutTimelineProps {
   currentExerciseIndex: number;
   currentSetIndex: number;
   exerciseDetails: Exercise[];
+  onSelectExercise?: (index: number) => void;
 }
 
 const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
   exercises,
   currentExerciseIndex,
   currentSetIndex,
-  exerciseDetails
+  exerciseDetails,
+  onSelectExercise
 }) => {
   const connectorColor = useColorModeValue('gray.200', 'gray.700');
   const activeColor = useColorModeValue('cyan.500', 'cyan.400');
@@ -66,6 +68,7 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
                   bg: isCurrentExercise ? activeBgColor : hoverBgColor
                 }}
                 role="group"
+                onClick={() => onSelectExercise && onSelectExercise(exerciseIdx)}
               >
                 <MotionCircle 
                   size="10px" 
@@ -113,14 +116,18 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
                         key={setIdx}
                         size="6px"
                         bg={
-                          isCompleted ? completedColor :
-                          exerciseIdx === currentExerciseIndex && setIdx < currentSetIndex ? completedColor :
-                          exerciseIdx === currentExerciseIndex && setIdx === currentSetIndex ? activeColor :
-                          connectorColor
+                          isCompleted || setIdx < completedSets
+                            ? completedColor
+                            : exerciseIdx === currentExerciseIndex && setIdx === currentSetIndex
+                            ? activeColor
+                            : connectorColor
                         }
                         initial={false}
                         animate={{
-                          scale: exerciseIdx === currentExerciseIndex && setIdx === currentSetIndex ? 1.5 : 1
+                          scale:
+                            exerciseIdx === currentExerciseIndex && setIdx === currentSetIndex
+                              ? 1.5
+                              : 1
                         }}
                         transition={{ duration: 0.2 }}
                         position="relative"
@@ -128,8 +135,7 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
                         alignItems="center"
                         justifyContent="center"
                       >
-                        {(isCompleted || 
-                         (exerciseIdx === currentExerciseIndex && setIdx < currentSetIndex)) ? (
+                        {(isCompleted || setIdx < completedSets) ? (
                           <Icon 
                             as={FaCheck} 
                             fontSize="4px" 
