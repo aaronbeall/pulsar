@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Exercise, Routine, Workout } from '../models/types';
 import * as db from '../db/indexedDb';
-import { getExerciseStats as calcExerciseStats } from '../utils/workoutUtils';
+import { getExerciseStats as calcExerciseStats, ExerciseStats } from '../utils/workoutUtils';
 
 interface PulsarStoreState {
   exercises: Exercise[];
@@ -25,11 +25,7 @@ interface PulsarStoreState {
   updateWorkout: (workout: Workout) => Promise<void>;
   removeWorkout: (id: string) => Promise<void>;
   // Get stats for an exercise by id
-  getExerciseStats: (exerciseId: string) => {
-    routines: number;
-    days: number;
-    workouts: number;
-  };
+  getExerciseStats: (exerciseId: string) => ExerciseStats;
 }
 
 export const usePulsarStore = create<PulsarStoreState>()(

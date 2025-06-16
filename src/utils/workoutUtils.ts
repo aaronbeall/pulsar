@@ -215,12 +215,18 @@ export function getStreakInfo(workouts: Workout[], routines: Routine[], daysBack
   return { streak, status, days };
 }
 
+export type ExerciseStats = {
+    routines: number;
+    days: number;
+    workouts: number;
+  }
+
 // Returns { routines, days, workouts } for a given exerciseId
 export function getExerciseStats(
   exerciseId: string,
   routines: Routine[],
   workouts: Workout[]
-): { routines: number; days: number; workouts: number } {
+): ExerciseStats {
   let routinesCount = 0;
   let daysSet = new Set<string>();
   let workoutsCount = 0;
