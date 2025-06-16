@@ -492,7 +492,7 @@ const WorkoutFinishedBanner: React.FC<{ streak: number; streakType: 'none' | 'st
                             fontSize: '2.3em',
                             fontWeight: 900,
                             color: 'transparent',
-                            background: 'linear-gradient(90deg, #ffb300 0%, #ff6a00 40%, #ff3c00 70%, #ff0055 100%)',
+                            background: 'linear-gradient(90deg, #ffb300 30%, #ff6a00 70%, #ff3c00 100%)',
                             backgroundClip: 'text',
                             textShadow: '0 0 32px #ffb300, 0 0 48px #ff6a00, 0 0 64px #ff3c00',
                             padding: 0,
