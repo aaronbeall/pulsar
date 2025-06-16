@@ -170,10 +170,12 @@ export function getStreakInfo(workouts: Workout[], routines: Routine[], daysBack
       day.inStreak = true;
     } else {
       // Not completed scheduled workout
-      // If today, don't break the streak yet
       if (i === streakDaysArr.length - 1) {
         // Today is a scheduled workout and not completed
-        // Don't break the streak, but don't mark today as inStreak
+        // If the streak is unbroken up to today, mark today as inStreak (for pending)
+        if (inStreak) {
+          day.inStreak = true;
+        }
         continue;
       } else {
         // Missed a scheduled workout in the past, break the streak
@@ -216,10 +218,10 @@ export function getStreakInfo(workouts: Workout[], routines: Routine[], daysBack
 }
 
 export type ExerciseStats = {
-    routines: number;
-    days: number;
-    workouts: number;
-  }
+  routines: number;
+  days: number;
+  workouts: number;
+}
 
 // Returns { routines, days, workouts } for a given exerciseId
 export function getExerciseStats(

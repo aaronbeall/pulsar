@@ -1,7 +1,8 @@
 import React from 'react';
 import { Box, Flex, Text, useColorModeValue, useToken } from '@chakra-ui/react';
+import { keyframes } from '@emotion/react';
 import { CheckIcon } from '@chakra-ui/icons';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaRegClock, FaExclamationTriangle } from 'react-icons/fa';
 import { Workout, Routine } from '../models/types';
 import { getWorkoutStatusForToday, hasRoutineForToday, getStreakInfo, StreakDay, getDayOfWeek, findRoutineForDay, findExercisesForDay, findWorkoutForDay, findScheduleForDay } from '../utils/workoutUtils';
 import { DAYS_OF_WEEK } from '../constants/days';
@@ -15,7 +16,9 @@ interface StreakCalendarProps {
 
 const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) => {
   const { days, streak, status } = getStreakInfo(workouts, routines, 28);
+  console.log('Streak Calendar', { days, streak, status });
   const isGrayed = status !== 'up_to_date';
+  const isPending = status === 'pending';
   const flameColor = isGrayed ? 'gray.400' : 'orange.400';
   const streakTextColor = isGrayed ? 'gray.400' : 'orange.500';
   const [bgActiveColor] = useToken('colors', [useColorModeValue('orange.300', 'orange.700')]);
@@ -84,6 +87,13 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
     location.reload(); // Reload to reflect changes
   };
 
+  // Add pulsate animation keyframes
+  const pulsate = keyframes`
+    0% { box-shadow: 0 0 0 0 rgba(237, 137, 54, 0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(237, 137, 54, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(237, 137, 54, 0); }
+  `;
+
   return (
     <Box mt={6} mb={2}>
       <Flex align="center" justify="center" mb={2} alignItems='center'>
@@ -130,6 +140,12 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
           }}>{streak}</span>
         </Text>
         <Text color={streakTextColor} fontWeight="medium">day streak</Text>
+        {isPending && (
+          <Flex align="center" ml={3} color={useColorModeValue('#E53E3E', '#F56565')} fontWeight="semibold" fontSize="sm">
+            <FaExclamationTriangle style={{ marginRight: 4 }} />
+            Expiring today
+          </Flex>
+        )}
       </Flex>
       <Box display="flex" flexDirection="column" alignItems="center" bg={useColorModeValue('white', 'gray.800')} borderRadius="lg" p={3} boxShadow="md">
         {/* Day labels */}
@@ -202,7 +218,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                   cursor={findRoutineForDay(routines, getDayOfWeek(date)) ? 'pointer' : undefined}
                 >
                   {/* Inner pill/dot for all days, style toggled by state */}
-                  {(!isCompleted && !isFuture && streakDay && !streakDay.rest) ? (
+                  {(!isCompleted && !isPending && !isFuture && streakDay && !streakDay.rest) ? (
                     <Box
                       display="flex"
                       alignItems="center"
@@ -244,6 +260,25 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                           color={isStreak ? 'white' : 'gray.300'}
                           sx={isStreak ? { filter: 'drop-shadow(0 0 6px #FFD600) drop-shadow(0 0 12px #FFD600)' } : undefined}
                         />
+                      )}
+                      {isPending && isToday && (
+                        <Box
+                          position="absolute"
+                          top="50%"
+                          left="50%"
+                          transform="translate(-50%, -50%)"
+                          w={isStreak && !isFuture ? '80%' : '65%'}
+                          h={isStreak && !isFuture ? '80%' : '65%'}
+                          borderRadius="9999px"
+                          bg={useColorModeValue('yellow.300', 'yellow.400')}
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="center"
+                          boxShadow={isStreak ? '0 0 6px #FFD600' : undefined}
+                          animation={`${pulsate} 1.5s infinite`}
+                        >
+                          <FaExclamationTriangle size={16} color={useColorModeValue('#E53E3E', '#F56565')} />
+                        </Box>
                       )}
                     </Box>
                   )}

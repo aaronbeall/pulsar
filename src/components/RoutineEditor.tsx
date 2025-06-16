@@ -16,7 +16,7 @@ import {
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Draggable, Droppable, DropResult } from 'react-beautiful-dnd';
-import { FaCheck, FaCog, FaDumbbell, FaEdit, FaExchangeAlt, FaGripVertical, FaPlus, FaRegCalendarAlt, FaSearch, FaStopwatch, FaSync, FaTimes, FaUndo } from 'react-icons/fa'; // Import icons
+import { FaCheck, FaCog, FaDumbbell, FaEdit, FaExchangeAlt, FaGripVertical, FaPlus, FaRegCalendarAlt, FaSearch, FaStopwatch, FaSync, FaThumbsDown, FaThumbsUp, FaTimes, FaUndo } from 'react-icons/fa'; // Import icons
 import ExerciseDetailsDialog from './ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import NumericStepper from './NumericStepper';
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
@@ -460,8 +460,19 @@ export const RoutineEditor: React.FC<{
                           const isExercise = 'id' in item && item.id && exercises.find(e => e.id === item.id);
                           const liked = isExercise && item.liked;
                           const disliked = isExercise && item.disliked;
+                          let icon: React.ReactNode = null;
+                          if (liked) {
+                            icon = <FaThumbsUp color={isHighlighted ? '#059669' : '#38bdf8'} style={{ marginRight: 6 }} />;
+                          } else if (disliked) {
+                            icon = <FaThumbsDown color={isHighlighted ? '#dc2626' : '#f87171'} style={{ marginRight: 6 }} />;
+                          } else if (isExercise) {
+                            icon = <FaCheck color={isHighlighted ? '#059669' : '#a0aec0'} style={{ marginRight: 6 }} />;
+                          } else {
+                            icon = <FaPlus color={isHighlighted ? '#2563eb' : '#a0aec0'} style={{ marginRight: 6 }} />;
+                          }
                           return (
                             <Flex align="center" gap={2}>
+                              {icon}
                               <Box fontWeight={isHighlighted ? 'bold' : 'normal'}>{item.name}</Box>
                               {Array.isArray(item.targetMuscles) && item.targetMuscles.length > 0 && (
                                 <Flex gap={1} flexWrap="wrap">
@@ -480,12 +491,6 @@ export const RoutineEditor: React.FC<{
                                     </Box>
                                   ))}
                                 </Flex>
-                              )}
-                              {isExercise && (
-                                <Box ml={1} fontSize="lg">
-                                  {liked && <span role="img" aria-label="liked">👍</span>}
-                                  {disliked && <span role="img" aria-label="disliked">👎</span>}
-                                </Box>
                               )}
                             </Flex>
                           );
