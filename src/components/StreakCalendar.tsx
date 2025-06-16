@@ -5,7 +5,7 @@ import { FaTimes } from 'react-icons/fa';
 import { Workout, Routine } from '../models/types';
 import { getWorkoutStatusForToday, hasRoutineForToday, getStreakInfo, StreakDay, getDayOfWeek, findRoutineForDay, findExercisesForDay, findWorkoutForDay, findScheduleForDay } from '../utils/workoutUtils';
 import { DAYS_OF_WEEK } from '../constants/days';
-import { addWorkout } from '../db/indexedDb';
+import { usePulsarStore } from '../store/pulsarStore';
 import { v4 as uuidv4 } from 'uuid';
 
 interface StreakCalendarProps {
@@ -55,6 +55,8 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
 
   // Find today's date string for highlight
   const todayStr = new Date().toDateString();
+
+  const addWorkout = usePulsarStore(s => s.addWorkout);
 
   const handleDayClick = async (date: Date) => {
     // Only allow for past or today

@@ -1,7 +1,10 @@
+// NOTE: All DB access for exercises/routines/workouts should go through the Zustand store (pulsarStore.ts).
+// This service now expects exercises to be passed in from the store, and add operations to use the store's addExercise.
+// Direct DB calls (getExercises, addExercise) have been removed from this file.
+
 import { Routine, Exercise } from '../models/types';
 import { v4 as uuidv4 } from 'uuid';
 import { getSearchUrl, getHowToQuery, fetchExerciseSearchImageUrl } from '../utils/webUtils';
-import { getExercises, addExercise } from '../db/indexedDb';
 import { exerciseTemplates, ExerciseTemplate } from './exerciseTemplates';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -58,9 +61,9 @@ export function findExistingExercise(name: string, exercises: Exercise[]): Exerc
 
 /**
  * Find or create and add an Exercise by name.
- * Returns an existing Exercise if found, otherwise creates from template or stub and adds to DB.
+ * Returns an existing Exercise if found, otherwise creates from template or stub and expects caller to add to store.
  */
-export async function getAddedExercise(name: string, exercises: Exercise[]): Promise<Exercise> {
+export async function getAddedExercise(name: string, exercises: Exercise[], addExercise: (ex: Exercise) => Promise<void>): Promise<Exercise> {
   const norm = normalizeExerciseName(name);
   // 1. Search in existing exercises
   for (const ex of exercises) {
@@ -77,9 +80,8 @@ export async function getAddedExercise(name: string, exercises: Exercise[]): Pro
       timed: false,
     };
   }
-  // 4. Create and add to db
+  // 4. Create and add to store
   const newExercise = await createNewExercise(template);
-  // Add to db
   await addExercise(newExercise);
   return newExercise;
 }
@@ -126,7 +128,14 @@ const generateRandomName = () => {
   return `${shuffled[0]} ${shuffled[1]} ${shuffled[2]}`;
 };
 
-export const generateRoutine = async (responses: { [key: string]: string }): Promise<{ routine: Routine, exercises: Exercise[] }> => {
+/**
+ * Generate a routine and exercises. Expects addExercise to be passed in from the store.
+ */
+export const generateRoutine = async (
+  responses: { [key: string]: string },
+  exercises: Exercise[],
+  addExercise: (ex: Exercise) => Promise<void>
+): Promise<{ routine: Routine, exercises: Exercise[] }> => {
   await delay(2000);
   const routineId = uuidv4();
   const routineName = generateRandomName();
@@ -134,17 +143,19 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
   const shuffledSuggestions = exerciseTemplates.slice().sort(() => Math.random() - 0.5);
   const pickedSuggestions = shuffledSuggestions.slice(0, 5);
 
-  // Fetch all existing exercises from the db
-  const existingExercises = await getExercises();
-  const exercises: Exercise[] = [];
+  const allExercises = [...exercises];
+  const newExercises: Exercise[] = [];
 
   for (const suggestion of pickedSuggestions) {
     // Try to find an existing exercise (forgiving match)
-    let found = existingExercises.find(ex => normalizeExerciseName(ex.name) === normalizeExerciseName(suggestion.name));
+    let found = allExercises.find(ex => normalizeExerciseName(ex.name) === normalizeExerciseName(suggestion.name));
     if (found) {
-      exercises.push(found);
+      newExercises.push(found);
     } else {
-      exercises.push(await createNewExercise(suggestion));
+      const created = await createNewExercise(suggestion);
+      await addExercise(created);
+      allExercises.push(created);
+      newExercises.push(created);
     }
   }
 
@@ -159,25 +170,25 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
         day: 'Monday',
         kind: 'Strength',
         exercises: [
-          { exerciseId: exercises[0].id, reps: 10, sets: 3 },
-          { exerciseId: exercises[1].id, reps: 15, sets: 3 },
-          { exerciseId: exercises[2].id, duration: 60, sets: 1 },
+          { exerciseId: newExercises[0].id, reps: 10, sets: 3 },
+          { exerciseId: newExercises[1].id, reps: 15, sets: 3 },
+          { exerciseId: newExercises[2].id, duration: 60, sets: 1 },
         ],
       },
       {
         day: 'Wednesday',
         kind: 'Cardio',
         exercises: [
-          { exerciseId: exercises[3].id, reps: 12, sets: 3 },
-          { exerciseId: exercises[4].id, duration: 90, sets: 1 },
+          { exerciseId: newExercises[3].id, reps: 12, sets: 3 },
+          { exerciseId: newExercises[4].id, duration: 90, sets: 1 },
         ],
       },
       {
         day: 'Friday',
         kind: 'Flexibility',
         exercises: [
-          { exerciseId: exercises[2].id, duration: 120, sets: 1 },
-          { exerciseId: exercises[3].id, reps: 10, sets: 2 },
+          { exerciseId: newExercises[2].id, duration: 120, sets: 1 },
+          { exerciseId: newExercises[3].id, reps: 10, sets: 2 },
         ],
       },
     ],
@@ -199,5 +210,5 @@ export const generateRoutine = async (responses: { [key: string]: string }): Pro
     disliked: false,
     favorite: false,
   };
-  return { routine, exercises };
+  return { routine, exercises: newExercises };
 };

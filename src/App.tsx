@@ -21,8 +21,10 @@ import { Routes, Route, Link, useLocation, Link as RouterLink } from 'react-rout
 import Home from './views/Home';
 import Workout from './views/Workout';
 import Settings from './views/Settings';
+import { usePulsarStoreInit } from './store/pulsarStore';
 
 const App: React.FC = () => {
+  usePulsarStoreInit(); // Load all data from DB into Zustand store on app mount
   const { colorMode, toggleColorMode } = useColorMode();
   const [colorScheme, setColorScheme] = React.useState<string>(() => {
     return localStorage.getItem('colorScheme') || 'cyan';

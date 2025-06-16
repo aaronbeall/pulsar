@@ -2,10 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Text, Box, VStack, Input, Textarea, Checkbox, Button, HStack, Tag, IconButton, useToast, Flex, Switch, ButtonGroup } from "@chakra-ui/react";
 import { FaChartBar, FaCalendarAlt, FaDumbbell, FaTimes, FaCheck, FaListOl, FaClock, FaSync, FaQuestionCircle } from "react-icons/fa";
 import { Exercise } from "../models/types";
-import { getRoutines, getWorkouts } from '../db/indexedDb';
 import LikeDislikeButtons from "../components/LikeDislikeButtons";
 import { openUrl, openSearchQuery } from '../utils/webUtils';
 import TagInput from "./TagInput";
+import { useRoutines, useWorkouts, usePulsarStore } from '../store/pulsarStore';
 
 interface ExerciseDetailsDialogProps {
   exerciseId: string;
@@ -20,43 +20,41 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
   const [edit, setEdit] = React.useState({ ...original });
   const [changed, setChanged] = React.useState(false);
   const [stats, setStats] = React.useState<{ routines: number; days: number; workouts: number }>({ routines: 0, days: 0, workouts: 0 });
+  const routines = useRoutines();
+  const workouts = useWorkouts();
+  const updateExercise = usePulsarStore(s => s.updateExercise);
 
-  // Fetch stats for this exercise
+  // Compute stats for this exercise from store
   React.useEffect(() => {
-    const fetchStats = async () => {
-      const routines = await getRoutines();
-      const workouts = await getWorkouts();
-      let routinesCount = 0;
-      let daysSet = new Set<string>();
-      let workoutsCount = 0;
-      for (const routine of routines) {
-        let foundInRoutine = false;
-        for (const day of routine.dailySchedule) {
-          if (day.exercises.some(ex => ex.exerciseId === exerciseId)) {
-            foundInRoutine = true;
-            daysSet.add(day.day);
-          }
-        }
-        if (foundInRoutine) routinesCount++;
-      }
-      for (const workout of workouts) {
-        if (workout.exercises.some(ex => ex.exerciseId === exerciseId)) {
-          workoutsCount++;
+    let routinesCount = 0;
+    let daysSet = new Set<string>();
+    let workoutsCount = 0;
+    for (const routine of routines) {
+      let foundInRoutine = false;
+      for (const day of routine.dailySchedule) {
+        if (day.exercises.some(ex => ex.exerciseId === exerciseId)) {
+          foundInRoutine = true;
+          daysSet.add(day.day);
         }
       }
-      setStats({ routines: routinesCount, days: daysSet.size, workouts: workoutsCount });
-    };
-    fetchStats();
-  }, [exerciseId]);
+      if (foundInRoutine) routinesCount++;
+    }
+    for (const workout of workouts) {
+      if (workout.exercises.some(ex => ex.exerciseId === exerciseId)) {
+        workoutsCount++;
+      }
+    }
+    setStats({ routines: routinesCount, days: daysSet.size, workouts: workoutsCount });
+  }, [exerciseId, routines, workouts]);
 
   const handleChange = (field: keyof typeof edit, value: any) => {
     setEdit(prev => ({ ...prev, [field]: value }));
     setChanged(true);
   };
 
-  // Save handler (emit event or call a callback as needed)
-  const handleSave = () => {
-    // TODO: Implement save logic (e.g., call a prop or context to update the exercise)
+  // Save handler (use Zustand store)
+  const handleSave = async () => {
+    await updateExercise(edit);
     toast({ title: "Exercise saved!", status: "success", duration: 1500, isClosable: true });
     setChanged(false);
     onClose();
@@ -206,40 +204,38 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
                   </VStack>
                 </HStack>
               </Box>
-              {mode === "edit" && (
-                <Box
-                  bg="white"
-                  _dark={{ bg: 'gray.800' }}
-                  borderRadius="lg"
-                  boxShadow="md"
-                  p={3}
-                  display="flex"
-                  justifyContent="center"
-                >
-                  <LikeDislikeButtons
-                    liked={!!edit.liked}
-                    disliked={!!edit.disliked}
-                    onLike={() => {
-                      if (edit.liked) {
-                        handleChange('liked', false);
-                      } else {
-                        handleChange('liked', true);
-                        handleChange('disliked', false);
-                      }
-                    }}
-                    onDislike={() => {
-                      if (edit.disliked) {
-                        handleChange('disliked', false);
-                      } else {
-                        handleChange('disliked', true);
-                        handleChange('liked', false);
-                      }
-                    }}
-                    iconColor="gray.400"
-                    size="md"
-                  />
-                </Box>
-              )}
+              <Box
+                bg="white"
+                _dark={{ bg: 'gray.800' }}
+                borderRadius="lg"
+                boxShadow="md"
+                p={3}
+                display="flex"
+                justifyContent="center"
+              >
+                <LikeDislikeButtons
+                  liked={!!edit.liked}
+                  disliked={!!edit.disliked}
+                  onLike={() => {
+                    if (edit.liked) {
+                      handleChange('liked', false);
+                    } else {
+                      handleChange('liked', true);
+                      handleChange('disliked', false);
+                    }
+                  }}
+                  onDislike={() => {
+                    if (edit.disliked) {
+                      handleChange('disliked', false);
+                    } else {
+                      handleChange('disliked', true);
+                      handleChange('liked', false);
+                    }
+                  }}
+                  iconColor="gray.400"
+                  size="md"
+                />
+              </Box>
             </VStack>
             {/* Right: Details */}
             <VStack align="stretch" spacing={6} flex={1} mt={{ base: 6, md: 0 }}>

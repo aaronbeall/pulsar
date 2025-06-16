@@ -75,3 +75,18 @@ export const getWorkout = async (id: string): Promise<Workout | undefined> => {
   const db = await getDB();
   return db.get('workouts', id);
 };
+
+export const removeExercise = async (id: string) => {
+  const db = await getDB();
+  await db.delete('exercises', id);
+};
+
+export const removeRoutine = async (id: string) => {
+  const db = await getDB();
+  await db.delete('routines', id);
+};
+
+export const removeWorkout = async (id: string) => {
+  const db = await getDB();
+  await db.delete('workouts', id);
+};

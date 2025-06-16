@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Button, Flex, Heading, Spinner, Text, VStack, Breadcrumb, BreadcrumbItem, BreadcrumbLink, SlideFade } from '@chakra-ui/react';
 import { useParams, useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom';
-import { getRoutines, getWorkout, addWorkout, getRoutine, getWorkouts, getExercises } from '../db/indexedDb';
+import { useExercises, useRoutines, useWorkouts, useRoutine, useWorkout, usePulsarStore } from '../store/pulsarStore';
 import { Routine, Workout, DayOfWeek, Exercise, WorkoutExercise } from '../models/types';
 import { getTodayDayOfWeek, findWorkoutForDay, findExercisesForDay } from '../utils/workoutUtils';
 import { DAYS_OF_WEEK } from '../constants/days';
@@ -15,111 +15,88 @@ export const WorkoutSession: React.FC = () => {
   const { sessionId } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const exercises = useExercises();
+  const routines = useRoutines();
+  const workouts = useWorkouts();
+  const addWorkout = usePulsarStore(s => s.addWorkout);
+  const updateWorkout = usePulsarStore(s => s.updateWorkout);
   const [workout, setWorkout] = React.useState<Workout | null>(null);
   const [routine, setRoutine] = React.useState<Routine | null>(null);
-  const [exercises, setExercises] = React.useState<Exercise[]>([]);
 
   React.useEffect(() => {
-    const initSession = async () => {
-      const exerciseData = await getExercises();
-      setExercises(exerciseData);
-      
-      // Load existing workout by sessionId
-      if (sessionId) {
-        const existingWorkout = await getWorkout(sessionId);
-        if (existingWorkout) {
-          setWorkout(existingWorkout);
-          const workoutRoutine = await getRoutine(existingWorkout.routineId);
-          setRoutine(workoutRoutine || null);
-          return;
-        }
-      }
-
-      // Initialize workout by routineId
-      const routineId = searchParams.get('routineId');
-      const dayParam = searchParams.get('day') as DayOfWeek | null;
-      const routine = await getRoutine(routineId || '');
-      
-      if (!routine) {
-        navigate('/workout', { replace: true });
+    // If sessionId is present, find the workout in store
+    if (sessionId && workouts.length > 0) {
+      const existingWorkout = workouts.find(w => w.id === sessionId);
+      if (existingWorkout) {
+        setWorkout(existingWorkout);
+        const workoutRoutine = routines.find(r => r.id === existingWorkout.routineId) || null;
+        setRoutine(workoutRoutine);
         return;
       }
-
-      // Use provided day or today's day, ensuring it's a valid DayOfWeek
-      const workoutDay = dayParam && DAYS_OF_WEEK.includes(dayParam) ? dayParam : getTodayDayOfWeek();
-
-      // Check if there's already a workout for this specific day and routine
-      const workouts = await getWorkouts();
-      const existingWorkoutForDay = findWorkoutForDay(workouts, [routine], workoutDay);
-
-      if (existingWorkoutForDay) {
-        navigate(`/workout/session/${existingWorkoutForDay.id}`, { replace: true });
-        return;
-      }
-
-      // Create new workout
-      const scheduledExercises = findExercisesForDay(routine, workoutDay);
-      const newWorkout: Workout = {
-        id: uuidv4(),
-        day: workoutDay,
-        nickname: generateRandomName(),
-        routineId: routine.id,
-        startedAt: Date.now(),
-        exercises: scheduledExercises.map(exercise => ({
-          ...exercise,
-          completedSets: 0,
-          completedDuration: 0,
-          startedAt: undefined,
-          completedAt: undefined,
-          skipped: false
-        }))
-      };
-      
-      await addWorkout(newWorkout);
-
-      setWorkout(newWorkout);
-      setRoutine(routine);
-      navigate(`/workout/session/${newWorkout.id}`, { replace: true });
+    }
+    // If no sessionId, try to create/init a new workout
+    const routineId = searchParams.get('routineId');
+    const dayParam = searchParams.get('day') as DayOfWeek | null;
+    const routine = routines.find(r => r.id === routineId) || null;
+    if (!routine) {
+      navigate('/workout', { replace: true });
+      return;
+    }
+    const workoutDay = dayParam && DAYS_OF_WEEK.includes(dayParam) ? dayParam : getTodayDayOfWeek();
+    const existingWorkoutForDay = workouts.find(w => w.routineId === routine.id && w.day === workoutDay);
+    if (existingWorkoutForDay) {
+      navigate(`/workout/session/${existingWorkoutForDay.id}`, { replace: true });
+      return;
+    }
+    // Create new workout
+    const scheduledExercises = findExercisesForDay(routine, workoutDay);
+    const newWorkout: Workout = {
+      id: sessionId || uuidv4(),
+      day: workoutDay,
+      nickname: generateRandomName(),
+      routineId: routine.id,
+      startedAt: Date.now(),
+      exercises: scheduledExercises.map(exercise => ({
+        ...exercise,
+        completedSets: 0,
+        completedDuration: 0,
+        startedAt: undefined,
+        completedAt: undefined,
+        skipped: false
+      }))
     };
-
-    initSession();
-  }, [sessionId, navigate]);
+    addWorkout(newWorkout);
+    setWorkout(newWorkout);
+    setRoutine(routine);
+    navigate(`/workout/session/${newWorkout.id}`, { replace: true });
+  }, [sessionId, workouts, routines, exercises, searchParams, navigate, addWorkout]);
 
   const handleComplete = async (exerciseIndex: number) => {
     if (!workout) return;
-    
     const updatedWorkout = { ...workout };
     const exercise = updatedWorkout.exercises[exerciseIndex];
-    
     if (exercise.duration) {
-      // For timed exercises, mark the full duration as completed
       exercise.completedDuration = exercise.duration;
       exercise.completedAt = Date.now();
     } else {
-      // For rep-based exercises, increment completed sets
       exercise.completedSets = (exercise.completedSets || 0) + 1;
       if (exercise.completedSets === exercise.sets) {
         exercise.completedAt = Date.now();
       }
     }
-    
-    // Update the workout in state and database
-    await addWorkout(updatedWorkout);
+    await updateWorkout(updatedWorkout);
     setWorkout(updatedWorkout);
   };
 
   const handleStart = (exerciseIndex: number) => {
     if (!workout) return;
-    
     const updatedWorkout = { ...workout };
     const exercise = updatedWorkout.exercises[exerciseIndex];
-    
     if (!exercise.startedAt) {
       exercise.startedAt = Date.now();
       exercise.completedSets = 0;
       exercise.completedDuration = 0;
     }
-    
     setWorkout(updatedWorkout);
   };
 

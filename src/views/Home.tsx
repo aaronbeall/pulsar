@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Box, Button, Container, Flex, Heading, Text, useToken, Highlight, Spinner } from '@chakra-ui/react';
 import { FaDumbbell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { getRoutines, getWorkouts } from '../db/indexedDb';
+import { useExercises, useRoutines, useWorkouts } from '../store/pulsarStore';
 import { Routine, Workout } from '../models/types';
 import TimeToWorkoutAlert from '../components/TimeToWorkoutAlert';
 import FinishedWorkoutAlert from '../components/FinishedWorkoutAlert';
@@ -11,22 +11,11 @@ import { findRoutineForToday, findWorkoutForToday, getWorkoutStatusForToday, has
 import StreakCalendar from '../components/StreakCalendar';
 
 const Home: React.FC = () => {
-  const [routines, setRoutines] = useState<Routine[]>([]);
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const routines = useRoutines();
+  const workouts = useWorkouts();
+  const isLoading = routines === undefined || workouts === undefined;
   const navigate = useNavigate();
   const [red500] = useToken('colors', ['red.500']);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const routinesData = await getRoutines();
-      const workoutsData = await getWorkouts();
-      setRoutines(routinesData);
-      setWorkouts(workoutsData);
-      setIsLoading(false);
-    };
-    fetchData();
-  }, []);
 
   const todayStatus = routines.length > 0 && hasRoutineForToday(routines)
     ? getWorkoutStatusForToday(workouts, routines)

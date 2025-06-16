@@ -15,7 +15,7 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { Routine, Workout } from '../models/types';
-import { getRoutines, getWorkouts } from '../db/indexedDb';
+import { useRoutines, useWorkouts } from '../store/pulsarStore';
 import { FaPlus, FaDumbbell } from 'react-icons/fa';
 import Timeline from '../components/Timeline';
 import { hasRoutineForToday, getWorkoutStatusForToday } from '../utils/workoutUtils';
@@ -64,36 +64,24 @@ const AddRoutineCard: React.FC<{ onClick: () => void }> = ({ onClick }) => {
 };
 
 export const WorkoutLanding: React.FC = () => {
-  const [routines, setRoutines] = useState<Routine[]>([]);
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const routines = useRoutines();
+  const workouts = useWorkouts();
   const navigate = useNavigate();
 
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
+  const isLoading = routines === undefined || workouts === undefined;
+
   // Use useMemo for active/inactive routines
   const activeRoutines = React.useMemo(() => routines.filter(r => r.active), [routines]);
   const inactiveRoutines = React.useMemo(() => routines.filter(r => !r.active), [routines]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const routinesData = await getRoutines();
-        const workoutsData = await getWorkouts();
-
-        if (routinesData.length === 0) {
-          navigate('setup', { replace: true });
-        }
-
-        setRoutines(routinesData);
-        setWorkouts(workoutsData);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, [navigate]);
+  React.useEffect(() => {
+    if (!isLoading && routines.length === 0) {
+      navigate('setup', { replace: true });
+    }
+  }, [isLoading, routines, navigate]);
 
   if (isLoading) {
     return (

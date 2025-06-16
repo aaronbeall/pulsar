@@ -26,6 +26,7 @@ import DayKindEditor from './DayKindBadgeEditor';
 import { Autocomplete } from './Autocomplete';
 import { getAddedExercise, normalizeExerciseName, searchExerciseSuggestions } from '../services/routineBuilderService';
 import { exerciseTemplates, ExerciseTemplate } from '../services/exerciseTemplates';
+import { usePulsarStore } from '../store/pulsarStore';
 
 // Helper to ensure all days are present in the schedule
 function ensureAllDays(schedule: Routine['dailySchedule']): Routine['dailySchedule'] {
@@ -160,6 +161,8 @@ export const RoutineEditor: React.FC<{
       .filter(t => !exerciseNames.has(normalizeExerciseName(t.name)));
     return [...exercises, ...uniqueTemplates];
   }, [exercises]);
+
+  const addExercise = usePulsarStore(s => s.addExercise);
 
   return (
     <Box>
@@ -438,17 +441,16 @@ export const RoutineEditor: React.FC<{
                         value={addExerciseInput?.[dayIdx] || ''}
                         onChange={val => handleAddExerciseInput(dayIdx, val)}
                         onSelect={async item => {
-                          // If item is an Exercise, add directly; if ExerciseTemplate, create and add
                           if ('id' in item) {
                             handleAddExercise(dayIdx, item);
                           } else {
-                            const newEx = await getAddedExercise(item.name, exercises);
+                            const newEx = await getAddedExercise(item.name, exercises, addExercise);
                             handleAddExercise(dayIdx, newEx);
                           }
                           handleAddExerciseInput(dayIdx, '');
                         }}
                         onCreate={async input => {
-                          const newEx = await getAddedExercise(input, exercises);
+                          const newEx = await getAddedExercise(input, exercises, addExercise);
                           handleAddExercise(dayIdx, newEx);
                           handleAddExerciseInput(dayIdx, '');
                         }}

@@ -32,107 +32,76 @@ import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Impo
 import RoutineChat, { ChatMessage } from '../components/RoutineChat';
 import { RoutineDisplayTable } from '../components/RoutineDisplayTable';
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
-import { addRoutine, getExercises, getRoutines } from '../db/indexedDb'; // Import addRoutine to update the Routine
-import { Exercise, Routine } from '../models/types';
+import { useRoutine, useRoutines, useExercises, usePulsarStore } from '../store/pulsarStore';
+import { Routine, Exercise } from '../models/types';
 
 const WorkoutRoutine: React.FC = () => {
   const { routineId } = useParams<{ routineId: string }>();
-  const [routine, setRoutine] = useState<Routine | null>(null);
+  const routine = useRoutine(routineId || '');
+  const routines = useRoutines();
+  const exercises = useExercises();
+  const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const [newResponses, setNewResponses] = useState<Routine['responses']>([]);
-  const [activeRoutines, setActiveRoutines] = useState<Routine[]>([]); // State for active routines
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [exercises, setExercises] = useState<Exercise[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchRoutine = async () => {
-      const routines = await getRoutines();
-      const selectedRoutine = routines.find((r) => r.id === routineId) || null;
-      setRoutine(selectedRoutine);
-
-      const active = routines.filter((r) => r.active);
-      setActiveRoutines(active);
-
-      if (selectedRoutine) {
-        setNewResponses(selectedRoutine.responses.filter((response) => !response.dismissed));
-        // Build chat history as a conversation: AI prompt, then user response, for each prompt
-        const introChat: ChatMessage[] = [];
-        workoutPrompts.forEach((prompt) => {
-          const userVal = selectedRoutine.prompts[prompt.key];
-          if (userVal) {
-            introChat.push({ role: 'ai', message: prompt.question });
-            introChat.push({ role: 'user', message: userVal });
-          }
-        });
-        setChatHistory([
-          ...introChat,
-          ...selectedRoutine.responses.map(r => ({ role: 'ai' as const, message: r.response }))
-        ]);
-      }
-    };
-    fetchRoutine();
-  }, [routineId]);
+  const activeRoutines = React.useMemo(() => routines.filter((r) => r.active), [routines]);
 
   useEffect(() => {
-    const fetchExercises = async () => {
-      const exerciseData = await getExercises();
-      setExercises(exerciseData);
-    };
-    fetchExercises();
-  }, []);
+    if (routine) {
+      setNewResponses(routine.responses.filter((response) => !response.dismissed));
+      // Build chat history as a conversation: AI prompt, then user response, for each prompt
+      const introChat: ChatMessage[] = [];
+      workoutPrompts.forEach((prompt) => {
+        const userVal = routine.prompts[prompt.key];
+        if (userVal) {
+          introChat.push({ role: 'ai', message: prompt.question });
+          introChat.push({ role: 'user', message: userVal });
+        }
+      });
+      setChatHistory([
+        ...introChat,
+        ...routine.responses.map(r => ({ role: 'ai' as const, message: r.response }))
+      ]);
+    }
+  }, [routine]);
 
   const dismissResponse = async (index: number) => {
     if (!routine) return;
-
-    // Update the dismissed status in the Routine object
     const updatedResponses = [...routine.responses];
     const dismissedResponse = newResponses[index];
     const responseIndex = updatedResponses.findIndex((r) => r.date === dismissedResponse.date);
-
     if (responseIndex !== -1) {
       updatedResponses[responseIndex].dismissed = true;
     }
-
     const updatedRoutine = { ...routine, responses: updatedResponses };
-    setRoutine(updatedRoutine); // Update local state
-    setNewResponses((prev) => prev.filter((_, i) => i !== index)); // Remove from newResponses state
-    await addRoutine(updatedRoutine); // Persist the updated Routine to the database
+    updateRoutine(updatedRoutine);
+    setNewResponses((prev) => prev.filter((_, i) => i !== index));
   };
 
   const toggleActiveState = async () => {
     if (!routine) return;
-
     if (routine.active && activeRoutines.length === 1) {
       const confirmDisable = window.confirm(
         'This is the only active routine. Are you sure you want to disable it?'
       );
       if (!confirmDisable) return;
     }
-
     if (!routine.active && activeRoutines.length > 0) {
       const confirmEnable = window.confirm(
         'There is already an active routine. Are you sure you want to enable this routine?'
       );
       if (!confirmEnable) return;
     }
-
     const updatedRoutine = { ...routine, active: !routine.active };
-    setRoutine(updatedRoutine); // Update local state
-    await addRoutine(updatedRoutine); // Persist the updated Routine to the database
-
-    // Update the active routines state
-    const updatedActiveRoutines = updatedRoutine.active
-      ? [...activeRoutines, updatedRoutine]
-      : activeRoutines.filter((r) => r.id !== updatedRoutine.id);
-    setActiveRoutines(updatedActiveRoutines);
+    updateRoutine(updatedRoutine);
   };
 
   // Save changes from EditableRoutine
   const handleSave = async (edited: Routine) => {
-    await addRoutine(edited);
-    setRoutine(edited);
+    updateRoutine(edited);
     setIsEditing(false);
   };
 

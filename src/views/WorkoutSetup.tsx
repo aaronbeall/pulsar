@@ -1,17 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Button, Flex, Heading, Input, Text, Spinner, Skeleton, VStack } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
-import { addRoutine, addExercise } from '../db/indexedDb';
+import { usePulsarStore, useExercises } from '../store/pulsarStore';
 import { generateRoutine } from '../services/routineBuilderService';
 import { workoutPrompts } from '../constants/prompts'; // Import reusable prompts
 import { RoutinePromptKey } from '../models/types';
 
+const initialPromptState = { goals: '', equipment: '', time: '', additionalInfo: '' };
+
 export const WorkoutSetup: React.FC = () => {
   const [step, setStep] = useState<number>(1);
-  const [responses, setResponses] = useState<Record<RoutinePromptKey, string>>({});
+  const [responses, setResponses] = useState<Record<RoutinePromptKey, string>>(initialPromptState);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  const addExercise = usePulsarStore(s => s.addExercise);
+  const addRoutine = usePulsarStore(s => s.addRoutine);
+  const exercises = useExercises();
 
   const handleInputChange = (key: RoutinePromptKey, value: string) => {
     setResponses((prev) => ({ ...prev, [key]: value }));
@@ -22,11 +28,11 @@ export const WorkoutSetup: React.FC = () => {
       setStep(step + 1);
     } else {
       setIsLoading(true);
-      const { routine, exercises } = await generateRoutine(responses); // Updated to handle new structure
-      await Promise.all(exercises.map((exercise) => addExercise(exercise))); // Save exercises to IndexedDB
-      await addRoutine(routine); // Save routine to IndexedDB
+      // Pass exercises and addExercise to generateRoutine
+      const { routine, exercises: newExercises } = await generateRoutine(responses, exercises, addExercise);
+      await addRoutine(routine);
       setIsLoading(false);
-      navigate(`/workout/routine/${routine.id}`, { replace: true }); // Navigate to WorkoutRoutine view
+      navigate(`/workout/routine/${routine.id}`, { replace: true });
     }
   };
 
