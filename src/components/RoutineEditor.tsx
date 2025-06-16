@@ -504,7 +504,6 @@ export const RoutineEditor: React.FC<{
         {exerciseDetailsId && (
           <ExerciseDetailsDialog
             exerciseId={exerciseDetailsId}
-            exercises={exercises}
             onClose={closeExerciseDetails}
             mode="edit"
           />

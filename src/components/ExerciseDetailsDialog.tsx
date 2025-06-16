@@ -1,51 +1,32 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Text, Box, VStack, Input, Textarea, Checkbox, Button, HStack, Tag, IconButton, useToast, Flex, Switch, ButtonGroup } from "@chakra-ui/react";
 import { FaChartBar, FaCalendarAlt, FaDumbbell, FaTimes, FaCheck, FaListOl, FaClock, FaSync, FaQuestionCircle } from "react-icons/fa";
 import { Exercise } from "../models/types";
 import LikeDislikeButtons from "../components/LikeDislikeButtons";
 import { openUrl, openSearchQuery } from '../utils/webUtils';
 import TagInput from "./TagInput";
-import { useRoutines, useWorkouts, usePulsarStore } from '../store/pulsarStore';
+import { usePulsarStore, useRoutines, useWorkouts } from '../store/pulsarStore';
 
 interface ExerciseDetailsDialogProps {
   exerciseId: string;
-  exercises: Exercise[];
   onClose: () => void;
   mode: "edit" | "view";
 }
 
-const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseId, exercises, onClose, mode = "edit" }) => {
+const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseId, onClose, mode = "edit" }) => {
   const toast = useToast();
-  const original = exercises.find(e => e.id === exerciseId)!;
-  const [edit, setEdit] = React.useState({ ...original });
+  const exercise = usePulsarStore(s => s.exercises.find(e => e.id === exerciseId));
+  if (!exercise) return null;
+  const [edit, setEdit] = React.useState({ ...exercise });
   const [changed, setChanged] = React.useState(false);
-  const [stats, setStats] = React.useState<{ routines: number; days: number; workouts: number }>({ routines: 0, days: 0, workouts: 0 });
-  const routines = useRoutines();
-  const workouts = useWorkouts();
+  const getExerciseStats = usePulsarStore(s => s.getExerciseStats);
+  const stats = useMemo(() => getExerciseStats(exerciseId), [exerciseId, getExerciseStats]);
   const updateExercise = usePulsarStore(s => s.updateExercise);
 
-  // Compute stats for this exercise from store
   React.useEffect(() => {
-    let routinesCount = 0;
-    let daysSet = new Set<string>();
-    let workoutsCount = 0;
-    for (const routine of routines) {
-      let foundInRoutine = false;
-      for (const day of routine.dailySchedule) {
-        if (day.exercises.some(ex => ex.exerciseId === exerciseId)) {
-          foundInRoutine = true;
-          daysSet.add(day.day);
-        }
-      }
-      if (foundInRoutine) routinesCount++;
-    }
-    for (const workout of workouts) {
-      if (workout.exercises.some(ex => ex.exerciseId === exerciseId)) {
-        workoutsCount++;
-      }
-    }
-    setStats({ routines: routinesCount, days: daysSet.size, workouts: workoutsCount });
-  }, [exerciseId, routines, workouts]);
+    setEdit({ ...exercise });
+    setChanged(false);
+  }, [exerciseId, exercise]);
 
   const handleChange = (field: keyof typeof edit, value: any) => {
     setEdit(prev => ({ ...prev, [field]: value }));
@@ -62,7 +43,7 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
 
   // Cancel handler
   const handleCancel = () => {
-    setEdit({ ...original });
+    setEdit({ ...exercise });
     setChanged(false);
     onClose();
   };
@@ -336,7 +317,7 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
                     {edit.timed ? 'Duration' : 'Reps'}
                   </Tag>
                 )}
-                {edit.timed !== original.timed && mode === "edit" && (
+                {edit.timed !== exercise.timed && mode === "edit" && (
                   <Text fontSize="xs" color="gray.500" mt={1} ml={1}>
                     This sets the default type when adding this exercise to a routine. To change the type for an existing exercise in a routine, use that exercise's gear menu.
                   </Text>

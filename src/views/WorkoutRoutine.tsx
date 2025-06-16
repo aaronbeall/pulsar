@@ -222,7 +222,6 @@ const WorkoutRoutine: React.FC = () => {
             {displayExerciseId && (
               <ExerciseDetailsDialog
                 exerciseId={displayExerciseId}
-                exercises={exercises}
                 onClose={() => setDisplayExerciseId(null)}
                 mode="view"
               />

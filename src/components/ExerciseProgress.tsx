@@ -17,7 +17,8 @@ import {
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaCheckCircle, FaPlay, FaCheck, FaStopwatch, FaQuestionCircle } from 'react-icons/fa';
+import { FaCheckCircle, FaPlay, FaCheck, FaStopwatch, FaQuestionCircle, FaInfoCircle } from 'react-icons/fa';
+import ExerciseDetailsDialog from './ExerciseDetailsDialog';
 import { Exercise, WorkoutExercise } from '../models/types';
 
 const breathe = keyframes`
@@ -101,6 +102,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
   const [timeElapsed, setTimeElapsed] = useState(exercise.completedDuration || 0);
   const [isRestPeriod, setIsRestPeriod] = useState(false);
   const [restTimeElapsed, setRestTimeElapsed] = useState(0);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.100', 'gray.700');
@@ -187,37 +189,74 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
           left={0}
           w="100%"
           h="100%"
-          bg="gray.100"
-          _dark={{ bg: 'gray.800' }}
+          zIndex={0}
         >
           <img
             src={exerciseDetail.coverImageUrl}
             alt={exerciseDetail.name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.18 }}
+            style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.22 }}
+          />
+          {/* Gradient overlay: light tint in light mode, dark in dark mode */}
+          <Box
+            position="absolute"
+            top={0}
+            left={0}
+            w="100%"
+            h="100%"
+            pointerEvents="none"
+            style={{
+              background: useColorModeValue(
+                'linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.32) 100%)',
+                'linear-gradient(135deg, rgba(30,30,40,0.45) 0%, rgba(0,0,0,0.32) 100%)'
+              ),
+              mixBlendMode: 'multiply',
+            }}
           />
         </Box>
       )}
-      {exerciseDetail?.howToUrl && (
-        <IconButton
-          as="a"
-          href={exerciseDetail.howToUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          size="sm"
-          colorScheme="cyan"
-          variant="ghost"
-          aria-label="How To (help)"
-          icon={<FaQuestionCircle />}
-          position="absolute"
-          top={2}
-          right={2}
-          zIndex={2}
-          bg="rgba(255,255,255,0.7)"
-          _dark={{ bg: 'rgba(26,32,44,0.7)' }}
-          _hover={{ bg: 'rgba(56,189,248,0.8)', opacity: 1 }}
-          opacity={0.7}
-          boxShadow="sm"
-          transition="opacity 0.2s"
+      {/* Info and How To buttons */}
+      <Box position="absolute" top={2} right={2} zIndex={2} display="flex" gap={2}>
+        {exerciseDetail && (
+          <IconButton
+            size="sm"
+            colorScheme="blue"
+            variant="ghost"
+            aria-label="Exercise Info"
+            icon={<FaInfoCircle />}
+            onClick={() => setIsDetailsOpen(true)}
+            bg="rgba(255,255,255,0.7)"
+            _dark={{ bg: 'rgba(26,32,44,0.7)' }}
+            _hover={{ bg: 'rgba(56,189,248,0.8)', opacity: 1 }}
+            opacity={0.7}
+            boxShadow="sm"
+            transition="opacity 0.2s"
+          />
+        )}
+        {exerciseDetail?.howToUrl && (
+          <IconButton
+            as="a"
+            href={exerciseDetail.howToUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            size="sm"
+            colorScheme="cyan"
+            variant="ghost"
+            aria-label="How To (help)"
+            icon={<FaQuestionCircle />}
+            bg="rgba(255,255,255,0.7)"
+            _dark={{ bg: 'rgba(26,32,44,0.7)' }}
+            _hover={{ bg: 'rgba(56,189,248,0.8)', opacity: 1 }}
+            opacity={0.7}
+            boxShadow="sm"
+            transition="opacity 0.2s"
+          />
+        )}
+      </Box>
+      {isDetailsOpen && exerciseDetail && (
+        <ExerciseDetailsDialog
+          onClose={() => setIsDetailsOpen(false)}
+          exerciseId={exerciseDetail.id}
+          mode="view"
         />
       )}
       <VStack spacing={6} align="center" position="relative">

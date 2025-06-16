@@ -214,3 +214,30 @@ export function getStreakInfo(workouts: Workout[], routines: Routine[], daysBack
   }
   return { streak, status, days };
 }
+
+// Returns { routines, days, workouts } for a given exerciseId
+export function getExerciseStats(
+  exerciseId: string,
+  routines: Routine[],
+  workouts: Workout[]
+): { routines: number; days: number; workouts: number } {
+  let routinesCount = 0;
+  let daysSet = new Set<string>();
+  let workoutsCount = 0;
+  for (const routine of routines) {
+    let foundInRoutine = false;
+    for (const day of routine.dailySchedule) {
+      if (day.exercises.some(ex => ex.exerciseId === exerciseId)) {
+        foundInRoutine = true;
+        daysSet.add(day.day);
+      }
+    }
+    if (foundInRoutine) routinesCount++;
+  }
+  for (const workout of workouts) {
+    if (workout.exercises.some(ex => ex.exerciseId === exerciseId)) {
+      workoutsCount++;
+    }
+  }
+  return { routines: routinesCount, days: daysSet.size, workouts: workoutsCount };
+}
