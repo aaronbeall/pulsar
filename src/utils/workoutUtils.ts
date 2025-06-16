@@ -113,7 +113,7 @@ function getScheduledDate(workout: Workout): Date {
   return addDays(weekStart, dayIdx);
 }
 
-export function getStreakInfo(workouts: Workout[], routines: Routine[], daysBack?: number): StreakInfo {
+export function getStreakInfo(workouts: Workout[], routines: Routine[]): StreakInfo {
   // 1. Convert workouts to workoutDates, preserving the scheduled date
   const workoutDates: Date[] = workouts
     .filter(w => !!w.completedAt)
@@ -194,6 +194,10 @@ export function getStreakInfo(workouts: Workout[], routines: Routine[], daysBack
     const day = streakDaysArr[i];
     if (day.rest) continue;
     if (day.inStreak) {
+      // If today is pending, do not count today in the streak
+      if (i === todayIdx && !todayDay.completed && todayDay.inStreak && !todayDay.rest) {
+        continue;
+      }
       streak++;
     } else {
       break;

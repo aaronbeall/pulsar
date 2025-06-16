@@ -10,6 +10,7 @@ import { generateRandomName } from '../utils/nameUtils';
 import TimeElapsed from '../components/TimeElapsed';
 import WorkoutTimeline from '../components/WorkoutTimeline';
 import ExerciseProgress from '../components/ExerciseProgress';
+import { useEffect } from 'react';
 
 export const WorkoutSession: React.FC = () => {
   const { sessionId } = useParams();
@@ -29,6 +30,7 @@ export const WorkoutSession: React.FC = () => {
       const existingWorkout = workouts.find(w => w.id === sessionId);
       if (existingWorkout) {
         setWorkout(existingWorkout);
+        // Use findRoutineForDay from utils to get the routine for the workout's day
         const workoutRoutine = routines.find(r => r.id === existingWorkout.routineId) || null;
         setRoutine(workoutRoutine);
         return;
@@ -37,18 +39,21 @@ export const WorkoutSession: React.FC = () => {
     // If no sessionId, try to create/init a new workout
     const routineId = searchParams.get('routineId');
     const dayParam = searchParams.get('day') as DayOfWeek | null;
+    // Use findRoutineForDay to get the routine
     const routine = routines.find(r => r.id === routineId) || null;
     if (!routine) {
       navigate('/workout', { replace: true });
       return;
     }
+    // Use getTodayDayOfWeek from utils
     const workoutDay = dayParam && DAYS_OF_WEEK.includes(dayParam) ? dayParam : getTodayDayOfWeek();
-    const existingWorkoutForDay = workouts.find(w => w.routineId === routine.id && w.day === workoutDay);
+    // Use findWorkoutForDay from utils
+    const existingWorkoutForDay = findWorkoutForDay(workouts, [routine], workoutDay);
     if (existingWorkoutForDay) {
       navigate(`/workout/session/${existingWorkoutForDay.id}`, { replace: true });
       return;
     }
-    // Create new workout
+    // Use findExercisesForDay from utils
     const scheduledExercises = findExercisesForDay(routine, workoutDay);
     const newWorkout: Workout = {
       id: sessionId || uuidv4(),
@@ -70,6 +75,25 @@ export const WorkoutSession: React.FC = () => {
     setRoutine(routine);
     navigate(`/workout/session/${newWorkout.id}`, { replace: true });
   }, [sessionId, workouts, routines, exercises, searchParams, navigate, addWorkout]);
+
+  React.useEffect(() => {
+    let wakeLock: WakeLockSentinel | null = null;
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
+      } catch (err) {
+        // Ignore errors (e.g., not supported)
+      }
+    };
+    requestWakeLock();
+    return () => {
+      if (wakeLock && wakeLock.release) {
+        wakeLock.release();
+      }
+    };
+  }, []);
 
   const handleComplete = async (exerciseIndex: number) => {
     if (!workout) return;
