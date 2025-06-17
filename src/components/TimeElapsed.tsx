@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text } from '@chakra-ui/react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow, format, formatDistance } from 'date-fns';
 
 interface TimeElapsedProps {
   startTime: number;
+  endTime?: number;
 }
 
-const TimeElapsed: React.FC<TimeElapsedProps> = ({ startTime }) => {
+const TimeElapsed: React.FC<TimeElapsedProps> = ({ startTime, endTime }) => {
   const [elapsedTime, setElapsedTime] = useState<string>('');
 
   useEffect(() => {
+    if (endTime) {
+      setElapsedTime(formatDistance(startTime, endTime));
+      return;
+    }
+    setElapsedTime(formatDistanceToNow(startTime));
     const timer = setInterval(() => {
       setElapsedTime(formatDistanceToNow(startTime));
     }, 1000);
-
     return () => clearInterval(timer);
-  }, [startTime]);
+  }, [startTime, endTime]);
 
   return (
     <Box 

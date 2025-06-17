@@ -226,6 +226,10 @@ export const WorkoutSession: React.FC = () => {
   if (showInterstitial) {
     const isPerfect = workout.completedAt && workout.exercises.every(ex => ex.completedAt);
     const totalWorkouts = workouts.filter(w => w.completedAt).length;
+    // Find the RoutineDay for the completed workout's day
+    const routineDay = routine.dailySchedule.find(day => day.day === workout.day);
+    const kind = routineDay?.kind || workout.day;
+    const completedExercises = workout.exercises.filter(ex => ex.completedAt).length;
     return (
       <CongratulatoryInterstitial
         streak={streakCount}
@@ -233,6 +237,9 @@ export const WorkoutSession: React.FC = () => {
         isPerfect={!!isPerfect}
         totalWorkouts={totalWorkouts}
         onDismiss={() => setShowInterstitial(false)}
+        nickname={workout.nickname}
+        kind={kind}
+        completedExercises={completedExercises}
       />
     );
   }
@@ -277,7 +284,7 @@ export const WorkoutSession: React.FC = () => {
             "{workout.nickname}"
           </Heading>
         </Box>
-        <TimeElapsed startTime={workout.startedAt} />
+        <TimeElapsed startTime={workout.startedAt} endTime={workout.completedAt} />
       </Flex>
 
       <VStack spacing={6} align="stretch">
