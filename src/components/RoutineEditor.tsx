@@ -15,7 +15,16 @@ import {
   Text,
   Textarea,
   useBreakpointValue,
-  VStack
+  useDisclosure,
+  VStack,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  Switch,
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Draggable, Droppable, DropResult } from 'react-beautiful-dnd';
@@ -23,13 +32,15 @@ import { FaCheck, FaCheckCircle, FaCog, FaDumbbell, FaEdit, FaExchangeAlt, FaGri
 import ExerciseDetailsDialog from './ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import NumericStepper from './NumericStepper';
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
-import { Exercise, Routine } from '../models/types';
+import type { Exercise, Routine } from '../models/types';
 import DayKindBadge from './DayKindBadge';
 import DayKindEditor from './DayKindBadgeEditor';
 import { Autocomplete } from './Autocomplete';
 import { getAddedExercise, normalizeExerciseName, searchExerciseSuggestions } from '../services/routineBuilderService';
 import { exerciseTemplates, ExerciseTemplate } from '../services/exerciseTemplates';
 import { usePulsarStore } from '../store/pulsarStore';
+import { useNavigate } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 
 // Helper to ensure all days are present in the schedule
 function ensureAllDays(schedule: Routine['dailySchedule']): Routine['dailySchedule'] {
@@ -44,8 +55,9 @@ export const RoutineEditor: React.FC<{
   initialRoutine: Routine;
   exercises: Exercise[];
   onSave: (routine: Routine) => void;
+  onSaveAs: (routine: Routine) => void;
   onRevert: () => void;
-}> = ({ initialRoutine, exercises, onSave, onRevert }) => {
+}> = ({ initialRoutine, exercises, onSave, onSaveAs, onRevert }) => {
   const [editRoutine, setEditRoutine] = useState<Routine>(() => {
     const initial = JSON.parse(JSON.stringify(initialRoutine));
     initial.dailySchedule = ensureAllDays(initial.dailySchedule);
@@ -53,6 +65,9 @@ export const RoutineEditor: React.FC<{
   });
   const [editChanged, setEditChanged] = useState(false);
   const [addExerciseInput, setAddExerciseInput] = useState<Record<number, string>>({});
+  const [showSaveAs, setShowSaveAs] = useState(false);
+  const [saveAsName, setSaveAsName] = useState(editRoutine.name);
+  const saveAsDisclosure = useDisclosure();
 
   // Deep clone helper
   function cloneRoutine(r: Routine): Routine {
@@ -128,11 +143,28 @@ export const RoutineEditor: React.FC<{
 
   // Save changes
   const handleSave = () => {
-    // Remove empty days before saving
     const trimmed = cloneRoutine(editRoutine);
     trimmed.dailySchedule = trimmed.dailySchedule.filter(s => s.exercises.length > 0);
     onSave(trimmed);
     setEditChanged(false);
+  };
+
+  // Save As handler
+  const handleSaveAs = () => {
+    const trimmed = cloneRoutine(editRoutine);
+    const { id, favorite, ...rest } = trimmed;
+    const uuid = uuidv4();
+    const newRoutine: Routine = {
+      ...rest,
+      id: uuid,
+      name: saveAsName,
+      dailySchedule: trimmed.dailySchedule.filter(s => s.exercises.length > 0),
+      active: false,
+      createdAt: Date.now(),
+    };
+    onSaveAs(newRoutine);
+    setEditChanged(false);
+    saveAsDisclosure.onClose();
   };
 
   // Revert changes
@@ -212,10 +244,69 @@ export const RoutineEditor: React.FC<{
             ) : (
               <Button leftIcon={<FaTimes />} colorScheme="gray" size="md" fontWeight="bold" onClick={onRevert}>Cancel</Button>
             )}
-            <Button leftIcon={<FaCheck />} colorScheme="green" size="md" fontWeight="bold" onClick={handleSave} isDisabled={!editChanged}>Save</Button>
+            {/* Split Save/Save As button using Flex */}
+            <Flex>
+              <Button
+                leftIcon={<FaCheck />} 
+                colorScheme="green"
+                size="md"
+                fontWeight="bold"
+                onClick={handleSave}
+                isDisabled={!editChanged}
+                borderRightRadius={0}
+                borderRightWidth={0}
+              >
+                Save
+              </Button>
+              <Menu>
+                <MenuButton
+                  as={Button}
+                  colorScheme="green"
+                  size="md"
+                  borderLeftRadius={0}
+                  borderLeftWidth={0}
+                  px={3}
+                  isDisabled={!editChanged}
+                  borderLeft="1px solid"
+                  borderColor="gray.300"
+                  _dark={{ borderColor: 'gray.600' }}
+                >
+                  <Box as={FaCog} />
+                </MenuButton>
+                <MenuList>
+                  <MenuItem icon={<FaCheck />} onClick={handleSave} isDisabled={!editChanged}>Save</MenuItem>
+                  <MenuItem icon={<FaEdit />} onClick={() => { setSaveAsName(editRoutine.name); setShowSaveAs(true); saveAsDisclosure.onOpen(); }}>Save As...</MenuItem>
+                </MenuList>
+              </Menu>
+            </Flex>
           </Flex>
         </Flex>
       </Box>
+      {/* Save As Modal */}
+      <Modal isOpen={showSaveAs} onClose={() => { setShowSaveAs(false); saveAsDisclosure.onClose(); }} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Save Routine As...</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Input
+              value={saveAsName}
+              onChange={e => setSaveAsName(e.target.value)}
+              placeholder="Routine Name"
+              size="lg"
+              autoFocus
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={() => { setShowSaveAs(false); saveAsDisclosure.onClose(); }} mr={3} leftIcon={<FaTimes />} variant="ghost">
+              Cancel
+            </Button>
+            <Button colorScheme="green" onClick={handleSaveAs} isDisabled={!saveAsName.trim()} leftIcon={<FaCheck />} fontWeight="bold">
+              Create
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
       {/* Editable description textarea under the name/save/cancel bar */}
       <Textarea
         value={editRoutine.description || ''}

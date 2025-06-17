@@ -34,7 +34,7 @@ import { RoutineDisplayTable } from '../components/RoutineDisplayTable';
 import { RoutineEditor } from '../components/RoutineEditor';
 import SwitchRoutineDialog from '../components/SwitchRoutineDialog';
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
-import { Routine } from '../models/types';
+import type { Routine } from '../models/types';
 import { useExercises, usePulsarStore, useRoutine, useRoutines, useWorkouts } from '../store/pulsarStore';
 
 const WorkoutRoutine: React.FC = () => {
@@ -44,6 +44,7 @@ const WorkoutRoutine: React.FC = () => {
   const exercises = useExercises();
   const workouts = useWorkouts();
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
+  const addRoutine = usePulsarStore(s => s.addRoutine);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
   const [newResponses, setNewResponses] = useState<Routine['responses']>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -116,6 +117,13 @@ const WorkoutRoutine: React.FC = () => {
   const handleSave = async (edited: Routine) => {
     updateRoutine(edited);
     setIsEditing(false);
+  };
+
+  // Save As from EditableRoutine
+  const handleSaveAs = (edited: Routine) => {
+    addRoutine(edited);
+    setIsEditing(false);
+    navigate(`/workout/routine/${edited.id}`);
   };
 
   // Revert changes from EditableRoutine
@@ -243,6 +251,7 @@ const WorkoutRoutine: React.FC = () => {
             initialRoutine={routine}
             exercises={exercises}
             onSave={handleSave}
+            onSaveAs={handleSaveAs}
             onRevert={handleRevert}
           />
         )}
