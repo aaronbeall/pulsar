@@ -18,6 +18,7 @@ export const WorkoutSetup: React.FC = () => {
   const addExercise = usePulsarStore(s => s.addExercise);
   const addRoutine = usePulsarStore(s => s.addRoutine);
   const exercises = useExercises();
+  const routines = usePulsarStore(s => s.routines);
 
   const handleInputChange = (key: RoutinePromptKey, value: string) => {
     setResponses((prev) => ({ ...prev, [key]: value }));
@@ -30,7 +31,10 @@ export const WorkoutSetup: React.FC = () => {
       setIsLoading(true);
       // Pass exercises and addExercise to generateRoutine
       const { routine, exercises: newExercises } = await generateRoutine(responses, exercises, addExercise);
-      await addRoutine(routine);
+      // Only set active if there are no active routines
+      const hasActive = routines.some(r => r.active);
+      const routineToAdd = hasActive ? { ...routine, active: false } : { ...routine, active: true };
+      await addRoutine(routineToAdd);
       setIsLoading(false);
       navigate(`/workout/routine/${routine.id}`, { replace: true });
     }
