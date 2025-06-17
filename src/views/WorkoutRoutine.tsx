@@ -34,6 +34,7 @@ import { RoutineDisplayTable } from '../components/RoutineDisplayTable';
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
 import { useRoutine, useRoutines, useExercises, usePulsarStore } from '../store/pulsarStore';
 import { Routine, Exercise } from '../models/types';
+import SwitchRoutineDialog from '../components/SwitchRoutineDialog';
 
 const WorkoutRoutine: React.FC = () => {
   const { routineId } = useParams<{ routineId: string }>();
@@ -46,8 +47,7 @@ const WorkoutRoutine: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
-
-  const activeRoutines = React.useMemo(() => routines.filter((r) => r.active), [routines]);
+  const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
 
   useEffect(() => {
     if (routine) {
@@ -81,19 +81,19 @@ const WorkoutRoutine: React.FC = () => {
     setNewResponses((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Remove old activeRoutines usage in toggleActiveState
   const toggleActiveState = async () => {
     if (!routine) return;
-    if (routine.active && activeRoutines.length === 1) {
+    // Only show confirmation dialog if enabling and there is another active routine
+    if (!routine.active && routines.some(r => r.active && r.id !== routine.id)) {
+      setShowSwitchConfirm(true);
+      return;
+    }
+    if (routine.active && routines.filter(r => r.active).length === 1) {
       const confirmDisable = window.confirm(
         'This is the only active routine. Are you sure you want to disable it?'
       );
       if (!confirmDisable) return;
-    }
-    if (!routine.active && activeRoutines.length > 0) {
-      const confirmEnable = window.confirm(
-        'There is already an active routine. Are you sure you want to enable this routine?'
-      );
-      if (!confirmEnable) return;
     }
     const updatedRoutine = { ...routine, active: !routine.active };
     updateRoutine(updatedRoutine);
@@ -109,6 +109,8 @@ const WorkoutRoutine: React.FC = () => {
   const handleRevert = () => {
     setIsEditing(false);
   };
+
+  const handleSwitchDialogClose = () => setShowSwitchConfirm(false);
 
   if (!routine) {
     return (
@@ -237,6 +239,11 @@ const WorkoutRoutine: React.FC = () => {
           />
         )}
       </Box>
+      <SwitchRoutineDialog
+        isOpen={showSwitchConfirm}
+        onClose={handleSwitchDialogClose}
+        routine={routine}
+      />
     </Flex>
   );
 };

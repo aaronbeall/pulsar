@@ -40,8 +40,11 @@ import {
   FaShare,
   FaArrowRight,
   FaChartLine,
+  FaLayerGroup,
+  FaTimesCircle,
 } from 'react-icons/fa';
 import { usePulsarStore } from '../store/pulsarStore';
+import SwitchRoutineDialog from './SwitchRoutineDialog';
 
 interface RoutineCardProps {
   routine: Routine;
@@ -49,10 +52,15 @@ interface RoutineCardProps {
 
 const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
   const navigate = useNavigate();
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const cancelRef = React.useRef<HTMLButtonElement>(null);
+  const {
+    isOpen: isDeleteOpen,
+    onOpen: onDeleteOpen,
+    onClose: onDeleteClose
+  } = useDisclosure();
+  const deleteCancelRef = React.useRef<HTMLButtonElement>(null);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
   const toast = useToast();
+  const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
 
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -75,7 +83,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
       duration: 2000,
       isClosable: true,
     });
-    onClose();
+    onDeleteClose();
   };
 
   return (
@@ -152,14 +160,17 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                 _dark={{ _hover: { bg: 'gray.700' } }}
               />
               <MenuList shadow="lg">
-                <MenuItem
-                  icon={<FaExchangeAlt />}
-                  color="cyan.500"
-                  _hover={{ bg: 'cyan.50' }}
-                  _dark={{ _hover: { bg: 'cyan.900' } }}
-                >
-                  Switch to this routine
-                </MenuItem>
+                {!routine.active && (
+                  <MenuItem
+                    icon={<FaExchangeAlt />}
+                    color="cyan.500"
+                    _hover={{ bg: 'cyan.50' }}
+                    _dark={{ _hover: { bg: 'cyan.900' } }}
+                    onClick={() => setShowSwitchConfirm(true)}
+                  >
+                    Switch to this routine
+                  </MenuItem>
+                )}
                 <MenuItem
                   icon={<FaStar />}
                   color="yellow.500"
@@ -180,7 +191,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                   color="red.500"
                   _hover={{ bg: 'red.50' }}
                   _dark={{ _hover: { bg: 'red.900' } }}
-                  onClick={onOpen}
+                  onClick={onDeleteOpen}
                 >
                   Delete routine
                 </MenuItem>
@@ -252,9 +263,9 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
         </VStack>
 
         <AlertDialog
-          isOpen={isOpen}
-          leastDestructiveRef={cancelRef}
-          onClose={onClose}
+          isOpen={isDeleteOpen}
+          leastDestructiveRef={deleteCancelRef}
+          onClose={onDeleteClose}
           isCentered
         >
           <AlertDialogOverlay>
@@ -266,7 +277,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                 Are you sure you want to delete {routine.name}? This action cannot be undone.
               </AlertDialogBody>
               <AlertDialogFooter>
-                <Button ref={cancelRef} onClick={onClose}>
+                <Button ref={deleteCancelRef} onClick={onDeleteClose}>
                   Cancel
                 </Button>
                 <Button colorScheme="red" ml={3} onClick={handleDelete}>
@@ -276,6 +287,12 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
             </AlertDialogContent>
           </AlertDialogOverlay>
         </AlertDialog>
+        {/* Switch routine confirmation dialog */}
+        <SwitchRoutineDialog
+          isOpen={showSwitchConfirm}
+          onClose={() => setShowSwitchConfirm(false)}
+          routine={routine}
+        />
       </CardBody>
     </Card>
   );
