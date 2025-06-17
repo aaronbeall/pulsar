@@ -37,22 +37,24 @@ import {
 } from '@chakra-ui/react';
 import { format } from 'date-fns'; // Import date-fns for formatting dates
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaInfoCircle, FaStar, FaTimesCircle, FaTrash, FaPowerOff, FaEllipsisV, FaChartBar, FaPlay, FaMagic, FaPlayCircle } from 'react-icons/fa'; // Import icons
+import { FaEdit, FaInfoCircle, FaStar, FaTimesCircle, FaTrash, FaPowerOff, FaEllipsisV, FaChartBar, FaPlay, FaMagic, FaPlayCircle, FaTrophy, FaCheckCircle } from 'react-icons/fa'; // Import icons
 import { Link as RouterLink, useParams, useNavigate } from 'react-router-dom';
 import { RoutineEditor } from '../components/RoutineEditor';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import RoutineChat, { ChatMessage } from '../components/RoutineChat';
 import { RoutineDisplayTable } from '../components/RoutineDisplayTable';
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
-import { useRoutine, useRoutines, useExercises, usePulsarStore } from '../store/pulsarStore';
-import { Routine, Exercise } from '../models/types';
+import { useRoutine, useRoutines, useExercises, usePulsarStore, useWorkouts } from '../store/pulsarStore';
+import { Routine, Exercise, Workout } from '../models/types';
 import SwitchRoutineDialog from '../components/SwitchRoutineDialog';
+import { RoutineActivityDrawer } from '../components/RoutineActivityDrawer';
 
 const WorkoutRoutine: React.FC = () => {
   const { routineId } = useParams<{ routineId: string }>();
   const routine = useRoutine(routineId || '');
   const routines = useRoutines();
   const exercises = useExercises();
+  const workouts = useWorkouts();
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
   const [newResponses, setNewResponses] = useState<Routine['responses']>([]);
@@ -203,10 +205,10 @@ const WorkoutRoutine: React.FC = () => {
               />
               <MenuList shadow="lg">
                 <MenuItem
-                  icon={<FaInfoCircle />}
+                  icon={<FaChartBar />}
                   onClick={onOpen}
                 >
-                  Details
+                  Activity
                 </MenuItem>
                 <MenuItem
                   icon={<FaStar />}
@@ -228,53 +230,9 @@ const WorkoutRoutine: React.FC = () => {
             </Menu>
           </Flex>
         </Flex>
-        <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
-          <DrawerOverlay />
-          <DrawerContent>
-            <DrawerCloseButton />
-            <DrawerHeader>Routine Details</DrawerHeader>
-            <DrawerBody>
-              {routine && workoutPrompts.map((prompt) => (
-                <Box key={prompt.key} mb={4}>
-                  <Text fontWeight="bold" fontSize="lg" mb={1}>
-                    {prompt.question}
-                  </Text>
-                  <Text fontSize="md" color="gray.600">
-                    {routine.prompts[prompt.key] || 'N/A'}
-                  </Text>
-                  <Divider mt={2} />
-                </Box>
-              ))}
-              <VStack align="start" spacing={4}>
-                {routine && routine.responses.map((aiResponse, index) => (
-                  <Box key={index} width="100%" textAlign="right">
-                    <Text fontSize="sm" color="gray.500" mb={2}>
-                      {format(new Date(aiResponse.date), 'MMMM d, yyyy')}
-                    </Text>
-                    <Tag size="md" colorScheme="cyan" mb={2} borderRadius="full">
-                      {aiResponse.prompt}
-                    </Tag>
-                    <Alert
-                      status={aiResponse.dismissed ? 'info' : 'success'}
-                      variant="left-accent"
-                      borderRadius="md"
-                      p={4}
-                    >
-                      <Flex direction="column" align="start" width="100%">
-                        <AlertDescription fontSize="md">
-                          {aiResponse.response}
-                        </AlertDescription>
-                        {!aiResponse.dismissed && (
-                          <Badge colorScheme="cyan" variant="solid" mt={2}>New</Badge>
-                        )}
-                      </Flex>
-                    </Alert>
-                  </Box>
-                ))}
-              </VStack>
-            </DrawerBody>
-          </DrawerContent>
-        </Drawer>
+        {isOpen && (
+          <RoutineActivityDrawer routine={routine} workouts={workouts} isOpen={isOpen} onClose={onClose} />
+        )}
         {/* Routine display table and editable routine */}
         {!isEditing && (
           <>

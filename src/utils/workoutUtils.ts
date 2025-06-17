@@ -1,6 +1,6 @@
 import { DayOfWeek, Routine, Workout } from '../models/types';
 import { DAYS_OF_WEEK } from '../constants/days';
-import { isSameWeek, startOfWeek, addDays, isAfter, isBefore, isEqual, subDays, isSameDay } from 'date-fns';
+import { isSameWeek, startOfWeek, addDays, isAfter, isBefore, isEqual, subDays, isSameDay, formatDistanceToNow, differenceInDays } from 'date-fns';
 
 export const getDayOfWeek = (date: Date): DayOfWeek => {
   return DAYS_OF_WEEK[date.getDay()];
@@ -252,4 +252,44 @@ export function getExerciseStats(
     }
   }
   return { routines: routinesCount, days: daysSet.size, workouts: workoutsCount };
+}
+
+export function getRoutineStats(routine: Routine, workouts: Workout[]): {
+  totalStarted: number;
+  totalCompleted: number;
+  totalPerfect: number;
+  missedCount: number;
+  streak: number;
+  createdAgo: string;
+} {
+  // Filter workouts for this routine
+  const routineWorkouts = workouts.filter(w => w.routineId === routine.id);
+  // Totals
+  const totalStarted = routineWorkouts.length;
+  const totalCompleted = routineWorkouts.filter(w => w.completedAt).length;
+  const totalPerfect = routineWorkouts.filter(w => w.completedAt && w.exercises.length > 0 && w.exercises.every(ex => ex.completedAt && !ex.skipped)).length;
+  // Created ago
+  const createdAgo = routine.createdAt ? formatDistanceToNow(new Date(routine.createdAt), { addSuffix: true }) : 'Unknown';
+  // Streak calculation: use getStreakInfo for this routine only
+  const streakInfo = getStreakInfo(routineWorkouts, [routine]);
+  const streak = streakInfo.streak;
+  // Missed workouts calculation
+  const scheduledDays = new Set<string>();
+  if (routine.dailySchedule && Array.isArray(routine.dailySchedule) && routine.dailySchedule.length > 0 && routine.createdAt) {
+    const scheduleDays = routine.dailySchedule.map(s => s.day);
+    const startDate = new Date(routine.createdAt);
+    const allWorkoutDates = routineWorkouts.map(w => new Date(w.startedAt));
+    const lastWorkoutDate = allWorkoutDates.length > 0 ? new Date(Math.max(...allWorkoutDates.map(d => d.getTime()))) : new Date();
+    let d = new Date(startDate);
+    while (d <= lastWorkoutDate) {
+      const weekday = DAYS_OF_WEEK[d.getDay()];
+      if (scheduleDays.includes(weekday)) {
+        scheduledDays.add(d.toDateString());
+      }
+      d.setDate(d.getDate() + 1);
+    }
+  }
+  const workoutDays = new Set(routineWorkouts.map(w => new Date(w.startedAt).toDateString()));
+  const missedCount = Array.from(scheduledDays).filter(day => !workoutDays.has(day)).length;
+  return { totalStarted, totalCompleted, totalPerfect, missedCount, streak, createdAgo };
 }
