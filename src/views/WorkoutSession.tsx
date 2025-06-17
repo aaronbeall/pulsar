@@ -1,30 +1,19 @@
+import { AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, Box, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Button, Flex, Heading, SlideFade, Spinner, Text, useColorModeValue, VStack } from '@chakra-ui/react';
+import { keyframes } from '@emotion/react';
+import { AnimatePresence, motion } from 'framer-motion';
 import React from 'react';
-import { Box, Button, Flex, Heading, Spinner, Text, VStack, Breadcrumb, BreadcrumbItem, BreadcrumbLink, SlideFade, AlertDialog, AlertDialogOverlay, AlertDialogContent, AlertDialogHeader, AlertDialogBody, AlertDialogFooter, useColorModeValue } from '@chakra-ui/react';
-import { useParams, useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom';
-import { useExercises, useRoutines, useWorkouts, useRoutine, useWorkout, usePulsarStore } from '../store/pulsarStore';
-import { Routine, Workout, DayOfWeek, Exercise, WorkoutExercise } from '../models/types';
-import { getTodayDayOfWeek, findWorkoutForDay, findExercisesForDay } from '../utils/workoutUtils';
-import { DAYS_OF_WEEK } from '../constants/days';
+import { FaFlagCheckered, FaInfoCircle, FaTimesCircle } from 'react-icons/fa';
+import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
-import { generateRandomName } from '../utils/nameUtils';
+import { CongratulatoryInterstitial } from '../components/CongratulatoryInterstitial';
+import ExerciseProgress from '../components/ExerciseProgress';
 import TimeElapsed from '../components/TimeElapsed';
 import WorkoutTimeline from '../components/WorkoutTimeline';
-import ExerciseProgress from '../components/ExerciseProgress';
-import { useEffect } from 'react';
-import FinishedWorkoutAlert from '../components/FinishedWorkoutAlert';
-import { getStreakInfo } from '../utils/workoutUtils';
-import { motion, AnimatePresence } from 'framer-motion';
-import { keyframes } from '@emotion/react';
-import { FaFlagCheckered, FaTimesCircle, FaInfoCircle } from 'react-icons/fa';
-import { Counter } from '../components/Counter';
-
-const confetti = keyframes`
-  0%, 100% { transform: translateY(0); }
-  20% { transform: translateY(-8px) rotate(-5deg); }
-  40% { transform: translateY(-16px) rotate(5deg); }
-  60% { transform: translateY(-8px) rotate(-3deg); }
-  80% { transform: translateY(-4px) rotate(3deg); }
-`;
+import { DAYS_OF_WEEK } from '../constants/days';
+import { DayOfWeek, Routine, Workout } from '../models/types';
+import { useExercises, usePulsarStore, useRoutines, useWorkouts } from '../store/pulsarStore';
+import { generateRandomName } from '../utils/nameUtils';
+import { findExercisesForDay, findWorkoutForDay, getStreakInfo, getTodayDayOfWeek } from '../utils/workoutUtils';
 
 export const WorkoutSession: React.FC = () => {
   const { sessionId } = useParams();
@@ -594,83 +583,192 @@ const WorkoutFinishedBanner: React.FC<{ streak: number; streakType: 'none' | 'st
 };
 
 const IncompleteWorkoutBanner: React.FC<{ routineId: string }> = ({ routineId }) => {
-  const bg = useColorModeValue('gray.50', 'gray.800');
-  const border = useColorModeValue('gray.200', 'gray.700');
-  const iconColor = useColorModeValue('yellow.400', 'yellow.200');
-  const textColor = useColorModeValue('gray.600', 'gray.200');
-  const subTextColor = useColorModeValue('gray.400', 'gray.400');
+  // Subtle danger (red/orange) style, smaller and less bold
+  const borderGradient = useColorModeValue(
+    'linear(90deg, #ffb3b3 0%, #ff9800 100%)',
+    'linear(90deg, #ff6a00 0%, #ffb3b3 100%)'
+  );
+  const glassBg = useColorModeValue('rgba(255, 240, 235, 0.85)', 'rgba(50, 20, 20, 0.85)');
+  const iconShadow = useColorModeValue(
+    '0 0 4px #ff4d4f, 0 0 8px #ff9800',
+    '0 0 4px #ff1744, 0 0 8px #ff6a00'
+  );
+  const textColor = useColorModeValue('#b71c1c', '#ffbdbd');
+  const subTextColor = useColorModeValue('#ff9800', '#ffb380');
 
   return (
-    <Flex
-      align="center"
-      bg={bg}
-      color={textColor}
-      borderRadius="md"
-      px={3}
-      py={1.5}
-      mb={3}
-      boxShadow="none"
-      borderWidth={1}
-      borderColor={border}
-      gap={2}
-      style={{ opacity: 0.85 }}
-    >
-      <Box fontSize="1.1em" mr={2} aria-label="warning" color={iconColor}>⚠️</Box>
-      <Box flex={1}>
-        <Text fontWeight="medium" color={textColor} mb={0.5} fontSize="sm">
-          Not all exercises were completed
-        </Text>
-        <Text fontSize="xs" color={subTextColor}>
-          You finished this workout, but some exercises were skipped or left incomplete. You can review and adjust your routine for next time.
-        </Text>
-      </Box>
-      <Button
-        as={RouterLink}
-        to={`/workout/routine/${routineId}`}
-        size="xs"
-        colorScheme="blue"
-        variant="ghost"
-        fontWeight="medium"
-        ml={2}
+    <SlideFade in={true} offsetY="8px">
+      <Flex
+        align="center"
+        borderRadius="lg"
+        p={0}
+        mb={3}
+        minHeight="48px"
+        width="100%"
+        mx="auto"
+        style={{ position: 'relative' }}
       >
-        Edit Routine
-      </Button>
-    </Flex>
+        {/* Outer soft danger border */}
+        <Box
+          borderRadius="0.8em"
+          bgGradient={borderGradient}
+          p="1px"
+          width="100%"
+          height="100%"
+          boxShadow="0 0 0 1.5px #ff4d4f33, 0 0 6px 0 #ff980022, 0 2px 8px 0 #0002"
+          display="flex"
+          alignItems="stretch"
+        >
+          {/* Inner glassy background */}
+          <Flex
+            align="center"
+            borderRadius="0.7em"
+            p={{ base: 2, md: 2.5 }}
+            width="100%"
+            minHeight="44px"
+            bg={glassBg}
+            style={{
+              backdropFilter: 'blur(6px)',
+              width: '100%',
+            }}
+            justify="flex-start"
+            gap={2}
+          >
+            <Box
+              fontSize={{ base: '1.2em', md: '1.4em' }}
+              mr={{ base: 1.5, md: 2 }}
+              style={{
+                userSelect: 'none',
+                filter: iconShadow,
+                textShadow: iconShadow,
+                transition: 'filter 0.2s',
+              }}
+              aria-label="warning"
+            >
+              ⚠️
+            </Box>
+            <Flex direction="column" align="flex-start" flex={1} minW={0}>
+              <Text
+                fontSize={{ base: 'sm', md: 'md' }}
+                fontWeight="semibold"
+                color={textColor}
+                mb={0.5}
+                letterSpacing="tight"
+                style={{ textShadow: '0 1px 2px #ff4d4f44, 0 1px 0 #fff2' }}
+              >
+                Not all exercises were completed
+              </Text>
+              <Text fontSize="xs" color={subTextColor} style={{ textShadow: '0 1px 2px #ff980044' }}>
+                You finished this workout, but some exercises were skipped or left incomplete. You can review and adjust your routine for next time.
+              </Text>
+            </Flex>
+            <Button
+              as={RouterLink}
+              to={`/workout/routine/${routineId}`}
+              size="xs"
+              colorScheme="red"
+              variant="ghost"
+              fontWeight="medium"
+              ml={2}
+              style={{
+                boxShadow: '0 0 4px #ff4d4f44',
+                borderRadius: '0.6em',
+                fontSize: '0.92em',
+              }}
+            >
+              Edit Routine
+            </Button>
+          </Flex>
+        </Box>
+      </Flex>
+    </SlideFade>
   );
 };
 
 const PerfectWorkoutBanner: React.FC = () => {
-  const bg = useColorModeValue('blue.50', 'gray.900');
-  const border = useColorModeValue('blue.200', 'blue.700');
-  const iconColor = useColorModeValue('yellow.400', 'yellow.200');
-  const textColor = useColorModeValue('blue.700', 'blue.200');
-  const subTextColor = useColorModeValue('gray.500', 'gray.400');
+  // Bold, glowy, golden style
+  const borderGradient = useColorModeValue(
+    'linear(90deg, #ffe066 0%, #ffd700 60%, #ffb300 100%)',
+    'linear(90deg, #ffd700 0%, #ffb300 60%, #ff6a00 100%)'
+  );
+  const glassBg = useColorModeValue('rgba(255, 245, 200, 0.92)', 'rgba(40, 32, 10, 0.92)');
+  const iconShadow = useColorModeValue(
+    '0 0 24px #ffe066, 0 0 48px #ffd700, 0 0 64px #ffb300',
+    '0 0 24px #ffd700, 0 0 48px #ffb300, 0 0 64px #ff6a00'
+  );
+  const textColor = useColorModeValue('#a67c00', '#ffe066');
+  const subTextColor = useColorModeValue('#ffb300', '#ffd700');
 
   return (
-    <Flex
-      align="center"
-      bg={bg}
-      color={textColor}
-      borderRadius="md"
-      px={3}
-      py={1.5}
-      mb={3}
-      boxShadow="none"
-      borderWidth={1}
-      borderColor={border}
-      gap={2}
-      style={{ opacity: 0.92 }}
-    >
-      <Box fontSize="1.2em" mr={2} aria-label="celebrate" color={iconColor}>🏆</Box>
-      <Box flex={1}>
-        <Text fontWeight="bold" color={textColor} mb={0.5} fontSize="sm">
-          Perfect Workout!
-        </Text>
-        <Text fontSize="xs" color={subTextColor}>
-          You completed every exercise in this workout. Amazing job!
-        </Text>
-      </Box>
-    </Flex>
+    <SlideFade in={true} offsetY="10px">
+      <Flex
+        align="center"
+        borderRadius="xl"
+        p={0}
+        mb={4}
+        minHeight="70px"
+        width="100%"
+        mx="auto"
+        style={{ position: 'relative' }}
+      >
+        {/* Outer golden glow border */}
+        <Box
+          borderRadius="1em"
+          bgGradient={borderGradient}
+          p="2.5px"
+          width="100%"
+          height="100%"
+          boxShadow="0 0 0 3px #ffd70088, 0 0 32px 0 #ffe06655, 0 2px 24px 0 #0007"
+          display="flex"
+          alignItems="stretch"
+        >
+          {/* Inner glassy background */}
+          <Flex
+            align="center"
+            borderRadius="0.9em"
+            p={{ base: 4, md: 5 }}
+            width="100%"
+            minHeight="66px"
+            bg={glassBg}
+            style={{
+              backdropFilter: 'blur(14px)',
+              width: '100%',
+            }}
+            justify="flex-start"
+            gap={3}
+          >
+            <Box
+              fontSize={{ base: '2em', md: '2.5em' }}
+              mr={{ base: 3, md: 4 }}
+              style={{
+                userSelect: 'none',
+                filter: iconShadow,
+                textShadow: iconShadow,
+                transition: 'filter 0.2s',
+              }}
+              aria-label="trophy"
+            >
+              🏆
+            </Box>
+            <Flex direction="column" align="flex-start" flex={1} minW={0}>
+              <Text
+                fontSize={{ base: 'lg', md: 'xl' }}
+                fontWeight="extrabold"
+                color={textColor}
+                mb={0.5}
+                letterSpacing="tight"
+                style={{ textShadow: '0 2px 16px #ffd700cc, 0 1px 0 #fff2' }}
+              >
+                Perfect Workout!
+              </Text>
+              <Text fontSize="sm" color={subTextColor} style={{ textShadow: '0 1px 12px #ffd70099' }}>
+                You completed every exercise in this workout. Amazing job!
+              </Text>
+            </Flex>
+          </Flex>
+        </Box>
+      </Flex>
+    </SlideFade>
   );
 };
 
@@ -708,207 +806,6 @@ const RoutineUpdatedBanner: React.FC<{ onRestart: () => void }> = ({ onRestart }
       >
         Restart
       </Button>
-    </Flex>
-  );
-};
-
-const CongratulatoryInterstitial: React.FC<{
-  streak: number;
-  streakType: 'none' | 'start' | 'continue';
-  isPerfect: boolean;
-  totalWorkouts: number;
-  onDismiss: () => void;
-}> = ({ streak, streakType, isPerfect, totalWorkouts, onDismiss }) => {
-  const [step, setStep] = React.useState(0);
-  React.useEffect(() => {
-    let timers: NodeJS.Timeout[] = [];
-    timers.push(setTimeout(() => setStep(1), 900));
-    if (streak > 0 && streakType !== 'none') {
-      timers.push(setTimeout(() => setStep(2), 1800));
-    }
-    if (isPerfect) {
-      timers.push(setTimeout(() => setStep(3), 2700));
-      timers.push(setTimeout(() => setStep(4), 3700));
-    } else {
-      timers.push(setTimeout(() => setStep(3), 2700));
-      timers.push(setTimeout(() => setStep(4), 3700));
-    }
-    return () => timers.forEach(clearTimeout);
-  }, [streak, streakType, isPerfect]);
-
-  // Neon/glassy border and animated emoji
-  return (
-    <Flex direction="column" align="center" minH="60vh" w="100%" p={6}>
-      <Box
-        borderRadius="1.5em"
-        bgGradient="linear(90deg, #00eaff 0%, #7f5fff 50%, #ff46a1 100%)"
-        p={{ base: '3.5px', md: '4.5px' }}
-        width={{ base: '100%', md: '80%' }}
-        maxW="480px"
-        boxShadow="0 0 0 2px #00eaff55, 0 0 16px 0 #7f5fff33, 0 4px 32px 0 #0008"
-        mb={8}
-        display="flex"
-        alignItems="stretch"
-        justifyContent="center"
-      >
-        <Flex
-          direction="column"
-          align="center"
-          borderRadius="1.3em"
-          p={{ base: 6, md: 10 }}
-          width="100%"
-          minHeight="320px"
-          bg="rgba(18,22,40,0.88)"
-          style={{
-            backdropFilter: 'blur(16px)',
-            width: '100%',
-          }}
-          justify="center"
-          position="relative"
-        >
-          <AnimatePresence mode="wait">
-            {step >= 0 && (
-              <motion.div
-                key="congrats"
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -40 }}
-                transition={{ duration: 0.7, type: 'spring', bounce: 0.4 }}
-                style={{ width: '100%' }}
-              >
-                <Box
-                  fontSize={{ base: '3.5em', md: '4.2em' }}
-                  mb={2}
-                  aria-label="celebrate"
-                  style={{
-                    userSelect: 'none',
-                    filter: 'drop-shadow(0 0 32px #00eaff) drop-shadow(0 0 64px #7f5fff) drop-shadow(0 0 96px #ff46a1)',
-                    textShadow: '0 0 32px #00eaff, 0 0 64px #7f5fff, 0 0 96px #ff46a1',
-                    transition: 'filter 0.2s',
-                    textAlign: 'center',
-                  }}
-                  as={motion.div}
-                  initial={{ scale: 0.7, rotate: -10 }}
-                  animate={{ scale: 1.18, rotate: 0 }}
-                >
-                  🎉
-                </Box>
-                <Heading
-                  size="2xl"
-                  mb={1}
-                  bgGradient="linear(90deg, #00eaff 0%, #7f5fff 50%, #ff46a1 100%)"
-                  bgClip="text"
-                  textAlign="center"
-                  fontWeight="extrabold"
-                  letterSpacing="tight"
-                  style={{ lineHeight: 1.1 }}
-                >
-                  Congratulations!
-                </Heading>
-                <Text fontSize="xl" color="gray.400" mb={4} textAlign="center">
-                  You finished your workout!
-                </Text>
-              </motion.div>
-            )}
-            {step >= 1 && streak > 0 && streakType !== 'none' && (
-              <motion.div
-                key="streak"
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -40 }}
-                transition={{ duration: 0.7, delay: 0.1, type: 'spring', bounce: 0.4 }}
-                style={{ width: '100%' }}
-              >
-                <Flex align="center" justify="center" mb={2} gap={2} minH="2.7em">
-                  <motion.span
-                    key="flame"
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1.18, opacity: 1 }}
-                    exit={{ scale: 0, opacity: 0 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-                    style={{
-                      fontSize: '2.3em',
-                      display: 'inline-block',
-                      marginRight: 10,
-                      filter: 'drop-shadow(0 0 32px #00eaff) drop-shadow(0 0 64px #7f5fff) drop-shadow(0 0 96px #ff46a1)',
-                      textShadow: '0 0 24px #00eaff, 0 0 48px #7f5fff, 0 0 64px #ff46a1',
-                      transition: 'filter 0.2s',
-                    }}
-                    aria-label="streak"
-                  >
-                    🔥
-                  </motion.span>
-                  <Box position="relative">
-                    <Counter from={0} to={streak} delay={300} duration={900} fontSize="2.3em" color="#ffb300" fontWeight={900} style={{marginRight: 8, textShadow: '0 2px 8px #ffb30088'}} />
-                  </Box>
-                  <Text
-                    fontSize="md"
-                    fontWeight="bold"
-                    color="#00eaff"
-                    letterSpacing="tight"
-                    ml={2}
-                    style={{
-                      textShadow: '0 1px 12px #00eaff99, 0 1px 0 #222',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
-                      fontFamily: 'Inter, sans-serif',
-                    }}
-                  >
-                    {streakType === 'start' ? 'Streak started!' : streakType === 'continue' ? 'Streak continued!' : ''}
-                  </Text>
-                </Flex>
-              </motion.div>
-            )}
-            {step >= 2 && isPerfect && (
-              <motion.div
-                key="perfect"
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -40 }}
-                transition={{ duration: 0.7, delay: 0.1, type: 'spring', bounce: 0.4 }}
-                style={{ width: '100%' }}
-              >
-                <Flex align="center" justify="center" mb={2} gap={2}>
-                  <Text fontSize="2xl" fontWeight="bold" color="yellow.400" mr={1} textShadow="0 2px 8px #ffe06688">🏆</Text>
-                  <Text fontSize="lg" color="yellow.500" fontWeight="semibold" letterSpacing="wide" textShadow="0 1px 6px #ffe06644">Perfect Workout!</Text>
-                </Flex>
-              </motion.div>
-            )}
-            {step >= 3 && (
-              <motion.div
-                key="stats"
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -40 }}
-                transition={{ duration: 0.7, delay: 0.1, type: 'spring', bounce: 0.4 }}
-                style={{ width: '100%' }}
-              >
-                <Flex align="center" justify="center" mb={2} gap={2}>
-                  <Box as={FaFlagCheckered} color="cyan.400" fontSize="2xl" mr={1} filter="drop-shadow(0 0 8px #00eaff88)" />
-                  <Counter from={0} to={totalWorkouts} delay={300} duration={900} fontSize="2.2em" color="#00eaff" fontWeight={900} style={{marginRight: 6, textShadow: '0 1px 6px #00eaff44'}} />
-                  <Text fontSize="lg" color="cyan.500" fontWeight="bold" letterSpacing="wide" textShadow="0 1px 6px #00eaff44">workouts completed</Text>
-                </Flex>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          {step >= 4 && (
-            <motion.div
-              key="dismiss"
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -40 }}
-              transition={{ duration: 0.7, delay: 0.1, type: 'spring', bounce: 0.4 }}
-              style={{ width: '100%' }}
-            >
-              <Flex justify="center">
-                <Button colorScheme="cyan" size="lg" mt={6} onClick={onDismiss} leftIcon={<Box as={FaFlagCheckered} fontSize="1.3em" />}>
-                  Continue
-                </Button>
-              </Flex>
-            </motion.div>
-          )}
-        </Flex>
-      </Box>
     </Flex>
   );
 };

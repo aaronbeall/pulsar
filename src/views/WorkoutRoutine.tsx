@@ -1,53 +1,41 @@
 import {
-  Alert,
-  AlertDescription,
-  Badge,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   Box, // Import Switch component
   Breadcrumb, // Import Breadcrumb components
   BreadcrumbItem,
   BreadcrumbLink,
-  Divider,
-  Drawer,
-  DrawerBody,
-  DrawerCloseButton,
-  DrawerContent,
-  DrawerHeader,
-  DrawerOverlay,
+  Button,
   Flex,
   Heading,
   IconButton,
+  Menu,
+  MenuButton,
+  MenuItem,
+  MenuList,
   Spinner,
   Switch,
   Tag,
   Text,
-  useDisclosure,
-  VStack,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
-  Button,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  useColorModeValue
+  useColorModeValue,
+  useDisclosure
 } from '@chakra-ui/react';
-import { format } from 'date-fns'; // Import date-fns for formatting dates
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaInfoCircle, FaStar, FaTimesCircle, FaTrash, FaPowerOff, FaEllipsisV, FaChartBar, FaPlay, FaMagic, FaPlayCircle, FaTrophy, FaCheckCircle } from 'react-icons/fa'; // Import icons
-import { Link as RouterLink, useParams, useNavigate } from 'react-router-dom';
-import { RoutineEditor } from '../components/RoutineEditor';
+import { FaChartBar, FaEdit, FaEllipsisV, FaInfoCircle, FaPlay, FaPlayCircle, FaPowerOff, FaStar, FaTimesCircle, FaTrash } from 'react-icons/fa'; // Import icons
+import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
+import { RoutineActivityDrawer } from '../components/RoutineActivityDrawer';
 import RoutineChat, { ChatMessage } from '../components/RoutineChat';
 import { RoutineDisplayTable } from '../components/RoutineDisplayTable';
-import { workoutPrompts } from '../constants/prompts'; // Import prompts
-import { useRoutine, useRoutines, useExercises, usePulsarStore, useWorkouts } from '../store/pulsarStore';
-import { Routine, Exercise, Workout } from '../models/types';
+import { RoutineEditor } from '../components/RoutineEditor';
 import SwitchRoutineDialog from '../components/SwitchRoutineDialog';
-import { RoutineActivityDrawer } from '../components/RoutineActivityDrawer';
+import { workoutPrompts } from '../constants/prompts'; // Import prompts
+import { Routine } from '../models/types';
+import { useExercises, usePulsarStore, useRoutine, useRoutines, useWorkouts } from '../store/pulsarStore';
 
 const WorkoutRoutine: React.FC = () => {
   const { routineId } = useParams<{ routineId: string }>();
