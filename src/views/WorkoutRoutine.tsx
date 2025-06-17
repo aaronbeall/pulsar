@@ -25,7 +25,7 @@ import {
   useDisclosure
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
-import { FaChartBar, FaEdit, FaEllipsisV, FaInfoCircle, FaPlay, FaPlayCircle, FaPowerOff, FaStar, FaTimesCircle, FaTrash } from 'react-icons/fa'; // Import icons
+import { FaChartBar, FaEdit, FaEllipsisV, FaInfoCircle, FaPlay, FaPlayCircle, FaPowerOff, FaStar, FaTimesCircle, FaTrash, FaFileExport } from 'react-icons/fa'; // Import icons
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import { RoutineActivityDrawer } from '../components/RoutineActivityDrawer';
@@ -33,6 +33,7 @@ import RoutineChat, { ChatMessage } from '../components/RoutineChat';
 import { RoutineDisplayTable } from '../components/RoutineDisplayTable';
 import { RoutineEditor } from '../components/RoutineEditor';
 import SwitchRoutineDialog from '../components/SwitchRoutineDialog';
+import { ExportRoutineDialog } from '../components/ExportRoutineDialog';
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
 import type { Routine } from '../models/types';
 import { useExercises, usePulsarStore, useRoutine, useRoutines, useWorkouts } from '../store/pulsarStore';
@@ -54,6 +55,7 @@ const WorkoutRoutine: React.FC = () => {
   const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
   const cancelRef = React.useRef(null);
   const navigate = useNavigate();
 
@@ -207,6 +209,12 @@ const WorkoutRoutine: React.FC = () => {
                   Activity
                 </MenuItem>
                 <MenuItem
+                  icon={<FaFileExport />} // Use export icon
+                  onClick={() => setShowExportDialog(true)}
+                >
+                  Export...
+                </MenuItem>
+                <MenuItem
                   icon={<FaStar />}
                   color={routine.favorite ? 'yellow.500' : 'gray.400'}
                   onClick={async () => {
@@ -314,6 +322,11 @@ const WorkoutRoutine: React.FC = () => {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
+      <ExportRoutineDialog
+        isOpen={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
+        routine={routine}
+      />
     </Flex>
   );
 };

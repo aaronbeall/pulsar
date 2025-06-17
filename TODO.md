@@ -29,7 +29,9 @@
 - [ ] Scores/points/ranks
 - [ ] Achievements
 - [ ] Rate this app
-- [ ] Monetization (Buy Me a Coffee, premium)
+- [ ] Support/Report a Bug
+- [ ] ToS/Privacy Notice
+- [ ] Monetization (Buy Me a Coffee, premium, ads)
 - [ ] AI-free routine library (generated with LLM) with semantic search
 
 ## Bells and whistles
@@ -49,3 +51,9 @@
 - [ ] Diet tracking
 - [ ] Print/Export PDF support
 - [ ] Timeline
+- [ ] Exercise library
+- [ ] Warn when deleting a routine that has workouts
+
+## Issues
+- [ ] Inactive routines are impacting the TimeToWorkoutAlert
+- [ ] Routine view banner gets mixed up with multiple started days
