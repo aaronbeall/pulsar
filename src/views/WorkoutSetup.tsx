@@ -5,6 +5,7 @@ import { usePulsarStore, useExercises } from '../store/pulsarStore';
 import { generateRoutine } from '../services/routineBuilderService';
 import { workoutPrompts } from '../constants/prompts'; // Import reusable prompts
 import { RoutinePromptKey } from '../models/types';
+import { FaArrowRight, FaMagic } from 'react-icons/fa';
 
 const initialPromptState = { goals: '', equipment: '', time: '', additionalInfo: '' };
 
@@ -87,7 +88,7 @@ export const WorkoutSetup: React.FC = () => {
           {workoutPrompts[step - 1].placeholder}
         </Text>
       </Box>
-      <Button colorScheme="cyan" onClick={handleNext}>
+      <Button colorScheme="cyan" onClick={handleNext} leftIcon={step < workoutPrompts.length ? <FaArrowRight /> : <FaMagic />}>
         {step < workoutPrompts.length ? "Next" : "Make my routine!"}
       </Button>
     </Flex>
