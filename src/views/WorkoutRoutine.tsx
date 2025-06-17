@@ -25,7 +25,7 @@ import {
 } from '@chakra-ui/react';
 import { format } from 'date-fns'; // Import date-fns for formatting dates
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaInfoCircle } from 'react-icons/fa'; // Import icons
+import { FaEdit, FaInfoCircle, FaStar } from 'react-icons/fa'; // Import icons
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { RoutineEditor } from '../components/RoutineEditor';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
@@ -138,8 +138,13 @@ const WorkoutRoutine: React.FC = () => {
       <RoutineChat chatHistory={chatHistory} setChatHistory={setChatHistory} />
       <Box width="100%" maxWidth="1200px">
         <Flex justify="space-between" align="center" mb={4}>
-          <Heading size="lg" bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
+          <Heading size="lg" bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text" display="flex" alignItems="center" gap={2}>
             {routine.name}
+            {routine.favorite && (
+              <Box as="span" color="yellow.400" ml={1} fontSize="1.1em" title="Favorite">
+                <FaStar />
+              </Box>
+            )}
           </Heading>
           <Flex gap={2} align="center">
             <Text fontSize="sm" color="gray.600">

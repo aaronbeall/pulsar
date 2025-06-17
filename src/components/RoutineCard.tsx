@@ -59,8 +59,10 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
   } = useDisclosure();
   const deleteCancelRef = React.useRef<HTMLButtonElement>(null);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
+  const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const toast = useToast();
   const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
+  const [favoriteLoading, setFavoriteLoading] = React.useState(false);
 
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -133,8 +135,16 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                 transition="color 0.2s"
                 cursor="pointer"
                 onClick={() => navigate(`/workout/routine/${routine.id}`)}
+                display="flex"
+                alignItems="center"
+                gap={2}
               >
                 {routine.name}
+                {routine.favorite && (
+                  <Box as="span" color="yellow.400" ml={1} fontSize="1.1em" title="Favorite">
+                    <FaStar />
+                  </Box>
+                )}
               </Heading>
               {routine.active && (
                 <Tag
@@ -173,11 +183,26 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                 )}
                 <MenuItem
                   icon={<FaStar />}
-                  color="yellow.500"
+                  color={routine.favorite ? 'yellow.500' : 'gray.400'}
                   _hover={{ bg: 'yellow.50' }}
                   _dark={{ _hover: { bg: 'yellow.900' } }}
+                  onClick={async () => {
+                    setFavoriteLoading(true);
+                    await updateRoutine({ ...routine, favorite: !routine.favorite });
+                    setFavoriteLoading(false);
+                    toast({
+                      title: routine.favorite ? 'Removed from favorites' : 'Added to favorites',
+                      description: routine.favorite
+                        ? `${routine.name} was removed from your favorites.`
+                        : `${routine.name} was added to your favorites!`,
+                      status: 'success',
+                      duration: 1800,
+                      isClosable: true,
+                    });
+                  }}
+                  isDisabled={favoriteLoading}
                 >
-                  Add to favorites
+                  {routine.favorite ? 'Remove from favorites' : 'Add to favorites'}
                 </MenuItem>
                 <MenuItem
                   icon={<FaShare />}
@@ -277,10 +302,10 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                 Are you sure you want to delete {routine.name}? This action cannot be undone.
               </AlertDialogBody>
               <AlertDialogFooter>
-                <Button ref={deleteCancelRef} onClick={onDeleteClose}>
+                <Button ref={deleteCancelRef} onClick={onDeleteClose} leftIcon={<FaTimesCircle />} variant="ghost">
                   Cancel
                 </Button>
-                <Button colorScheme="red" ml={3} onClick={handleDelete}>
+                <Button colorScheme="red" ml={3} onClick={handleDelete} leftIcon={<FaTrash />}>
                   Delete
                 </Button>
               </AlertDialogFooter>

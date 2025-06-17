@@ -16,7 +16,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { Routine, Workout } from '../models/types';
 import { useRoutines, useWorkouts } from '../store/pulsarStore';
-import { FaPlus, FaDumbbell } from 'react-icons/fa';
+import { FaPlus, FaDumbbell, FaStar } from 'react-icons/fa';
 import Timeline from '../components/Timeline';
 import { hasRoutineForToday, getWorkoutStatusForToday } from '../utils/workoutUtils';
 import RoutineCard from '../components/RoutineCard';
@@ -74,9 +74,19 @@ export const WorkoutLanding: React.FC = () => {
 
   const isLoading = routines === undefined || workouts === undefined;
 
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
   // Use useMemo for active/inactive routines
-  const activeRoutines = React.useMemo(() => routines.filter(r => r.active), [routines]);
-  const inactiveRoutines = React.useMemo(() => routines.filter(r => !r.active), [routines]);
+  const activeRoutines = React.useMemo(() =>
+    routines.filter(r => r.active && (!showFavoritesOnly || r.favorite)),
+    [routines, showFavoritesOnly]
+  );
+  const inactiveRoutines = React.useMemo(() =>
+    routines.filter(r => !r.active && (!showFavoritesOnly || r.favorite)),
+    [routines, showFavoritesOnly]
+  );
+
+  const hasFavorites = React.useMemo(() => routines.some(r => r.favorite), [routines]);
 
   React.useEffect(() => {
     if (!isLoading && routines.length === 0) {
@@ -121,6 +131,33 @@ export const WorkoutLanding: React.FC = () => {
               <Heading size="lg" bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
                 My Workout
               </Heading>
+              {hasFavorites && (
+                <Button
+                  leftIcon={<FaStar />}
+                  colorScheme={showFavoritesOnly ? 'yellow' : undefined}
+                  variant={showFavoritesOnly ? 'solid' : 'ghost'}
+                  size="sm"
+                  onClick={() => setShowFavoritesOnly(fav => !fav)}
+                  aria-pressed={showFavoritesOnly}
+                  sx={!showFavoritesOnly ? {
+                    color: useColorModeValue('#B89C3A', '#FFD600'),
+                    border: '1.5px solid',
+                    borderColor: useColorModeValue('#F5E7B2', '#FFD60055'),
+                    background: useColorModeValue('#FFFBEA', 'rgba(255,214,0,0.07)'),
+                    boxShadow: 'none',
+                    opacity: 0.92,
+                    fontWeight: 500,
+                    _hover: {
+                      color: '#FFD600',
+                      borderColor: '#FFD600',
+                      background: useColorModeValue('#FFF9E1', '#FFD60022'),
+                      opacity: 1,
+                    },
+                  } : {}}
+                >
+                  {showFavoritesOnly ? 'Show All' : 'Show Favorites'}
+                </Button>
+              )}
             </Flex>
 
             {activeRoutines.length > 0 && (
