@@ -156,8 +156,8 @@ export function getStreakInfo(workouts: Workout[], routines: Routine[]): StreakI
   for (let i = 0; i < streakDaysArr.length; i++) {
     const day = streakDaysArr[i];
     if (day.rest) {
-      // Only mark as inStreak if between completed workouts or today
-      if (inStreak) {
+      // Mark as inStreak if between completed workouts or today
+      if (inStreak || day.completed) {
         day.inStreak = true;
       }
       continue;

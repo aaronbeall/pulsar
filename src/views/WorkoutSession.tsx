@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Flex, Heading, Spinner, Text, VStack, Breadcrumb, BreadcrumbItem, BreadcrumbLink, SlideFade, AlertDialog, AlertDialogOverlay, AlertDialogContent, AlertDialogHeader, AlertDialogBody, AlertDialogFooter } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Spinner, Text, VStack, Breadcrumb, BreadcrumbItem, BreadcrumbLink, SlideFade, AlertDialog, AlertDialogOverlay, AlertDialogContent, AlertDialogHeader, AlertDialogBody, AlertDialogFooter, useColorModeValue } from '@chakra-ui/react';
 import { useParams, useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom';
 import { useExercises, useRoutines, useWorkouts, useRoutine, useWorkout, usePulsarStore } from '../store/pulsarStore';
 import { Routine, Workout, DayOfWeek, Exercise, WorkoutExercise } from '../models/types';
@@ -205,6 +205,43 @@ export const WorkoutSession: React.FC = () => {
     }
   }, [workout?.completedAt, workouts, routines]);
 
+  // Helper: check if workout exercises match the routine for the day
+  const isRoutineUpdated = React.useMemo(() => {
+    if (!routine || !workout) return false;
+    const workoutDay = workout.day;
+    // Get the exercises for this day from the routine
+    const routineExercises = findExercisesForDay(routine, workoutDay);
+    if (routineExercises.length !== workout.exercises.length) return true;
+    // Compare exercise IDs in order
+    for (let i = 0; i < routineExercises.length; i++) {
+      if (routineExercises[i].exerciseId !== workout.exercises[i].exerciseId) return true;
+    }
+    return false;
+  }, [routine, workout]);
+
+  // Handler: restart workout to match routine
+  const handleRestartToRoutine = React.useCallback(() => {
+    if (!routine || !workout) return;
+    const workoutDay = workout.day;
+    const scheduledExercises = findExercisesForDay(routine, workoutDay);
+    const resetWorkout: Workout = {
+      ...workout,
+      startedAt: Date.now(),
+      completedAt: undefined,
+      exercises: scheduledExercises.map(exercise => ({
+        ...exercise,
+        completedSets: 0,
+        completedDuration: 0,
+        startedAt: undefined,
+        completedAt: undefined,
+        skipped: false
+      }))
+    };
+    updateWorkout(resetWorkout);
+    setWorkout(resetWorkout);
+    setSelectedExerciseIndex(0);
+  }, [routine, workout, updateWorkout]);
+
   if (!routine || !workout) {
     return (
       <Flex direction="column" align="center" justify="center" height="100%" width="100%">
@@ -220,6 +257,9 @@ export const WorkoutSession: React.FC = () => {
 
   return (
     <Flex direction="column" p={4} width="100%">
+      {isRoutineUpdated && (
+        <RoutineUpdatedBanner onRestart={handleRestartToRoutine} />
+      )}
       <AnimatePresence>
         {showFinishedAlert && (
           <motion.div
@@ -323,6 +363,12 @@ export const WorkoutSession: React.FC = () => {
               </AlertDialogOverlay>
             </AlertDialog>
           </>
+        )}
+        {workout.completedAt && workout.exercises.every(ex => ex.completedAt) && (
+          <PerfectWorkoutBanner />
+        )}
+        {workout.completedAt && workout.exercises.some(ex => !ex.completedAt) && (
+          <IncompleteWorkoutBanner routineId={routine.id} />
         )}
       </VStack>
     </Flex>
@@ -545,5 +591,124 @@ const WorkoutFinishedBanner: React.FC<{ streak: number; streakType: 'none' | 'st
         </Box>
       </Flex>
     </SlideFade>
+  );
+};
+
+const IncompleteWorkoutBanner: React.FC<{ routineId: string }> = ({ routineId }) => {
+  const bg = useColorModeValue('gray.50', 'gray.800');
+  const border = useColorModeValue('gray.200', 'gray.700');
+  const iconColor = useColorModeValue('yellow.400', 'yellow.200');
+  const textColor = useColorModeValue('gray.600', 'gray.200');
+  const subTextColor = useColorModeValue('gray.400', 'gray.400');
+
+  return (
+    <Flex
+      align="center"
+      bg={bg}
+      color={textColor}
+      borderRadius="md"
+      px={3}
+      py={1.5}
+      mb={3}
+      boxShadow="none"
+      borderWidth={1}
+      borderColor={border}
+      gap={2}
+      style={{ opacity: 0.85 }}
+    >
+      <Box fontSize="1.1em" mr={2} aria-label="warning" color={iconColor}>⚠️</Box>
+      <Box flex={1}>
+        <Text fontWeight="medium" color={textColor} mb={0.5} fontSize="sm">
+          Not all exercises were completed
+        </Text>
+        <Text fontSize="xs" color={subTextColor}>
+          You finished this workout, but some exercises were skipped or left incomplete. You can review and adjust your routine for next time.
+        </Text>
+      </Box>
+      <Button
+        as={RouterLink}
+        to={`/workout/routine/${routineId}`}
+        size="xs"
+        colorScheme="blue"
+        variant="ghost"
+        fontWeight="medium"
+        ml={2}
+      >
+        Edit Routine
+      </Button>
+    </Flex>
+  );
+};
+
+const PerfectWorkoutBanner: React.FC = () => {
+  const bg = useColorModeValue('blue.50', 'gray.900');
+  const border = useColorModeValue('blue.200', 'blue.700');
+  const iconColor = useColorModeValue('yellow.400', 'yellow.200');
+  const textColor = useColorModeValue('blue.700', 'blue.200');
+  const subTextColor = useColorModeValue('gray.500', 'gray.400');
+
+  return (
+    <Flex
+      align="center"
+      bg={bg}
+      color={textColor}
+      borderRadius="md"
+      px={3}
+      py={1.5}
+      mb={3}
+      boxShadow="none"
+      borderWidth={1}
+      borderColor={border}
+      gap={2}
+      style={{ opacity: 0.92 }}
+    >
+      <Box fontSize="1.2em" mr={2} aria-label="celebrate" color={iconColor}>🏆</Box>
+      <Box flex={1}>
+        <Text fontWeight="bold" color={textColor} mb={0.5} fontSize="sm">
+          Perfect Workout!
+        </Text>
+        <Text fontSize="xs" color={subTextColor}>
+          You completed every exercise in this workout. Amazing job!
+        </Text>
+      </Box>
+    </Flex>
+  );
+};
+
+const RoutineUpdatedBanner: React.FC<{ onRestart: () => void }> = ({ onRestart }) => {
+  const bg = useColorModeValue('gray.100', 'gray.850');
+  const border = useColorModeValue('gray.200', 'gray.800');
+  const textColor = useColorModeValue('gray.400', 'gray.500');
+  const buttonColor = useColorModeValue('blue.400', 'blue.300');
+  return (
+    <Flex
+      align="center"
+      bg={bg}
+      color={textColor}
+      borderRadius="md"
+      px={2}
+      py={0.5}
+      mb={2}
+      borderWidth={1}
+      borderColor={border}
+      fontSize="xs"
+      style={{ opacity: 0.7, minHeight: 0 }}
+      gap={2}
+    >
+      <Box flex={1}>
+        This routine has been updated. Would you like to restart this workout to use the latest routine?
+      </Box>
+      <Button
+        size="xs"
+        variant="ghost"
+        color={buttonColor}
+        fontWeight="medium"
+        px={2}
+        py={0.5}
+        onClick={onRestart}
+      >
+        Restart
+      </Button>
+    </Flex>
   );
 };

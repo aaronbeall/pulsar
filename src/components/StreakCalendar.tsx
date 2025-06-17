@@ -15,7 +15,9 @@ interface StreakCalendarProps {
 }
 
 const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) => {
-  const { days, streak, status } = React.useMemo(() => getStreakInfo(workouts, routines), [workouts, routines]);
+  // Only use active routines for streak info
+  const activeRoutines = React.useMemo(() => routines.filter(r => r.active), [routines]);
+  const { days, streak, status } = React.useMemo(() => getStreakInfo(workouts, activeRoutines), [workouts, activeRoutines]);
   const isGrayed = status !== 'up_to_date';
   const isPending = status === 'pending';
   const flameColor = isGrayed ? 'gray.400' : 'orange.400';
