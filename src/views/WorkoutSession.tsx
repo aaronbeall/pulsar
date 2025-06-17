@@ -40,9 +40,6 @@ export const WorkoutSession: React.FC = () => {
   const [selectedExerciseIndex, setSelectedExerciseIndex] = React.useState<number | null>(null);
   const [finishDialogOpen, setFinishDialogOpen] = React.useState(false);
   const finishCancelRef = React.useRef<HTMLButtonElement>(null);
-  const [showFinishedAlert, setShowFinishedAlert] = React.useState(false);
-  const [streakCount, setStreakCount] = React.useState(0);
-  const [streakType, setStreakType] = React.useState<'none' | 'start' | 'continue'>('none');
   const [showInterstitial, setShowInterstitial] = React.useState(false);
 
   React.useEffect(() => {
@@ -135,6 +132,7 @@ export const WorkoutSession: React.FC = () => {
     const allCompleted = updatedWorkout.exercises.every(ex => ex.completedAt);
     if (allCompleted && !updatedWorkout.completedAt) {
       updatedWorkout.completedAt = Date.now();
+      setShowInterstitial(true);
     }
     await updateWorkout(updatedWorkout);
     setWorkout(updatedWorkout);
@@ -157,26 +155,6 @@ export const WorkoutSession: React.FC = () => {
     setWorkout(updatedWorkout);
   };
 
-  const handleSkip = async (exerciseIndex: number) => {
-    if (!workout) return;
-    const updatedWorkout = { ...workout };
-    const exercise = updatedWorkout.exercises[exerciseIndex];
-    if (!exercise.completedAt) {
-      exercise.completedAt = Date.now();
-      exercise.skipped = true;
-    }
-    // Set workout.completedAt if all exercises are complete
-    const allCompleted = updatedWorkout.exercises.every(ex => ex.completedAt);
-    if (allCompleted && !updatedWorkout.completedAt) {
-      updatedWorkout.completedAt = Date.now();
-    }
-    await updateWorkout(updatedWorkout);
-    setWorkout(updatedWorkout);
-    // Auto-advance to the first incomplete exercise (if any)
-    const firstIncompleteIdx = updatedWorkout.exercises.findIndex(ex => !ex.completedAt);
-    setSelectedExerciseIndex(firstIncompleteIdx !== -1 ? firstIncompleteIdx : null);
-  };
-
   const getCurrentExercise = () => {
     if (!workout) return null;
     if (selectedExerciseIndex !== null) {
@@ -189,26 +167,22 @@ export const WorkoutSession: React.FC = () => {
     setSelectedExerciseIndex(index);
   };
 
-  React.useEffect(() => {
+  // Replace useEffect for streakCount and streakType with useMemo
+  const streakInfo = React.useMemo(() => {
     if (workout && workout.completedAt) {
-      setShowFinishedAlert(true);
-      setShowInterstitial(true);
-      // Calculate streak info
-      const streakInfo = getStreakInfo(workouts, routines);
-      if (streakInfo && streakInfo.streak > 0 && streakInfo.status !== 'expired') {
-        setStreakCount(streakInfo.streak);
-        setStreakType(streakInfo.streak === 1 ? 'start' : 'continue');
-      } else {
-        setStreakCount(0);
-        setStreakType('none');
-      }
-    } else {
-      setShowFinishedAlert(false);
-      setShowInterstitial(false);
-      setStreakCount(0);
-      setStreakType('none');
+      return getStreakInfo(workouts, routines);
     }
+    return null;
   }, [workout?.completedAt, workouts, routines]);
+
+  const streakCount = streakInfo && streakInfo.streak > 0 && streakInfo.status !== 'expired' ? streakInfo.streak : 0;
+  const streakType: 'none' | 'start' | 'continue' =
+    streakInfo && streakInfo.streak > 0 && streakInfo.status !== 'expired'
+      ? (streakInfo.streak === 1 ? 'start' : 'continue')
+      : 'none';
+
+  // showFinishedAlert is now derived from workout.completedAt
+  const showFinishedAlert = !!(workout && workout.completedAt);
 
   // Helper: check if workout exercises match the routine for the day
   const isRoutineUpdated = React.useMemo(() => {
@@ -379,6 +353,7 @@ export const WorkoutSession: React.FC = () => {
                       await updateWorkout(updatedWorkout);
                       setWorkout(updatedWorkout);
                       setFinishDialogOpen(false);
+                      setShowInterstitial(true);
                     }} leftIcon={<FaFlagCheckered />}>
                       Finish
                     </Button>
