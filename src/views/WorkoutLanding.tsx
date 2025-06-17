@@ -23,6 +23,7 @@ import RoutineCard from '../components/RoutineCard';
 import TimeToWorkoutAlert from '../components/TimeToWorkoutAlert';
 import RestDayAlert from '../components/RestDayAlert';
 import FinishedWorkoutAlert from '../components/FinishedWorkoutAlert';
+import NoActiveRoutinesAlert from '../components/NoActiveRoutinesAlert';
 
 const AddRoutineCard: React.FC<{ onClick: () => void }> = ({ onClick }) => {
   return (
@@ -95,7 +96,15 @@ export const WorkoutLanding: React.FC = () => {
     <Container maxW="container.lg" p={4}>
       <SlideFade in={true} offsetY="20px">
         <VStack spacing={6} align="stretch" width="100%">
-          {hasRoutineForToday(activeRoutines) ? (
+          {activeRoutines.length === 0 && inactiveRoutines.length > 0 ? (
+            <NoActiveRoutinesAlert 
+              onCreate={() => navigate('/workout/setup')}
+              onStartRoutine={() => {
+                const el = document.getElementById('inactive-routines-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+            />
+          ) : hasRoutineForToday(activeRoutines) ? (
             getWorkoutStatusForToday(workouts, activeRoutines) === 'completed' ? (
               <FinishedWorkoutAlert routines={activeRoutines} workouts={workouts} />
             ) : (
@@ -104,7 +113,7 @@ export const WorkoutLanding: React.FC = () => {
           ) : (
             <RestDayAlert />
           )}
-          
+
           <Timeline activeRoutines={activeRoutines} workouts={workouts} />
 
           <Box bg={bgColor} borderRadius="xl" p={6} boxShadow="sm" borderWidth="1px" borderColor={borderColor}>
@@ -132,7 +141,7 @@ export const WorkoutLanding: React.FC = () => {
             {inactiveRoutines.length > 0 && (
               <>
                 <Divider my={6} />
-                <Box>
+                <Box id="inactive-routines-section">
                   <Heading size="md" mb={4} color="gray.500">
                     Inactive Routines
                   </Heading>
