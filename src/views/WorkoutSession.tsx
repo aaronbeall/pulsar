@@ -726,10 +726,15 @@ const CongratulatoryInterstitial: React.FC<{
     if (streak > 0 && streakType !== 'none') {
       timers.push(setTimeout(() => setStep(2), 2400));
     }
+    // Adjust delays if isPerfect is false
     if (isPerfect) {
       timers.push(setTimeout(() => setStep(3), 3600));
+      timers.push(setTimeout(() => setStep(4), 4800));
+    } else {
+      // Skip the perfect step and move to stats sooner
+      timers.push(setTimeout(() => setStep(3), 3600)); // stats step
+      timers.push(setTimeout(() => setStep(4), 4800)); // dismiss step
     }
-    timers.push(setTimeout(() => setStep(4), 4800));
     return () => timers.forEach(clearTimeout);
   }, [streak, streakType, isPerfect]);
   return (
