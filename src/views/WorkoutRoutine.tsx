@@ -377,37 +377,60 @@ const RoutineStatusBanner: React.FC<{ routine: Routine }> = ({ routine }) => {
   const bgIcon = useColorModeValue(isRestDay ? 'gray.100' : 'green.50', isRestDay ? 'gray.700' : 'green.800');
   const bg = useColorModeValue(isRestDay ? 'gray.50' : todayWorkouts.length > 0 ? 'green.50' : 'blue.50', isRestDay ? 'gray.800' : todayWorkouts.length > 0 ? 'green.900' : 'blue.900');
   const border = useColorModeValue(isRestDay ? 'gray.200' : todayWorkouts.length > 0 ? 'green.200' : 'blue.200', isRestDay ? 'gray.700' : todayWorkouts.length > 0 ? 'green.700' : 'blue.700');
-  const iconColor = useColorModeValue(isRestDay ? 'gray.400' : todayWorkouts.length > 0 ? 'green.400' : 'blue.400', isRestDay ? 'gray.500' : todayWorkouts.length > 0 ? 'green.300' : 'blue.300');
-  const textColor = useColorModeValue(isRestDay ? 'gray.600' : todayWorkouts.length > 0 ? 'green.700' : 'blue.700', isRestDay ? 'gray.200' : todayWorkouts.length > 0 ? 'green.200' : 'blue.100');
-  const iconBg = useColorModeValue(isRestDay ? 'gray.100' : todayWorkouts.length > 0 ? 'green.100' : 'blue.100', isRestDay ? 'gray.700' : todayWorkouts.length > 0 ? 'green.800' : 'blue.800');
-  const iconBgComplete = useColorModeValue(isRestDay ? 'gray.100' : 'green.50', isRestDay ? 'gray.700' : 'green.800');
-
   const todayWorkout = todayWorkouts[0];
   const isTodayComplete = !!todayWorkout && !!todayWorkout.completedAt;
+  const isComplete = hasWorkouts && isTodayComplete;
+  const iconColor = isRestDay
+    ? useColorModeValue('gray.400', 'gray.500')
+    : isComplete
+      ? useColorModeValue('yellow.500', 'yellow.300')
+      : 'cyan.100';
+  const iconBg = isRestDay
+    ? useColorModeValue('gray.100', 'gray.700')
+    : isComplete
+      ? useColorModeValue('yellow.200', 'orange.400')
+      : useColorModeValue('cyan.600', 'blue.700');
+  const textColor = isRestDay
+    ? useColorModeValue('gray.600', 'gray.200')
+    : useColorModeValue('white', 'blue.50');
 
-  // Consolidated single render branch
+  // Banner color logic for consistency with alerts
+  const isActive = !isRestDay && !isComplete;
+  const bannerBg = isRestDay
+    ? bg
+    : isComplete
+      ? 'linear(to-r, yellow.400, orange.400)'
+      : 'linear(to-r, cyan.500, blue.500)';
+  const bannerBoxShadow = isComplete ? '2xl' : 'xl';
+
   return (
     <Flex
       p={hasWorkouts ? 4 : 3}
       borderRadius="md"
       align="center"
       justify="space-between"
-      bg={bg}
+      bgGradient={bannerBg}
       borderWidth={1}
       borderColor={border}
-      boxShadow="md"
+      boxShadow={bannerBoxShadow}
       gap={hasWorkouts ? undefined : 3}
     >
       <Flex align="center" gap={hasWorkouts ? 3 : 2}>
         <Box
           p={hasWorkouts ? 3 : 2}
           borderRadius="full"
-          bg={hasWorkouts && isTodayComplete ? iconBgComplete : iconBg}
+          bg={iconBg}
           color={iconColor}
           boxShadow="md"
           fontSize={hasWorkouts ? undefined : 'lg'}
         >
-          {isRestDay ? <FaPowerOff /> : <FaStar />}
+          {isRestDay
+            ? <FaPowerOff />
+            : isComplete
+              ? <FaChartBar />
+              : todayWorkouts.length > 0 && !isTodayComplete
+                ? <FaPlay />
+                : <FaPlayCircle />}
         </Box>
         <Flex direction="column">
           <Text fontSize="xs" color={textColor} fontWeight="bold" letterSpacing="wide" textTransform="uppercase" mb={0.5}>
@@ -416,7 +439,7 @@ const RoutineStatusBanner: React.FC<{ routine: Routine }> = ({ routine }) => {
           <Text fontSize="sm" color={textColor} fontWeight="medium">
             Review, make changes
             {isRestDay
-              ? ', and rest.'
+              ? ', and rest for your next workout.'
               : hasWorkouts && isTodayComplete
                 ? ', and view your completed workout.'
                 : todayWorkouts.length > 0 && !isTodayComplete
@@ -427,18 +450,18 @@ const RoutineStatusBanner: React.FC<{ routine: Routine }> = ({ routine }) => {
       </Flex>
       {!isRestDay && (
         <Button
-          colorScheme={hasWorkouts && isTodayComplete ? 'green' : 'cyan'}
+          colorScheme={isComplete ? 'yellow' : 'cyan'}
           size="sm"
-          variant={hasWorkouts && isTodayComplete ? 'outline' : 'solid'}
+          variant={isComplete ? 'outline' : 'solid'}
           leftIcon={
-            hasWorkouts && isTodayComplete
+            isComplete
               ? <FaChartBar />
               : todayWorkouts.length > 0 && !isTodayComplete
                 ? <FaPlay />
                 : <FaPlayCircle />
           }
           onClick={() => {
-            if (hasWorkouts && isTodayComplete) {
+            if (isComplete) {
               if (todayWorkout) {
                 navigate(`/workout/session/${todayWorkout.id}`);
               }
@@ -452,7 +475,7 @@ const RoutineStatusBanner: React.FC<{ routine: Routine }> = ({ routine }) => {
             }
           }}
         >
-          {hasWorkouts && isTodayComplete
+          {isComplete
             ? 'View'
             : todayWorkouts.length > 0 && !isTodayComplete
               ? 'Continue'
