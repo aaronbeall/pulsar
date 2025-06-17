@@ -186,6 +186,15 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                 _dark={{ _hover: { bg: 'gray.700' } }}
               />
               <MenuList shadow="lg">
+                <MenuItem
+                  icon={<FaArrowRight />}
+                  color="cyan.500"
+                  _hover={{ bg: 'cyan.50' }}
+                  _dark={{ _hover: { bg: 'cyan.900' } }}
+                  onClick={() => navigate(`/workout/routine/${routine.id}`)}
+                >
+                  View details
+                </MenuItem>
                 {!routine.active && (
                   <MenuItem
                     icon={<FaExchangeAlt />}
