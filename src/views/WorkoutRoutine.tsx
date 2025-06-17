@@ -21,11 +21,18 @@ import {
   Tag,
   Text,
   useDisclosure,
-  VStack
+  VStack,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  Button
 } from '@chakra-ui/react';
 import { format } from 'date-fns'; // Import date-fns for formatting dates
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaInfoCircle, FaStar } from 'react-icons/fa'; // Import icons
+import { FaEdit, FaInfoCircle, FaStar, FaTimesCircle, FaTrash, FaPowerOff } from 'react-icons/fa'; // Import icons
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { RoutineEditor } from '../components/RoutineEditor';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
@@ -48,6 +55,8 @@ const WorkoutRoutine: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
   const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
+  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+  const cancelRef = React.useRef(null);
 
   useEffect(() => {
     if (routine) {
@@ -90,14 +99,20 @@ const WorkoutRoutine: React.FC = () => {
       return;
     }
     if (routine.active && routines.filter(r => r.active).length === 1) {
-      const confirmDisable = window.confirm(
-        'This is the only active routine. Are you sure you want to disable it?'
-      );
-      if (!confirmDisable) return;
+      setShowDeactivateConfirm(true);
+      return;
     }
     const updatedRoutine = { ...routine, active: !routine.active };
     updateRoutine(updatedRoutine);
   };
+
+  const handleDeactivateConfirm = () => {
+    if (!routine) return;
+    const updatedRoutine = { ...routine, active: false };
+    updateRoutine(updatedRoutine);
+    setShowDeactivateConfirm(false);
+  };
+  const handleDeactivateCancel = () => setShowDeactivateConfirm(false);
 
   // Save changes from EditableRoutine
   const handleSave = async (edited: Routine) => {
@@ -249,6 +264,33 @@ const WorkoutRoutine: React.FC = () => {
         onClose={handleSwitchDialogClose}
         routine={routine}
       />
+      {/* Deactivate only active routine confirmation dialog */}
+      <AlertDialog
+        isOpen={showDeactivateConfirm}
+        leastDestructiveRef={cancelRef}
+        onClose={handleDeactivateCancel}
+        isCentered
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent borderRadius="xl">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold" display="flex" alignItems="center" gap={2}>
+              <Box as={FaInfoCircle} color="red.400" fontSize="2xl" mr={2} />
+              Deactivate Routine
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              This is the only active routine. Are you sure you want to deactivate it? You will not have any active routines.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={handleDeactivateCancel} leftIcon={<FaTimesCircle />} variant="ghost">
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={handleDeactivateConfirm} ml={3} leftIcon={<FaPowerOff />}> 
+                Deactivate
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Flex>
   );
 };
