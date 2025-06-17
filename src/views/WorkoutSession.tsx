@@ -15,7 +15,7 @@ import FinishedWorkoutAlert from '../components/FinishedWorkoutAlert';
 import { getStreakInfo } from '../utils/workoutUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { keyframes } from '@emotion/react';
-import { FaFlagCheckered, FaTimesCircle } from 'react-icons/fa';
+import { FaFlagCheckered, FaTimesCircle, FaInfoCircle } from 'react-icons/fa';
 
 const confetti = keyframes`
   0%, 100% { transform: translateY(0); }
@@ -288,7 +288,10 @@ export const WorkoutSession: React.FC = () => {
 
       <Flex justify="space-between" align="start" mb={6}>
         <Box>
-          <Text as={RouterLink} to={`/workout/routine/${routine.id}`} fontSize="sm" color="gray.500" mb={1}>{routine.name}</Text>
+          <Text as={RouterLink} to={`/workout/routine/${routine.id}`} fontSize="sm" color="gray.500" mb={1} display="flex" alignItems="center" gap={1} _hover={{ color: 'cyan.500', textDecoration: 'underline' }}>
+            {routine.name}
+            <Box as={FaInfoCircle} fontSize="1em" ml={1} color="gray.400" _hover={{ color: 'cyan.400' }} aria-label="View routine details" />
+          </Text>
           <Heading size="lg" mb={2} bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
             "{workout.nickname}"
           </Heading>
