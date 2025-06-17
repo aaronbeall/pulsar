@@ -16,6 +16,7 @@ import { getStreakInfo } from '../utils/workoutUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { keyframes } from '@emotion/react';
 import { FaFlagCheckered, FaTimesCircle, FaInfoCircle } from 'react-icons/fa';
+import { Counter } from '../components/Counter';
 
 const confetti = keyframes`
   0%, 100% { transform: translateY(0); }
@@ -42,6 +43,7 @@ export const WorkoutSession: React.FC = () => {
   const [showFinishedAlert, setShowFinishedAlert] = React.useState(false);
   const [streakCount, setStreakCount] = React.useState(0);
   const [streakType, setStreakType] = React.useState<'none' | 'start' | 'continue'>('none');
+  const [showInterstitial, setShowInterstitial] = React.useState(false);
 
   React.useEffect(() => {
     // If sessionId is present, find the workout in store
@@ -190,6 +192,7 @@ export const WorkoutSession: React.FC = () => {
   React.useEffect(() => {
     if (workout && workout.completedAt) {
       setShowFinishedAlert(true);
+      setShowInterstitial(true);
       // Calculate streak info
       const streakInfo = getStreakInfo(workouts, routines);
       if (streakInfo && streakInfo.streak > 0 && streakInfo.status !== 'expired') {
@@ -201,6 +204,7 @@ export const WorkoutSession: React.FC = () => {
       }
     } else {
       setShowFinishedAlert(false);
+      setShowInterstitial(false);
       setStreakCount(0);
       setStreakType('none');
     }
@@ -255,6 +259,20 @@ export const WorkoutSession: React.FC = () => {
   const currentExerciseIndex = currentExercise ? workout.exercises.indexOf(currentExercise) : -1;
   const currentExerciseDetail = currentExercise ? exercises.find(e => e.id === currentExercise.exerciseId) : null;
   const currentSetIndex = currentExercise ? (currentExercise.completedSets || 0) : 0;
+
+  if (showInterstitial) {
+    const isPerfect = workout.completedAt && workout.exercises.every(ex => ex.completedAt);
+    const totalWorkouts = workouts.filter(w => w.completedAt).length;
+    return (
+      <CongratulatoryInterstitial
+        streak={streakCount}
+        streakType={streakType}
+        isPerfect={!!isPerfect}
+        totalWorkouts={totalWorkouts}
+        onDismiss={() => setShowInterstitial(false)}
+      />
+    );
+  }
 
   return (
     <Flex direction="column" p={4} width="100%">
@@ -715,6 +733,110 @@ const RoutineUpdatedBanner: React.FC<{ onRestart: () => void }> = ({ onRestart }
       >
         Restart
       </Button>
+    </Flex>
+  );
+};
+
+const CongratulatoryInterstitial: React.FC<{
+  streak: number;
+  streakType: 'none' | 'start' | 'continue';
+  isPerfect: boolean;
+  totalWorkouts: number;
+  onDismiss: () => void;
+}> = ({ streak, streakType, isPerfect, totalWorkouts, onDismiss }) => {
+  const [step, setStep] = React.useState(0);
+  React.useEffect(() => {
+    let timers: NodeJS.Timeout[] = [];
+    timers.push(setTimeout(() => setStep(1), 1200));
+    if (streak > 0 && streakType !== 'none') {
+      timers.push(setTimeout(() => setStep(2), 2400));
+    }
+    if (isPerfect) {
+      timers.push(setTimeout(() => setStep(3), 3600));
+    }
+    timers.push(setTimeout(() => setStep(4), 4800));
+    return () => timers.forEach(clearTimeout);
+  }, [streak, streakType, isPerfect]);
+  return (
+    <Flex direction="column" align="center" minH="60vh" w="100%" p={6}>
+      <AnimatePresence mode="wait">
+        {step >= 0 && (
+          <motion.div
+            key="congrats"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -40 }}
+            transition={{ duration: 0.7, type: 'spring', bounce: 0.4 }}
+            style={{ width: '100%' }}
+          >
+            <Heading size="2xl" mb={2} color="cyan.400" textAlign="center">🎉 Congratulations!</Heading>
+            <Text fontSize="xl" color="gray.500" mb={6} textAlign="center">You finished your workout!</Text>
+          </motion.div>
+        )}
+        {step >= 1 && streak > 0 && streakType !== 'none' && (
+          <motion.div
+            key="streak"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -40 }}
+            transition={{ duration: 0.7, delay: 0.2, type: 'spring', bounce: 0.4 }}
+            style={{ width: '100%' }}
+          >
+            <Flex align="center" justify="center" mb={4} gap={2}>
+              <Text fontSize="2xl" fontWeight="bold" color="orange.400" mr={1} textShadow="0 2px 8px #ffb30088">🔥</Text>
+              <Counter from={0} to={streak} delay={500} duration={1000} fontSize="2.7em" color="#ffb300" fontWeight={900} style={{marginRight: 6, textShadow: '0 2px 8px #ffb30088'}} />
+              <Text fontSize="lg" color="orange.400" fontWeight="semibold" letterSpacing="wide" textShadow="0 1px 6px #ffb30044">day streak</Text>
+            </Flex>
+          </motion.div>
+        )}
+        {step >= 2 && isPerfect && (
+          <motion.div
+            key="perfect"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -40 }}
+            transition={{ duration: 0.7, delay: 0.2, type: 'spring', bounce: 0.4 }}
+            style={{ width: '100%' }}
+          >
+            <Flex align="center" justify="center" mb={2} gap={2}>
+              <Text fontSize="2xl" fontWeight="bold" color="yellow.400" mr={1} textShadow="0 2px 8px #ffe06688">🏆</Text>
+              <Text fontSize="lg" color="yellow.500" fontWeight="semibold" letterSpacing="wide" textShadow="0 1px 6px #ffe06644">Perfect Workout!</Text>
+            </Flex>
+          </motion.div>
+        )}
+        {step >= 3 && (
+          <motion.div
+            key="stats"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -40 }}
+            transition={{ duration: 0.7, delay: 0.2, type: 'spring', bounce: 0.4 }}
+            style={{ width: '100%' }}
+          >
+            <Flex align="center" justify="center" mb={2} gap={2}>
+              <Box as={FaFlagCheckered} color="cyan.400" fontSize="2xl" mr={1} filter="drop-shadow(0 0 8px #00eaff88)" />
+              <Counter from={0} to={totalWorkouts} delay={500} duration={1000} fontSize="2.2em" color="#00eaff" fontWeight={900} style={{marginRight: 6, textShadow: '0 1px 6px #00eaff44'}} />
+              <Text fontSize="lg" color="cyan.500" fontWeight="bold" letterSpacing="wide" textShadow="0 1px 6px #00eaff44">workouts completed</Text>
+            </Flex>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {step >= 4 && (
+        <motion.div
+          key="dismiss"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -40 }}
+          transition={{ duration: 0.7, delay: 0.2, type: 'spring', bounce: 0.4 }}
+          style={{ width: '100%' }}
+        >
+          <Flex justify="center">
+            <Button colorScheme="cyan" size="lg" mt={6} onClick={onDismiss} leftIcon={<Box as={FaFlagCheckered} fontSize="1.3em" />}>
+              Continue
+            </Button>
+          </Flex>
+        </motion.div>
+      )}
     </Flex>
   );
 };
