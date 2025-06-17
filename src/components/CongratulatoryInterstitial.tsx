@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import React from 'react';
 import { FaFlagCheckered, FaDumbbell } from 'react-icons/fa';
 import { Counter } from '../components/Counter';
+import Confetti from 'react-confetti';
 
 export const CongratulatoryInterstitial: React.FC<{
   streak: number;
@@ -24,18 +25,21 @@ export const CongratulatoryInterstitial: React.FC<{
     if (isPerfect) {
       timers.push(setTimeout(() => setStep(3), 2700));
       timers.push(setTimeout(() => setStep(4), 3700));
-      timers.push(setTimeout(() => setStep(5), 4900)); // Add timer for step 5 (1.2s after step 4)
+      timers.push(setTimeout(() => setStep(5), 4900));
     } else {
       timers.push(setTimeout(() => setStep(3), 2700));
       timers.push(setTimeout(() => setStep(4), 3700));
-      timers.push(setTimeout(() => setStep(5), 4900)); // Add timer for step 5 (1.2s after step 4)
+      timers.push(setTimeout(() => setStep(5), 4900));
     }
     return () => timers.forEach(clearTimeout);
   }, [streak, streakType, isPerfect]);
 
   // Neon/glassy border and animated emoji
   return (
-    <Flex direction="column" align="center" minH="60vh" w="100%" p={6}>
+    <Flex direction="column" align="center" minH="60vh" w="100%" p={6} position="relative">
+      <Box position="fixed" top={0} left={0} w="100vw" h="100vh" zIndex={2000} pointerEvents="none">
+        <Confetti width={window.innerWidth} height={window.innerHeight} numberOfPieces={220} recycle={false} gravity={0.25} />
+      </Box>
       <Box
         borderRadius="1.5em"
         bgGradient="linear(90deg, #00eaff 0%, #7f5fff 50%, #ff46a1 100%)"
