@@ -15,6 +15,7 @@ import FinishedWorkoutAlert from '../components/FinishedWorkoutAlert';
 import { getStreakInfo } from '../utils/workoutUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { keyframes } from '@emotion/react';
+import { FaFlagCheckered, FaTimesCircle } from 'react-icons/fa';
 
 const confetti = keyframes`
   0%, 100% { transform: translateY(0); }
@@ -328,6 +329,7 @@ export const WorkoutSession: React.FC = () => {
               mt={4}
               onClick={() => setFinishDialogOpen(true)}
               alignSelf="center"
+              leftIcon={<Box as={FaFlagCheckered} fontSize="1.2em" />}
             >
               Finish
             </Button>
@@ -339,23 +341,24 @@ export const WorkoutSession: React.FC = () => {
             >
               <AlertDialogOverlay>
                 <AlertDialogContent borderRadius="xl">
-                  <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                  <AlertDialogHeader fontSize="lg" fontWeight="bold" display="flex" alignItems="center" gap={2}>
+                    <Box as={FaFlagCheckered} color="blue.400" fontSize="2xl" mr={2} />
                     Finish Workout?
                   </AlertDialogHeader>
                   <AlertDialogBody>
                     Are you sure you're done?
                   </AlertDialogBody>
                   <AlertDialogFooter>
-                    <Button ref={finishCancelRef} onClick={() => setFinishDialogOpen(false)}>
+                    <Button ref={finishCancelRef} onClick={() => setFinishDialogOpen(false)} leftIcon={<FaTimesCircle />} variant="ghost">
                       Cancel
                     </Button>
-                    <Button colorScheme="red" ml={3} onClick={async () => {
+                    <Button colorScheme="blue" ml={3} onClick={async () => {
                       if (!workout) return;
                       const updatedWorkout = { ...workout, completedAt: Date.now() };
                       await updateWorkout(updatedWorkout);
                       setWorkout(updatedWorkout);
                       setFinishDialogOpen(false);
-                    }}>
+                    }} leftIcon={<FaFlagCheckered />}>
                       Finish
                     </Button>
                   </AlertDialogFooter>

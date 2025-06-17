@@ -28,11 +28,15 @@ import {
   AlertDialogHeader,
   AlertDialogContent,
   AlertDialogOverlay,
-  Button
+  Button,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem
 } from '@chakra-ui/react';
 import { format } from 'date-fns'; // Import date-fns for formatting dates
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaInfoCircle, FaStar, FaTimesCircle, FaTrash, FaPowerOff } from 'react-icons/fa'; // Import icons
+import { FaEdit, FaInfoCircle, FaStar, FaTimesCircle, FaTrash, FaPowerOff, FaEllipsisV } from 'react-icons/fa'; // Import icons
 import { Link as RouterLink, useParams } from 'react-router-dom';
 import { RoutineEditor } from '../components/RoutineEditor';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
@@ -49,6 +53,7 @@ const WorkoutRoutine: React.FC = () => {
   const routines = useRoutines();
   const exercises = useExercises();
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
+  const removeRoutine = usePulsarStore(s => s.removeRoutine);
   const [newResponses, setNewResponses] = useState<Routine['responses']>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -56,6 +61,7 @@ const WorkoutRoutine: React.FC = () => {
   const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
   const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const cancelRef = React.useRef(null);
 
   useEffect(() => {
@@ -168,22 +174,50 @@ const WorkoutRoutine: React.FC = () => {
             <Switch
               colorScheme="cyan"
               isChecked={routine.active}
-              onChange={toggleActiveState} // Use the toggleActiveState function
+              onChange={toggleActiveState}
             />
-            <IconButton
-              aria-label="View Details"
-              icon={<FaInfoCircle />}
+            <Button
+              leftIcon={<FaEdit />} 
               colorScheme="cyan"
               variant="ghost"
-              onClick={onOpen}
-            />
-            <IconButton
-              aria-label="Edit Routine"
-              icon={<FaEdit />}
-              colorScheme="cyan"
-              variant="ghost"
+              size="sm"
               onClick={() => setIsEditing(isEditing ? false : true)}
-            />
+            >
+              Edit
+            </Button>
+            <Menu>
+              <MenuButton
+                as={IconButton}
+                icon={<FaEllipsisV />}
+                variant="ghost"
+                size="sm"
+                aria-label="More options"
+              />
+              <MenuList shadow="lg">
+                <MenuItem
+                  icon={<FaInfoCircle />}
+                  onClick={onOpen}
+                >
+                  Details
+                </MenuItem>
+                <MenuItem
+                  icon={<FaStar />}
+                  color={routine.favorite ? 'yellow.500' : 'gray.400'}
+                  onClick={async () => {
+                    await updateRoutine({ ...routine, favorite: !routine.favorite });
+                  }}
+                >
+                  {routine.favorite ? 'Remove from favorites' : 'Add to favorites'}
+                </MenuItem>
+                <MenuItem
+                  icon={<FaTrash />}
+                  color="red.500"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  Delete
+                </MenuItem>
+              </MenuList>
+            </Menu>
           </Flex>
         </Flex>
         <Drawer isOpen={isOpen} placement="right" onClose={onClose}>
@@ -286,6 +320,32 @@ const WorkoutRoutine: React.FC = () => {
               </Button>
               <Button colorScheme="red" onClick={handleDeactivateConfirm} ml={3} leftIcon={<FaPowerOff />}> 
                 Deactivate
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+      {/* Delete routine confirmation dialog */}
+      <AlertDialog
+        isOpen={showDeleteConfirm}
+        leastDestructiveRef={cancelRef}
+        onClose={() => setShowDeleteConfirm(false)}
+        isCentered
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent borderRadius="xl">
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Routine
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              Are you sure you want to delete {routine.name}? This action cannot be undone.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={() => setShowDeleteConfirm(false)} leftIcon={<FaTimesCircle />} variant="ghost">
+                Cancel
+              </Button>
+              <Button colorScheme="red" ml={3} onClick={async () => { await removeRoutine(routine.id); setShowDeleteConfirm(false); }} leftIcon={<FaTrash />}>
+                Delete
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
