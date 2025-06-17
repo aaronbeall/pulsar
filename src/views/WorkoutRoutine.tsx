@@ -32,12 +32,13 @@ import {
   Menu,
   MenuButton,
   MenuList,
-  MenuItem
+  MenuItem,
+  useColorModeValue
 } from '@chakra-ui/react';
 import { format } from 'date-fns'; // Import date-fns for formatting dates
 import React, { useEffect, useState } from 'react';
-import { FaEdit, FaInfoCircle, FaStar, FaTimesCircle, FaTrash, FaPowerOff, FaEllipsisV } from 'react-icons/fa'; // Import icons
-import { Link as RouterLink, useParams } from 'react-router-dom';
+import { FaEdit, FaInfoCircle, FaStar, FaTimesCircle, FaTrash, FaPowerOff, FaEllipsisV, FaChartBar, FaPlay, FaMagic, FaPlayCircle } from 'react-icons/fa'; // Import icons
+import { Link as RouterLink, useParams, useNavigate } from 'react-router-dom';
 import { RoutineEditor } from '../components/RoutineEditor';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import RoutineChat, { ChatMessage } from '../components/RoutineChat';
@@ -63,6 +64,7 @@ const WorkoutRoutine: React.FC = () => {
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const cancelRef = React.useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (routine) {
@@ -158,6 +160,12 @@ const WorkoutRoutine: React.FC = () => {
       {/* AI Chat Interface */}
       <RoutineChat chatHistory={chatHistory} setChatHistory={setChatHistory} />
       <Box width="100%" maxWidth="1200px">
+        {/* Minimalistic routine status banner */}
+        {routine.active && (
+          <Box mb={4}>
+            <RoutineStatusBanner routine={routine} />
+          </Box>
+        )}
         <Flex justify="space-between" align="center" mb={4}>
           <Heading size="lg" bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text" display="flex" alignItems="center" gap={2}>
             {routine.name}
@@ -351,6 +359,111 @@ const WorkoutRoutine: React.FC = () => {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
+    </Flex>
+  );
+};
+
+// Add this component above WorkoutRoutine
+const RoutineStatusBanner: React.FC<{ routine: Routine }> = ({ routine }) => {
+  const workouts = usePulsarStore(s => s.workouts);
+  const navigate = useNavigate();
+  const today = new Date();
+  const todayDay = today.toLocaleDateString('en-US', { weekday: 'long' });
+  const todayWorkouts = workouts.filter(w => w.routineId === routine.id && new Date(w.startedAt).toDateString() === today.toDateString());
+  const isRestDay = !routine.dailySchedule.some(d => d.day === todayDay && d.exercises.length > 0);
+  const hasWorkouts = workouts.some(w => w.routineId === routine.id);
+
+  // Use Chakra's color mode hook for theme-aware colors
+  const bgIcon = useColorModeValue(isRestDay ? 'gray.100' : 'green.50', isRestDay ? 'gray.700' : 'green.800');
+  const bg = useColorModeValue(isRestDay ? 'gray.50' : todayWorkouts.length > 0 ? 'green.50' : 'blue.50', isRestDay ? 'gray.800' : todayWorkouts.length > 0 ? 'green.900' : 'blue.900');
+  const border = useColorModeValue(isRestDay ? 'gray.200' : todayWorkouts.length > 0 ? 'green.200' : 'blue.200', isRestDay ? 'gray.700' : todayWorkouts.length > 0 ? 'green.700' : 'blue.700');
+  const iconColor = useColorModeValue(isRestDay ? 'gray.400' : todayWorkouts.length > 0 ? 'green.400' : 'blue.400', isRestDay ? 'gray.500' : todayWorkouts.length > 0 ? 'green.300' : 'blue.300');
+  const textColor = useColorModeValue(isRestDay ? 'gray.600' : todayWorkouts.length > 0 ? 'green.700' : 'blue.700', isRestDay ? 'gray.200' : todayWorkouts.length > 0 ? 'green.200' : 'blue.100');
+  const iconBg = useColorModeValue(isRestDay ? 'gray.100' : todayWorkouts.length > 0 ? 'green.100' : 'blue.100', isRestDay ? 'gray.700' : todayWorkouts.length > 0 ? 'green.800' : 'blue.800');
+  const iconBgComplete = useColorModeValue(isRestDay ? 'gray.100' : 'green.50', isRestDay ? 'gray.700' : 'green.800');
+
+  const todayWorkout = todayWorkouts[0];
+  const isTodayComplete = !!todayWorkout && !!todayWorkout.completedAt;
+
+  // Consolidated single render branch
+  return (
+    <Flex
+      p={hasWorkouts ? 4 : 3}
+      borderRadius="md"
+      align="center"
+      justify="space-between"
+      bg={bg}
+      borderWidth={1}
+      borderColor={border}
+      boxShadow="md"
+      gap={hasWorkouts ? undefined : 3}
+    >
+      <Flex align="center" gap={hasWorkouts ? 3 : 2}>
+        <Box
+          p={hasWorkouts ? 3 : 2}
+          borderRadius="full"
+          bg={hasWorkouts && isTodayComplete ? iconBgComplete : iconBg}
+          color={iconColor}
+          boxShadow="md"
+          fontSize={hasWorkouts ? undefined : 'lg'}
+        >
+          {isRestDay ? <FaPowerOff /> : <FaStar />}
+        </Box>
+        <Flex direction="column">
+          <Text fontSize="xs" color={textColor} fontWeight="bold" letterSpacing="wide" textTransform="uppercase" mb={0.5}>
+            NEXT STEPS
+          </Text>
+          <Text fontSize="sm" color={textColor} fontWeight="medium">
+            Review, make changes
+            {isRestDay
+              ? ', and rest.'
+              : hasWorkouts && isTodayComplete
+                ? ', and view your completed workout.'
+                : todayWorkouts.length > 0 && !isTodayComplete
+                  ? ", and continue today's workout."
+                  : ', and start your first workout.'}
+          </Text>
+        </Flex>
+      </Flex>
+      {!isRestDay && (
+        <Button
+          colorScheme={hasWorkouts && isTodayComplete ? 'green' : 'cyan'}
+          size="sm"
+          variant={hasWorkouts && isTodayComplete ? 'outline' : 'solid'}
+          leftIcon={
+            hasWorkouts && isTodayComplete
+              ? <FaChartBar />
+              : todayWorkouts.length > 0 && !isTodayComplete
+                ? <FaPlay />
+                : <FaPlayCircle />
+          }
+          onClick={() => {
+            if (hasWorkouts && isTodayComplete) {
+              if (todayWorkout) {
+                navigate(`/workout/session/${todayWorkout.id}`);
+              }
+            } else {
+              const startedWorkout = todayWorkouts.find(w => new Date(w.startedAt).toDateString() === today.toDateString());
+              if (startedWorkout) {
+                navigate(`/workout/session/${startedWorkout.id}`);
+              } else {
+                navigate(`/workout/session/?routineId=${routine.id}`);
+              }
+            }
+          }}
+        >
+          {hasWorkouts && isTodayComplete
+            ? 'View'
+            : todayWorkouts.length > 0 && !isTodayComplete
+              ? 'Continue'
+              : 'Start'}
+        </Button>
+      )}
+      {isRestDay && (
+        <Tag colorScheme="gray" size="sm" fontWeight="bold">
+          Rest Day
+        </Tag>
+      )}
     </Flex>
   );
 };
