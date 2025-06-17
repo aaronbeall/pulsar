@@ -1,3 +1,6 @@
+// RoutineEditor.tsx
+// Provides an interactive editor for routines, allowing drag-and-drop reordering, day/kind editing, and exercise management.
+
 import {
   Badge,
   Box, // Import CloseButton
@@ -10,6 +13,7 @@ import {
   MenuItem,
   MenuList,
   Text,
+  Textarea,
   useBreakpointValue,
   VStack
 } from '@chakra-ui/react';
@@ -212,6 +216,22 @@ export const RoutineEditor: React.FC<{
           </Flex>
         </Flex>
       </Box>
+      {/* Editable description textarea under the name/save/cancel bar */}
+      <Textarea
+        value={editRoutine.description || ''}
+        onChange={e => {
+          setEditRoutine(r => ({ ...r, description: e.target.value }));
+          setEditChanged(true);
+        }}
+        placeholder="Add a description (optional)"
+        fontSize="md"
+        color="gray.600"
+        _dark={{ color: 'gray.300' }}
+        width="100%"
+        resize="vertical"
+        minH="60px"
+        mb={4}
+      />
       <DragDropContext onDragEnd={onDragEnd}>
         <VStack align="start" spacing={4}>
           {editRoutine.dailySchedule.map((schedule, dayIdx) => (

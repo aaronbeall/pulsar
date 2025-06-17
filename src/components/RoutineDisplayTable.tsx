@@ -1,3 +1,6 @@
+// RoutineDisplayTable.tsx
+// Displays a read-only table view of a routine's weekly schedule and exercises, with clickable exercise names for details.
+
 import {
   Box,
   Card,
@@ -29,6 +32,13 @@ export const RoutineDisplayTable: React.FC<{
 }> = ({ routine, exercises, onShowExerciseDetails }) => {
   return (
     <VStack align="start" spacing={4}>
+      {routine.description && (
+        <Box pb={1}>
+          <Text fontSize="sm" color="gray.500" _dark={{ color: 'gray.500' }} fontStyle="italic" opacity={0.8}>
+            {routine.description}
+          </Text>
+        </Box>
+      )}
       {DAYS_OF_WEEK.map((day) => {
         const scheduleForDay = routine.dailySchedule.find((schedule) => schedule.day === day);
         if (!scheduleForDay) {
