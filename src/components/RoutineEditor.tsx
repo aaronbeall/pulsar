@@ -3,7 +3,6 @@ import {
   Box, // Import CloseButton
   Button,
   Flex,
-  Heading,
   IconButton,
   Input, // Import Select component
   Menu, // Import Menu components
@@ -16,7 +15,7 @@ import {
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Draggable, Droppable, DropResult } from 'react-beautiful-dnd';
-import { FaCheck, FaCog, FaDumbbell, FaEdit, FaExchangeAlt, FaGripVertical, FaPlus, FaRegCalendarAlt, FaSearch, FaStopwatch, FaSync, FaThumbsDown, FaThumbsUp, FaTimes, FaUndo } from 'react-icons/fa'; // Import icons
+import { FaCheck, FaCheckCircle, FaCog, FaDumbbell, FaEdit, FaExchangeAlt, FaGripVertical, FaPlus, FaRegCalendarAlt, FaSearch, FaStopwatch, FaSync, FaThumbsDown, FaThumbsUp, FaTimes, FaUndo } from 'react-icons/fa'; // Import icons
 import ExerciseDetailsDialog from './ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import NumericStepper from './NumericStepper';
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
@@ -229,9 +228,24 @@ export const RoutineEditor: React.FC<{
               boxShadow="sm"
             >
               <Flex align="center" mb={2}>
-                {/* Move day button instead of dropdown */}
+                {/* Combined day name and calendar icon as a single button */}
                 <Menu>
-                  <MenuButton as={IconButton} icon={<FaRegCalendarAlt />} size="sm" colorScheme="cyan" mr={2} aria-label="Move day" />
+                  <MenuButton
+                    as={Button}
+                    leftIcon={<FaRegCalendarAlt />}
+                    size="sm"
+                    colorScheme="cyan"
+                    mr={2}
+                    fontWeight="bold"
+                    px={3}
+                    py={1.5}
+                    borderRadius="md"
+                    aria-label={`Move day: ${schedule.day}`}
+                    _focus={{ boxShadow: 'outline' }}
+                    variant={schedule.exercises.length === 0 ? 'outline' : undefined}
+                  >
+                    {schedule.day}
+                  </MenuButton>
                   <MenuList>
                     <Box px={3} py={1} fontWeight="bold" color="gray.600">Move to...</Box>
                     {editRoutine.dailySchedule.map((s, idx) => {
@@ -242,18 +256,14 @@ export const RoutineEditor: React.FC<{
                           key={s.day}
                           onClick={() => !isCurrent && handleChangeDay(dayIdx, s.day)}
                           isDisabled={isCurrent}
-                          icon={isCurrent || hasExercises ? <FaExchangeAlt /> : undefined}
+                          icon={isCurrent ? <FaRegCalendarAlt color="#38bdf8" /> : hasExercises ? <FaExchangeAlt /> : undefined}
                         >
                           {s.day}
-                          {isCurrent && (
-                            <Box as="span" ml={2} color="gray.400" fontSize="sm">(current)</Box>
-                          )}
                         </MenuItem>
                       );
                     })}
                   </MenuList>
                 </Menu>
-                <Heading size="sm" mr={2}>{schedule.day}</Heading>
                 {editKindIdx === dayIdx ? (
                   <DayKindEditor
                     value={editKindValue}
