@@ -145,6 +145,22 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                     <FaStar />
                   </Box>
                 )}
+                {/* Link arrow icon for clickable affordance */}
+                <Box
+                  as="span"
+                  ml={1}
+                  display="inline-flex"
+                  alignItems="center"
+                  opacity={0.5}
+                  transition="opacity 0.2s, transform 0.2s"
+                  _groupHover={{ opacity: 1, transform: 'translateX(4px) scale(1.1)' }}
+                  _groupFocusWithin={{ opacity: 1, transform: 'translateX(4px) scale(1.1)' }}
+                  fontSize="1.1em"
+                  aria-label="View details"
+                  pointerEvents="none"
+                >
+                  <FaArrowRight />
+                </Box>
               </Heading>
               {routine.active && (
                 <Tag
