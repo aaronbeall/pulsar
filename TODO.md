@@ -2,10 +2,13 @@
 
 ## MVP
 - [ ] Create routine
+  - [ ] AI generation
   - [ ] AI key prompt setting
-- [x] Edit routine
-- [ ] AI chat suggestions
-- [x] Add/edit exercises
+  - [x] Create from templates
+- [ ] Edit routine
+  - [x] Manual editing
+  - [ ] AI chat suggestions
+  - [ ] Add/edit day from templates
 - [x] Exercise How-To link
 - [x] Exercise image/wiki
 - [x] Workout session
@@ -33,6 +36,7 @@
 - [ ] ToS/Privacy Notice
 - [ ] Monetization (Buy Me a Coffee, premium, ads)
 - [ ] AI-free routine library (generated with LLM) with semantic search
+- [ ] Onboarding/Help
 
 ## Bells and whistles
 - [ ] Like/dislike routine/workout/exercise
@@ -53,6 +57,8 @@
 - [ ] Timeline
 - [ ] Exercise library
 - [ ] Warn when deleting a routine that has workouts
+- [ ] Ad hoc workouts
+- [ ] Activity log - view any past workout, repeat
 
 ## Issues
 - [ ] Inactive routines are impacting the TimeToWorkoutAlert

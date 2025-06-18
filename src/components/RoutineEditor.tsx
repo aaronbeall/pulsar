@@ -27,7 +27,7 @@ import {
   Switch,
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
-import { DragDropContext, Draggable, Droppable, DropResult } from 'react-beautiful-dnd';
+import { DragDropContext, Draggable, Droppable, DroppableProvided, DroppableStateSnapshot, DropResult } from 'react-beautiful-dnd';
 import { FaCheck, FaCheckCircle, FaCog, FaDumbbell, FaEdit, FaExchangeAlt, FaGripVertical, FaPlus, FaRegCalendarAlt, FaSearch, FaStopwatch, FaSync, FaThumbsDown, FaThumbsUp, FaTimes, FaUndo } from 'react-icons/fa'; // Import icons
 import ExerciseDetailsDialog from './ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import NumericStepper from './NumericStepper';
@@ -400,226 +400,226 @@ export const RoutineEditor: React.FC<{
                 )}
               </Flex>
               <Droppable droppableId={`day-${dayIdx}`}>
-                {(provided, snapshot) => (
+                {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => (
                   <VStack
-                    align="start"
-                    spacing={2}
-                    w="100%"
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    bg={snapshot.isDraggingOver ? 'rgba(56, 189, 248, 0.04)' : 'transparent'}
-                    _dark={{ bg: snapshot.isDraggingOver ? 'rgba(56, 189, 248, 0.08)' : 'transparent' }}
-                    minH={10}
-                    borderRadius="md"
-                    border={
-                      snapshot.isDraggingOver
-                        ? '1px solid #38bdf8' // cyan.400
-                        : schedule.exercises.length === 0
-                        ? '1px dashed #90cdf4'
-                        : undefined
-                    }
-                    boxShadow={undefined}
-                    style={{
-                      transition: 'background 0.15s, border 0.15s',
-                    }}
+                  align="start"
+                  spacing={2}
+                  w="100%"
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  bg={snapshot.isDraggingOver ? 'rgba(56, 189, 248, 0.04)' : 'transparent'}
+                  _dark={{ bg: snapshot.isDraggingOver ? 'rgba(56, 189, 248, 0.08)' : 'transparent' }}
+                  minH={10}
+                  borderRadius="md"
+                  border={
+                    snapshot.isDraggingOver
+                    ? '1px solid #38bdf8' // cyan.400
+                    : schedule.exercises.length === 0
+                    ? '1px dashed #90cdf4'
+                    : undefined
+                  }
+                  boxShadow={undefined}
+                  style={{
+                    transition: 'background 0.15s, border 0.15s',
+                  }}
                   >
-                    {/* Draggable exercises */}
-                    {schedule.exercises.map((ex, exIdx) => (
-                      <Draggable key={`ex-${dayIdx}-${exIdx}`} draggableId={`ex-${dayIdx}-${exIdx}`} index={exIdx}>
-                        {(provided, snapshot) => (
-                          <Flex
-                            align="center"
-                            w="100%"
-                            bg={snapshot.isDragging ? 'cyan.100' : 'transparent'}
-                            _dark={{ bg: snapshot.isDragging ? 'cyan.800' : 'transparent' }}
-                            p={2}
-                            borderRadius="md"
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            style={{ ...provided.draggableProps.style, opacity: snapshot.isDragging ? 0.7 : 1 }}
-                          >
-                            <Box mr={2} color="gray.400" _dark={{ color: 'gray.500' }} p={1}>
-                              <FaGripVertical />
-                            </Box>
-                            {/* Show exercise name and gear icon beside each other */}
-                            <Flex align="center" flex={1} minW={0} mr={2}>
-                              <Text
-                                fontWeight="semibold"
-                                color="cyan.700"
-                                _dark={{ color: 'cyan.300' }}
-                                minW={0}
-                                isTruncated={isMdOrLarger}
-                                fontSize={{ base: 'sm', md: 'md' }}
-                                whiteSpace={isMdOrLarger ? 'nowrap' : 'normal'}
-                                wordBreak="break-word"
-                              >
-                                {(() => {
-                                  const details = exercises.find(e => e.id === ex.exerciseId);
-                                  return details ? details.name : ex.exerciseId;
-                                })()}
-                              </Text>
-                              <IconButton
-                                aria-label="Edit exercise details"
-                                icon={<FaEdit />}
-                                size="sm"
-                                colorScheme="gray"
-                                variant="ghost"
-                                ml={2}
-                                onClick={() => openExerciseDetails(ex.exerciseId)}
-                              />
-                            </Flex>
-                            {/* Right-aligned controls */}
-                            <Flex align="center" ml="auto">
-                              <Flex direction={{ base: 'column', sm: 'row' }} gap={{ base: 1, sm: 2 }}>
-                                <NumericStepper
-                                  value={ex.sets || 1}
-                                  onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, sets: val })}
-                                  label="sets"
-                                />
-                                {ex.reps !== undefined && (
-                                  <NumericStepper
-                                    value={ex.reps}
-                                    onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, reps: val })}
-                                    label="reps"
-                                  />
-                                )}
-                                {ex.duration !== undefined && (
-                                  <NumericStepper
-                                    value={ex.duration}
-                                    onChange={val => handleEditExercise(dayIdx, exIdx, { ...ex, duration: val })}
-                                    label="sec"
-                                  />
-                                )}
-                              </Flex>
-                              <Menu>
-                                <MenuButton
-                                  as={IconButton}
-                                  size="sm"
-                                  colorScheme="gray"
-                                  aria-label="More options"
-                                  icon={<FaCog />} // Use a gear icon for the menu
-                                  ml={{ base: 0, sm: 1 }}
-                                  mt={{ base: 1, sm: 0 }}
-                                  variant="ghost"
-                                />
-                                <MenuList>
-                                  <MenuItem
-                                    icon={<FaTimes color="#E53E3E" />} // Red X icon
-                                    onClick={() => handleEditExercise(dayIdx, exIdx, null)}
-                                  >
-                                    Remove Exercise
-                                  </MenuItem>
-                                  <MenuItem
-                                    onClick={() => {
-                                      // Toggle between reps and duration
-                                      if (ex.reps !== undefined) {
-                                        // Switch to duration, remove reps
-                                        handleEditExercise(dayIdx, exIdx, { ...ex, duration: 30, reps: undefined });
-                                      } else if (ex.duration !== undefined) {
-                                        // Switch to reps, remove duration
-                                        handleEditExercise(dayIdx, exIdx, { ...ex, reps: 10, duration: undefined });
-                                      }
-                                    }}
-                                  >
-                                    {ex.reps !== undefined ? (
-                                      <Flex align="center">
-                                        <Box as={FaStopwatch} color="#3182CE" mr={2} />
-                                        Switch to Duration
-                                      </Flex>
-                                    ) : (
-                                      <Flex align="center">
-                                        <Box as={FaSync} color="#3182CE" mr={2} />
-                                        Switch to Reps
-                                      </Flex>
-                                    )}
-                                  </MenuItem>
-                                </MenuList>
-                              </Menu>
-                            </Flex>
-                          </Flex>
-                        )}
-                      </Draggable>
-                    ))}
-                    {/* Persistent empty row for adding a new exercise */}
-                    <Flex
+                  {/* Draggable exercises */}
+                  {schedule.exercises.map((ex: any, exIdx: number) => (
+                    <Draggable key={`ex-${dayIdx}-${exIdx}`} draggableId={`ex-${dayIdx}-${exIdx}`} index={exIdx}>
+                    {(provided: import('react-beautiful-dnd').DraggableProvided, snapshot: import('react-beautiful-dnd').DraggableStateSnapshot) => (
+                      <Flex
                       align="center"
                       w="100%"
-                      bg="transparent"
-                      _dark={{ bg: 'transparent' }}
+                      bg={snapshot.isDragging ? 'cyan.100' : 'transparent'}
+                      _dark={{ bg: snapshot.isDragging ? 'cyan.800' : 'transparent' }}
                       p={2}
                       borderRadius="md"
-                      opacity={snapshot.isDraggingOver ? 0 : 1}
-                      pointerEvents={snapshot.isDraggingOver ? 'none' : 'auto'}
-                    >
-                      <Box mr={2} color="gray.300" _dark={{ color: 'gray.600' }} p={1}>
-                        <FaGripVertical style={{ opacity: 0.3 }} />
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      style={{ ...provided.draggableProps.style, opacity: snapshot.isDragging ? 0.7 : 1 }}
+                      >
+                      <Box mr={2} color="gray.400" _dark={{ color: 'gray.500' }} p={1}>
+                        <FaGripVertical />
                       </Box>
-                      <Autocomplete
-                        items={exerciseSuggestions}
-                        getItemLabel={ex => ex.name}
-                        getKey={(ex, idx) => 'id' in ex ? ex.id : `template-${ex.name}`}
-                        value={addExerciseInput?.[dayIdx] || ''}
-                        onChange={val => handleAddExerciseInput(dayIdx, val)}
-                        onSelect={async item => {
-                          if ('id' in item) {
-                            handleAddExercise(dayIdx, item);
-                          } else {
-                            const newEx = await getAddedExercise(item.name, exercises, addExercise);
-                            handleAddExercise(dayIdx, newEx);
-                          }
-                          handleAddExerciseInput(dayIdx, '');
-                        }}
-                        onCreate={async input => {
-                          const newEx = await getAddedExercise(input, exercises, addExercise);
-                          handleAddExercise(dayIdx, newEx);
-                          handleAddExerciseInput(dayIdx, '');
-                        }}
-                        filterItems={searchExerciseSuggestions}
-                        placeholder="Add new exercise..."
-                        renderItemLabel={(item, isHighlighted) => {
-                          const isExercise = 'id' in item && item.id && exercises.find(e => e.id === item.id);
-                          const liked = isExercise && item.liked;
-                          const disliked = isExercise && item.disliked;
-                          let icon: React.ReactNode = null;
-                          if (liked) {
-                            icon = <FaThumbsUp color={isHighlighted ? '#059669' : '#38bdf8'} style={{ marginRight: 6 }} />;
-                          } else if (disliked) {
-                            icon = <FaThumbsDown color={isHighlighted ? '#dc2626' : '#f87171'} style={{ marginRight: 6 }} />;
-                          } else if (isExercise) {
-                            icon = <FaCheck color={isHighlighted ? '#059669' : '#a0aec0'} style={{ marginRight: 6 }} />;
-                          } else {
-                            icon = <FaPlus color={isHighlighted ? '#2563eb' : '#a0aec0'} style={{ marginRight: 6 }} />;
-                          }
-                          return (
-                            <Flex align="center" gap={2}>
-                              {icon}
-                              <Box fontWeight={isHighlighted ? 'bold' : 'normal'}>{item.name}</Box>
-                              {Array.isArray(item.targetMuscles) && item.targetMuscles.length > 0 && (
-                                <Flex gap={1} flexWrap="wrap">
-                                  {item.targetMuscles.map(muscle => (
-                                    <Box
-                                      key={muscle}
-                                      fontSize="xs"
-                                      px={2}
-                                      py={0.5}
-                                      borderRadius="full"
-                                      bg={isHighlighted ? 'cyan.100' : 'gray.100'}
-                                      color={isHighlighted ? 'cyan.700' : 'gray.600'}
-                                      _dark={{ bg: isHighlighted ? 'cyan.900' : 'gray.700', color: isHighlighted ? 'cyan.200' : 'gray.300' }}
-                                    >
-                                      {muscle}
-                                    </Box>
-                                  ))}
-                                </Flex>
-                              )}
+                      {/* Show exercise name and gear icon beside each other */}
+                      <Flex align="center" flex={1} minW={0} mr={2}>
+                        <Text
+                        fontWeight="semibold"
+                        color="cyan.700"
+                        _dark={{ color: 'cyan.300' }}
+                        minW={0}
+                        isTruncated={isMdOrLarger}
+                        fontSize={{ base: 'sm', md: 'md' }}
+                        whiteSpace={isMdOrLarger ? 'nowrap' : 'normal'}
+                        wordBreak="break-word"
+                        >
+                        {(() => {
+                          const details = exercises.find((e: Exercise) => e.id === ex.exerciseId);
+                          return details ? details.name : ex.exerciseId;
+                        })()}
+                        </Text>
+                        <IconButton
+                        aria-label="Edit exercise details"
+                        icon={<FaEdit />}
+                        size="sm"
+                        colorScheme="gray"
+                        variant="ghost"
+                        ml={2}
+                        onClick={() => openExerciseDetails(ex.exerciseId)}
+                        />
+                      </Flex>
+                      {/* Right-aligned controls */}
+                      <Flex align="center" ml="auto">
+                        <Flex direction={{ base: 'column', sm: 'row' }} gap={{ base: 1, sm: 2 }}>
+                        <NumericStepper
+                          value={ex.sets || 1}
+                          onChange={(val: number) => handleEditExercise(dayIdx, exIdx, { ...ex, sets: val })}
+                          label="sets"
+                        />
+                        {ex.reps !== undefined && (
+                          <NumericStepper
+                          value={ex.reps}
+                          onChange={(val: number) => handleEditExercise(dayIdx, exIdx, { ...ex, reps: val })}
+                          label="reps"
+                          />
+                        )}
+                        {ex.duration !== undefined && (
+                          <NumericStepper
+                          value={ex.duration}
+                          onChange={(val: number) => handleEditExercise(dayIdx, exIdx, { ...ex, duration: val })}
+                          label="sec"
+                          />
+                        )}
+                        </Flex>
+                        <Menu>
+                        <MenuButton
+                          as={IconButton}
+                          size="sm"
+                          colorScheme="gray"
+                          aria-label="More options"
+                          icon={<FaCog />} // Use a gear icon for the menu
+                          ml={{ base: 0, sm: 1 }}
+                          mt={{ base: 1, sm: 0 }}
+                          variant="ghost"
+                        />
+                        <MenuList>
+                          <MenuItem
+                          icon={<FaTimes color="#E53E3E" />} // Red X icon
+                          onClick={() => handleEditExercise(dayIdx, exIdx, null)}
+                          >
+                          Remove Exercise
+                          </MenuItem>
+                          <MenuItem
+                          onClick={() => {
+                            // Toggle between reps and duration
+                            if (ex.reps !== undefined) {
+                            // Switch to duration, remove reps
+                            handleEditExercise(dayIdx, exIdx, { ...ex, duration: 30, reps: undefined });
+                            } else if (ex.duration !== undefined) {
+                            // Switch to reps, remove duration
+                            handleEditExercise(dayIdx, exIdx, { ...ex, reps: 10, duration: undefined });
+                            }
+                          }}
+                          >
+                          {ex.reps !== undefined ? (
+                            <Flex align="center">
+                            <Box as={FaStopwatch} color="#3182CE" mr={2} />
+                            Switch to Duration
                             </Flex>
-                          );
-                        }}
-                        renderCreateLabel={input => `Create "${input}"`}
-                      />
-                    </Flex>
-                    {provided.placeholder}
+                          ) : (
+                            <Flex align="center">
+                            <Box as={FaSync} color="#3182CE" mr={2} />
+                            Switch to Reps
+                            </Flex>
+                          )}
+                          </MenuItem>
+                        </MenuList>
+                        </Menu>
+                      </Flex>
+                      </Flex>
+                    )}
+                    </Draggable>
+                  ))}
+                  {/* Persistent empty row for adding a new exercise */}
+                  <Flex
+                    align="center"
+                    w="100%"
+                    bg="transparent"
+                    _dark={{ bg: 'transparent' }}
+                    p={2}
+                    borderRadius="md"
+                    opacity={snapshot.isDraggingOver ? 0 : 1}
+                    pointerEvents={snapshot.isDraggingOver ? 'none' : 'auto'}
+                  >
+                    <Box mr={2} color="gray.300" _dark={{ color: 'gray.600' }} p={1}>
+                    <FaGripVertical style={{ opacity: 0.3 }} />
+                    </Box>
+                    <Autocomplete
+                    items={exerciseSuggestions}
+                    getItemLabel={(ex: Exercise | ExerciseTemplate) => ex.name}
+                    getKey={(ex: Exercise | ExerciseTemplate, idx: number) => 'id' in ex ? ex.id : `template-${ex.name}`}
+                    value={addExerciseInput?.[dayIdx] || ''}
+                    onChange={(val: string) => handleAddExerciseInput(dayIdx, val)}
+                    onSelect={async (item: Exercise | ExerciseTemplate) => {
+                      if ('id' in item) {
+                      handleAddExercise(dayIdx, item as Exercise);
+                      } else {
+                      const newEx = await getAddedExercise(item.name, exercises, addExercise);
+                      handleAddExercise(dayIdx, newEx);
+                      }
+                      handleAddExerciseInput(dayIdx, '');
+                    }}
+                    onCreate={async (input: string) => {
+                      const newEx = await getAddedExercise(input, exercises, addExercise);
+                      handleAddExercise(dayIdx, newEx);
+                      handleAddExerciseInput(dayIdx, '');
+                    }}
+                    filterItems={searchExerciseSuggestions}
+                    placeholder="Add new exercise..."
+                    renderItemLabel={(item: Exercise | ExerciseTemplate, isHighlighted: boolean) => {
+                      const isExercise = 'id' in item && item.id && exercises.find((e: Exercise) => e.id === item.id);
+                      const liked = isExercise && (item as Exercise).liked;
+                      const disliked = isExercise && (item as Exercise).disliked;
+                      let icon: React.ReactNode = null;
+                      if (liked) {
+                      icon = <FaThumbsUp color={isHighlighted ? '#059669' : '#38bdf8'} style={{ marginRight: 6 }} />;
+                      } else if (disliked) {
+                      icon = <FaThumbsDown color={isHighlighted ? '#dc2626' : '#f87171'} style={{ marginRight: 6 }} />;
+                      } else if (isExercise) {
+                      icon = <FaCheck color={isHighlighted ? '#059669' : '#a0aec0'} style={{ marginRight: 6 }} />;
+                      } else {
+                      icon = <FaPlus color={isHighlighted ? '#2563eb' : '#a0aec0'} style={{ marginRight: 6 }} />;
+                      }
+                      return (
+                      <Flex align="center" gap={2}>
+                        {icon}
+                        <Box fontWeight={isHighlighted ? 'bold' : 'normal'}>{item.name}</Box>
+                        {Array.isArray(item.targetMuscles) && item.targetMuscles.length > 0 && (
+                        <Flex gap={1} flexWrap="wrap">
+                          {item.targetMuscles.map((muscle: string) => (
+                          <Box
+                            key={muscle}
+                            fontSize="xs"
+                            px={2}
+                            py={0.5}
+                            borderRadius="full"
+                            bg={isHighlighted ? 'cyan.100' : 'gray.100'}
+                            color={isHighlighted ? 'cyan.700' : 'gray.600'}
+                            _dark={{ bg: isHighlighted ? 'cyan.900' : 'gray.700', color: isHighlighted ? 'cyan.200' : 'gray.300' }}
+                          >
+                            {muscle}
+                          </Box>
+                          ))}
+                        </Flex>
+                        )}
+                      </Flex>
+                      );
+                    }}
+                    renderCreateLabel={(input: string) => `Create "${input}"`}
+                    />
+                  </Flex>
+                  {provided.placeholder}
                   </VStack>
                 )}
               </Droppable>

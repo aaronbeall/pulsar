@@ -2,10 +2,12 @@
 // This service now expects exercises to be passed in from the store, and add operations to use the store's addExercise.
 // Direct DB calls (getExercises, addExercise) have been removed from this file.
 
-import { Routine, Exercise } from '../models/types';
+import { Routine, Exercise, DayOfWeek } from '../models/types';
 import { v4 as uuidv4 } from 'uuid';
 import { getSearchUrl, getHowToQuery, fetchExerciseSearchImageUrl } from '../utils/webUtils';
 import { exerciseTemplates, ExerciseTemplate } from './exerciseTemplates';
+import { routineTemplates, RoutineTemplate } from './routineTemplates';
+import { dailyWorkoutTemplates } from './dailyWorkoutTemplates';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -119,11 +121,69 @@ export function searchExerciseSuggestions(
 }
 
 const funnyWords = [
+  // General funny/quirky
   'Wacky', 'Zany', 'Bouncy', 'Funky', 'Snazzy', 'Quirky', 'Spunky', 'Jazzy', 'Peppy', 'Sassy',
-  'Loopy', 'Goofy', 'Nutty', 'Cheeky', 'Perky', 'Zippy', 'Bubbly', 'Jolly', 'Frisky', 'Chirpy'
+  'Loopy', 'Goofy', 'Nutty', 'Cheeky', 'Perky', 'Zippy', 'Bubbly', 'Jolly', 'Frisky', 'Chirpy',
+  'Wobble', 'Giggle', 'Waddle', 'Dizzy', 'Twisty', 'Wiggly', 'Bonkers', 'Swole', 'Buff', 'Ripped',
+  'Shredded', 'Flexy', 'Beefy', 'Chunky', 'Mighty', 'Thunder', 'Lightning', 'Rocket', 'Turbo',
+  'Beast', 'Savage', 'Legend', 'Epic', 'Heroic', 'Viking', 'Ninja', 'Samurai', 'Gladiator',
+  'Warrior', 'Titan', 'Juggernaut', 'Machine', 'Robot', 'Cyborg', 'Power', 'Blast', 'Pump',
+  'Crush', 'Smash', 'Blitz', 'Rampage', 'Rumble', 'Boom', 'Kaboom', 'Zap', 'Wham', 'Pow',
+  'Slam', 'Thump', 'Thud', 'Thicc', 'Yoked', 'Chonk', 'Chiseled', 'Diesel', 'Alpha', 'Omega',
+  'Unicorn', 'Rhino', 'Gorilla', 'Monkey', 'Banana', 'Peanut', 'Pickle', 'Broccoli', 'Squat',
+  'Lunge', 'Plank', 'Burpee', 'Crunch', 'Pushup', 'Pullup', 'Deadlift', 'Bench', 'Curl', 'Dip',
+  'Jump', 'Sprint', 'Dash', 'Zoom', 'Flash', 'Blaze', 'Inferno', 'Fire', 'Ice', 'Frost', 'Chill',
+  'Zen', 'Chillax', 'Groovy', 'Rad', 'Gnarly', 'Dope', 'Boss', 'Champ', 'Ace', 'Pro', 'Rookie',
+  'Noob', 'Wizard', 'Guru', 'Sensei', 'Coach', 'Captain', 'Chief', 'Commander', 'Major', 'Sarge',
+  'Scout', 'Ranger', 'Explorer', 'Nomad', 'Maverick', 'Rebel', 'Outlaw', 'Bandit', 'Pirate',
+  'Jester', 'Clown', 'Goat', 'Moose', 'Bear', 'Otter', 'Penguin', 'Sloth', 'Cheetah', 'Panther',
+  'Lion', 'Tiger', 'Shark', 'Dolphin', 'Whale', 'Crab', 'Lobster', 'Octopus', 'Squid', 'Turtle',
+  // Fitness/Workout specific
+  'Rep', 'Set', 'Gainz', 'Sweat', 'Burn', 'Cardio', 'HIIT', 'Tabata', 'Mobility', 'Stretch',
+  'Yoga', 'Pilates', 'Spin', 'Cycle', 'Row', 'Box', 'Kick', 'Punch', 'Fight', 'Battle', 'Grind',
+  'Hustle', 'Flow', 'Groove', 'Bounce', 'Hop', 'Skip', 'Leap', 'Stomp', 'March', 'Charge',
+  'Blast', 'Rocket', 'Jet', 'Zoom', 'Vroom', 'Drive', 'Cruise', 'Roll', 'Slide', 'Glide',
+  'Wave', 'Surf', 'Swim', 'Dive', 'Climb', 'Hike', 'Trek', 'Trail', 'Peak', 'Summit', 'Valley',
+  'Canyon', 'Desert', 'Jungle', 'Forest', 'Swamp', 'Marsh', 'Lake', 'River', 'Ocean', 'Sea',
+  // Entertaining/absurd
+  'Banana', 'Pickle', 'Broccoli', 'Potato', 'Tomato', 'Pumpkin', 'Muffin', 'Cupcake', 'Cookie',
+  'Donut', 'Waffle', 'Pancake', 'Bacon', 'Egg', 'Sausage', 'Tofu', 'Noodle', 'Spaghetti', 'Pizza',
+  'Nacho', 'Taco', 'Burrito', 'Queso', 'Salsa', 'Guac', 'Avocado', 'Cheese', 'Milkshake', 'Smoothie',
+  'Sundae', 'Fudge', 'Brownie', 'Marshmallow', 'Gummy', 'Jelly', 'Peach', 'Berry', 'Apple', 'Grape',
+  'Melon', 'Kiwi', 'Lime', 'Lemon', 'Orange', 'Coconut', 'Pineapple', 'Mango', 'Papaya', 'Dragonfruit',
+  // More fitness fun
+  'Muscle', 'Abs', 'Core', 'Quads', 'Glutes', 'Hammies', 'Calves', 'Pecs', 'Lats', 'Traps', 'Delts',
+  'Forearms', 'Biceps', 'Triceps', 'Neck', 'Back', 'Chest', 'Legs', 'Arms', 'Shoulders', 'Wings',
+  'Washboard', 'Steel', 'Iron', 'Bronze', 'Gold', 'Silver', 'Platinum', 'Diamond', 'Ruby', 'Sapphire',
+  'Emerald', 'Crystal', 'Stone', 'Rock', 'Pebble', 'Boulder', 'Mountain', 'Volcano', 'Comet', 'Meteor',
+  'Astro', 'Cosmo', 'Galaxy', 'Star', 'Nova', 'Nebula', 'Orbit', 'Rocket', 'Space', 'Alien', 'Martian',
+  'Robot', 'Android', 'Cyborg', 'Droid', 'Bot', 'Chip', 'Pixel', 'Nano', 'Mega', 'Giga', 'Tera',
+  'Quantum', 'Turbo', 'Hyper', 'Ultra', 'Max', 'Prime', 'Super', 'Mega', 'Ultra', 'Hyper', 'Extreme',
+  'Insane', 'Wild', 'Crazy', 'Mad', 'Epic', 'Legend', 'Mythic', 'Heroic', 'Royal', 'King', 'Queen',
+  'Prince', 'Princess', 'Duke', 'Duchess', 'Baron', 'Baroness', 'Knight', 'Paladin', 'Squire', 'Page',
+  'Wizard', 'Mage', 'Sorcerer', 'Witch', 'Warlock', 'Druid', 'Shaman', 'Monk', 'Priest', 'Cleric',
+  'Saint', 'Angel', 'Demon', 'Devil', 'Imp', 'Goblin', 'Orc', 'Troll', 'Giant', 'Ogre', 'Dragon',
+  'Wyvern', 'Hydra', 'Phoenix', 'Griffin', 'Unicorn', 'Pegasus', 'Mermaid', 'Kraken', 'Yeti', 'Bigfoot',
+  'Loch', 'Nessie', 'Chupacabra', 'Mothman', 'Banshee', 'Poltergeist', 'Ghost', 'Zombie', 'Vampire',
+  'Werewolf', 'Mummy', 'Skeleton', 'Ghoul', 'Wraith', 'Shade', 'Specter', 'Phantom', 'Spirit', 'Sprite',
+  'Pixie', 'Fairy', 'Elf', 'Dwarf', 'Gnome', 'Halfling', 'Hobbit', 'Troll', 'Ogre', 'Gargoyle', 'Gremlin',
+  'Imp', 'Leprechaun', 'Genie', 'Djinn', 'Sphinx', 'Minotaur', 'Centaur', 'Satyr', 'Faun', 'Cyclops',
+  'Harpy', 'Basilisk', 'Cockatrice', 'Manticore', 'Cerberus', 'Chimera', 'Hydra', 'Kraken', 'Leviathan',
+  'Behemoth', 'Colossus', 'Titan', 'Goliath', 'Atlas', 'Hercules', 'Achilles', 'Odysseus', 'Perseus',
+  'Jason', 'Theseus', 'Orpheus', 'Daedalus', 'Icarus', 'Prometheus', 'Pandora', 'Medusa', 'Circe',
+  'Calypso', 'Scylla', 'Charybdis', 'Sirens', 'Furies', 'Graces', 'Muses', 'Nymph', 'Dryad', 'Naiad',
+  'Oceanid', 'Oread', 'Satyr', 'Faun', 'Centaur', 'Minotaur', 'Sphinx', 'Chimera', 'Cerberus', 'Hydra',
+  'Kraken', 'Leviathan', 'Behemoth', 'Colossus', 'Titan', 'Goliath', 'Atlas', 'Hercules', 'Achilles',
+  'Odysseus', 'Perseus', 'Jason', 'Theseus', 'Orpheus', 'Daedalus', 'Icarus', 'Prometheus', 'Pandora',
+  // Just for fun
+  'Banana', 'Pickle', 'Broccoli', 'Potato', 'Tomato', 'Pumpkin', 'Muffin', 'Cupcake', 'Cookie',
+  'Donut', 'Waffle', 'Pancake', 'Bacon', 'Egg', 'Sausage', 'Tofu', 'Noodle', 'Spaghetti', 'Pizza',
+  'Nacho', 'Taco', 'Burrito', 'Queso', 'Salsa', 'Guac', 'Avocado', 'Cheese', 'Milkshake', 'Smoothie',
+  'Sundae', 'Fudge', 'Brownie', 'Marshmallow', 'Gummy', 'Jelly', 'Peach', 'Berry', 'Apple', 'Grape',
+  'Melon', 'Kiwi', 'Lime', 'Lemon', 'Orange', 'Coconut', 'Pineapple', 'Mango', 'Papaya', 'Dragonfruit'
 ];
 
-const generateRandomName = () => {
+export const generateRandomRoutineName = () => {
   const shuffled = funnyWords.sort(() => 0.5 - Math.random());
   return `${shuffled[0]} ${shuffled[1]} ${shuffled[2]}`;
 };
@@ -138,7 +198,7 @@ export const generateRoutine = async (
 ): Promise<{ routine: Routine, exercises: Exercise[] }> => {
   await delay(2000);
   const routineId = uuidv4();
-  const routineName = generateRandomName();
+  const routineName = generateRandomRoutineName();
   // Pick a few exercises randomly
   const shuffledSuggestions = exerciseTemplates.slice().sort(() => Math.random() - 0.5);
   const pickedSuggestions = shuffledSuggestions.slice(0, 5);
@@ -212,3 +272,71 @@ export const generateRoutine = async (
   };
   return { routine, exercises: newExercises };
 };
+
+/**
+ * Create a Routine from a RoutineTemplate, adding any missing exercises to the store.
+ */
+export async function createRoutineFromTemplate(
+  template: RoutineTemplate,
+  exercises: Exercise[],
+  addExercise: (ex: Exercise) => Promise<void>
+): Promise<{ routine: Routine, exercises: Exercise[] }> {
+  const routineId = uuidv4();
+  const allExercises = [...exercises];
+  const newExercises: Exercise[] = [];
+  const dailySchedule = [];
+
+  for (const [day, dayName] of Object.entries(template.days)) {
+    if (!dayName) continue;
+    // Find the daily workout template for this day
+    const dayTmpl = dailyWorkoutTemplates.find(dt => dt.day.toLowerCase() === String(dayName).toLowerCase());
+    if (!dayTmpl) continue;
+    const scheduledExercises = [];
+    for (const ex of dayTmpl.exercises) {
+      // Try to find an existing exercise (forgiving match)
+      let found = allExercises.find(e => normalizeExerciseName(e.name) === normalizeExerciseName(ex.name));
+      if (!found) {
+        // Try to find in templates
+        let templateEx = exerciseTemplates.find(t => normalizeExerciseName(t.name) === normalizeExerciseName(ex.name));
+        if (!templateEx) {
+          templateEx = { name: ex.name, description: '', targetMuscles: [], timed: !!ex.duration };
+        }
+        found = await createNewExercise(templateEx);
+        await addExercise(found);
+        allExercises.push(found);
+        newExercises.push(found);
+      }
+      scheduledExercises.push({
+        exerciseId: found.id,
+        sets: ex.sets,
+        reps: ex.reps,
+        duration: ex.duration,
+      });
+    }
+    dailySchedule.push({
+      day: day as DayOfWeek,
+      kind: dayName,
+      exercises: scheduledExercises,
+    });
+  }
+
+  const routine: Routine = {
+    id: routineId,
+    name: template.name,
+    description: template.description,
+    active: true,
+    createdAt: Date.now(),
+    dailySchedule,
+    prompts: {
+      goals: '',
+      equipment: '',
+      time: '',
+      additionalInfo: '',
+    },
+    responses: [],
+    liked: false,
+    disliked: false,
+    favorite: false,
+  };
+  return { routine, exercises: newExercises };
+}
