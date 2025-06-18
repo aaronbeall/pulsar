@@ -1,12 +1,14 @@
 import { Box, Button, Flex, Heading, Input, Text, VStack, Tag, SimpleGrid, useColorModeValue, InputGroup, InputLeftElement, InputRightElement } from '@chakra-ui/react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { FaArrowLeft, FaBook, FaMedal, FaPlayCircle, FaThumbsDown, FaRedo, FaPlus, FaSearch, FaTimes, FaDice } from 'react-icons/fa';
 import { dailyWorkoutTemplates } from '../services/dailyWorkoutTemplates';
 import { RoutineTemplate, routineTemplates } from '../services/routineTemplates';
 import { AnimatePresence, motion } from 'framer-motion';
 import { generateRandomRoutineName } from '../services/routineBuilderService';
+import { fetchExerciseSearchImageUrl } from '../utils/webUtils';
 
 const templateTextCache = new WeakMap<RoutineTemplate, string>();
+const templateImageCache = new WeakMap<RoutineTemplate, string | null>();
 
 // Utility to duplicate a value n times in an array
 function dup<T>(val: T, n: number): T[] {
@@ -225,6 +227,21 @@ export const RoutineTemplateChooser: React.FC<RoutineTemplateChooserProps> = ({ 
     const [showNaming, setShowNaming] = useState(false);
     const [routineName, setRoutineName] = useState(template.name);
     const nicknameSuggestions = template.nicknames || [];
+    const [imageUrl, setImageUrl] = useState<string | null>(() => templateImageCache.get(template) ?? null);
+
+    // Fetch and cache the image on mount if not already cached
+    useEffect(() => {
+      let isMounted = true;
+      if (imageUrl === null && !templateImageCache.has(template)) {
+        fetchExerciseSearchImageUrl(template.name).then(url => {
+          if (isMounted) {
+            templateImageCache.set(template, url);
+            setImageUrl(url ?? null);
+          }
+        });
+      }
+      return () => { isMounted = false; };
+    }, [template]);
 
     return (
       <motion.div
@@ -246,188 +263,205 @@ export const RoutineTemplateChooser: React.FC<RoutineTemplateChooserProps> = ({ 
           position="relative"
           overflow="hidden"
         >
-          {!showNaming ? (
-            <>
-              <Flex align="center" mb={1} gap={2}>
-                <FaBook color={templateIconColor} />
-                <Heading size="sm">{template.name}</Heading>
-                <Tag colorScheme="cyan" ml={2}>{getRandomNickname(template)}</Tag>
-              </Flex>
-              <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.300' }} mt={0} mb={template.keywords?.length ? 1 : 3}>
-                {template.description}
-              </Text>
-              <Box position="absolute" top={2} right={3}>
-                <Tag size="sm" colorScheme="gray" fontWeight={700} fontSize="xs" px={2} py={0.5} borderRadius="md" display="flex" alignItems="center" gap={1}>
-                  <FaMedal style={{ marginRight: 2, fontSize: '1em', color: '#ECC94B' }} />
-                  {score}
-                </Tag>
-              </Box>
-              <Box as="section" mt={2} mb={2}>
-                <SimpleGrid columns={Object.keys(template.days).length <= 4 ? Object.keys(template.days).length : 4} spacing={2} minChildWidth="110px">
-                  {Object.entries(template.days)
-                    .filter(([_, val]) => val)
-                    .map(([day, val], idx) => (
-                      <Box
-                        key={day}
-                        bg={'gray.50'}
-                        _dark={{ bg: 'gray.800' }}
-                        borderRadius="lg"
-                        boxShadow="md"
-                        borderWidth={0}
-                        p={3}
-                        minH="70px"
-                        display="flex"
-                        flexDirection="column"
-                        alignItems="center"
-                      >
-                        <Tag
-                          size="sm"
-                          colorScheme="cyan"
-                          variant="subtle"
-                          mb={1}
-                          fontWeight={600}
-                          letterSpacing="wide"
-                          opacity={0.85}
-                          borderRadius="md"
-                          px={2}
-                          py={0.5}
-                        >
-                          Day {idx + 1}
-                        </Tag>
-                        <Text fontSize="sm" color={'gray.700'} _dark={{ color: 'gray.200' }} fontWeight={500} textAlign="center" whiteSpace="pre-line">
-                          {val}
-                        </Text>
-                      </Box>
-                    ))}
-                </SimpleGrid>
-              </Box>
-              <Flex align="center" mb={2} gap={2} wrap="wrap">
-                <Text as="span" fontSize="sm" color={exerciseIconColor} fontWeight={600} mr={1}>
-                  Exercises:
-                </Text>
-                <Text as="span" fontSize="xs" color="gray.400" _dark={{ color: 'gray.500' }}>
-                  {getAllExercises(template).join(', ')}
-                </Text>
-              </Flex>
-              {template.keywords && template.keywords.length > 0 && (
-                <Flex wrap="wrap" gap={2} mb={2}>
-                  {template.keywords.map(kw => (
-                    <Tag
-                      key={kw}
-                      size="sm"
-                      colorScheme="cyan"
-                      variant="subtle"
-                      cursor="pointer"
-                      onClick={() => setSearch(kw)}
-                    >
-                      {kw}
-                    </Tag>
-                  ))}
+          {imageUrl && (
+            <Box
+              position="absolute"
+              inset={0}
+              zIndex={0}
+              backgroundImage={`linear-gradient(120deg, ${showNaming ? 'rgba(0,255,255,0.18)' : 'rgba(0,0,0,0.22)'}, ${showNaming ? 'rgba(0,255,255,0.18)' : 'rgba(0,0,0,0.22)'}, var(--chakra-colors-whiteAlpha-900) 80%), url(${imageUrl})`}
+              backgroundSize="cover"
+              backgroundPosition="center"
+              backgroundRepeat="no-repeat"
+              opacity={0.1}
+              pointerEvents="none"
+              style={{ mixBlendMode: 'luminosity' }}
+            />
+          )}
+          <Box position="relative" zIndex={1}>
+            {!showNaming ? (
+              <>
+                <Flex align="center" mb={1} gap={2}>
+                  <FaBook color={templateIconColor} />
+                  <Heading size="sm">{template.name}</Heading>
+                  <Tag colorScheme="cyan" ml={2}>{getRandomNickname(template)}</Tag>
                 </Flex>
-              )}
-              <Flex gap={2} mt={2}>
-                <Button
-                  colorScheme="gray"
-                  size="sm"
-                  leftIcon={<FaThumbsDown />}
-                  fontWeight={500}
-                  variant="outline"
-                  w="100%"
-                  onClick={() => onReject(template)}
-                >
-                  No thanks
-                </Button>
-                <Button
-                  colorScheme="cyan"
-                  size="sm"
-                  leftIcon={<FaPlayCircle />}
-                  fontWeight={500}
-                  w="100%"
-                  onClick={() => setShowNaming(true)}
-                >
-                  Start with this template
-                </Button>
-              </Flex>
-            </>
-          ) : (
-            <>
-              <Flex align="center" mb={2} gap={2}>
-                <FaBook color={templateIconColor} />
-                <Heading size="sm">Name your routine</Heading>
-              </Flex>
-              <Input
-                placeholder="Routine name"
-                value={routineName}
-                onChange={e => setRoutineName(e.target.value)}
-                mb={3}
-                size="md"
-                autoFocus
-              />
-              {nicknameSuggestions.length > 0 && (
-                <Flex wrap="wrap" gap={2} mb={3} align="center">
-                  {nicknameSuggestions.map(nick => (
+                <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.300' }} mt={0} mb={template.keywords?.length ? 1 : 3}>
+                  {template.description}
+                </Text>
+                <Box position="absolute" top={2} right={3}>
+                  <Tag size="sm" colorScheme="gray" fontWeight={700} fontSize="xs" px={2} py={0.5} borderRadius="md" display="flex" alignItems="center" gap={1}>
+                    <FaMedal style={{ marginRight: 2, fontSize: '1em', color: '#ECC94B' }} />
+                    {score}
+                  </Tag>
+                </Box>
+                <Box as="section" mt={2} mb={2}>
+                  <SimpleGrid columns={Object.keys(template.days).length <= 4 ? Object.keys(template.days).length : 4} spacing={2} minChildWidth="110px">
+                    {Object.entries(template.days)
+                      .filter(([_, val]) => val)
+                      .map(([day, val], idx) => (
+                        <Box
+                          key={day}
+                          bg={'rgba(255,255,255,0.65)'}
+                          _dark={{ bg: 'rgba(26,32,44,0.65)' }}
+                          borderRadius="lg"
+                          boxShadow="md"
+                          borderWidth={0}
+                          p={3}
+                          minH="70px"
+                          style={{ backdropFilter: 'blur(2px)' }}
+                          display="flex"
+                          flexDirection="column"
+                          alignItems="center"
+                        >
+                          <Tag
+                            size="sm"
+                            colorScheme="cyan"
+                            variant="subtle"
+                            mb={1}
+                            fontWeight={600}
+                            letterSpacing="wide"
+                            opacity={0.85}
+                            borderRadius="md"
+                            px={2}
+                            py={0.5}
+                          >
+                            Day {idx + 1}
+                          </Tag>
+                          <Text fontSize="sm" color={'gray.700'} _dark={{ color: 'gray.200' }} fontWeight={500} textAlign="center" whiteSpace="pre-line">
+                            {val}
+                          </Text>
+                        </Box>
+                      ))}
+                  </SimpleGrid>
+                </Box>
+                <Flex align="center" mb={2} gap={2} wrap="wrap">
+                  <Text as="span" fontSize="sm" color={exerciseIconColor} fontWeight={600} mr={1}>
+                    Exercises:
+                  </Text>
+                  <Text as="span" fontSize="xs" color="gray.400" _dark={{ color: 'gray.500' }}>
+                    {getAllExercises(template).join(', ')}
+                  </Text>
+                </Flex>
+                {template.keywords && template.keywords.length > 0 && (
+                  <Flex wrap="wrap" gap={2} mb={2}>
+                    {template.keywords.map(kw => (
+                      <Tag
+                        key={kw}
+                        size="sm"
+                        colorScheme="cyan"
+                        variant="subtle"
+                        cursor="pointer"
+                        onClick={() => setSearch(kw)}
+                      >
+                        {kw}
+                      </Tag>
+                    ))}
+                  </Flex>
+                )}
+                <Flex gap={2} mt={2}>
+                  <Button
+                    colorScheme="gray"
+                    size="sm"
+                    leftIcon={<FaThumbsDown />}
+                    fontWeight={500}
+                    variant="outline"
+                    w="100%"
+                    onClick={() => onReject(template)}
+                  >
+                    No thanks
+                  </Button>
+                  <Button
+                    colorScheme="cyan"
+                    size="sm"
+                    leftIcon={<FaPlayCircle />}
+                    fontWeight={500}
+                    w="100%"
+                    onClick={() => setShowNaming(true)}
+                  >
+                    Start with this template
+                  </Button>
+                </Flex>
+              </>
+            ) : (
+              <>
+                <Flex align="center" mb={2} gap={2}>
+                  <FaBook color={templateIconColor} />
+                  <Heading size="sm">Name your routine</Heading>
+                </Flex>
+                <Input
+                  placeholder="Routine name"
+                  value={routineName}
+                  onChange={e => setRoutineName(e.target.value)}
+                  mb={3}
+                  size="md"
+                  autoFocus
+                />
+                {nicknameSuggestions.length > 0 && (
+                  <Flex wrap="wrap" gap={2} mb={3} align="center">
+                    {nicknameSuggestions.map(nick => (
+                      <Tag
+                        key={nick}
+                        colorScheme="cyan"
+                        variant="subtle"
+                        cursor="pointer"
+                        boxShadow="sm"
+                        _hover={{
+                          bg: 'cyan.100',
+                          color: 'cyan.800',
+                          boxShadow: 'md',
+                          _dark: { bg: 'cyan.700', color: 'white' },
+                        }}
+                        onClick={() => setRoutineName(nick)}
+                      >
+                        {nick}
+                      </Tag>
+                    ))}
                     <Tag
-                      key={nick}
-                      colorScheme="cyan"
+                      colorScheme="purple"
                       variant="subtle"
                       cursor="pointer"
                       boxShadow="sm"
                       _hover={{
-                        bg: 'cyan.100',
-                        color: 'cyan.800',
+                        bg: 'purple.100',
+                        color: 'purple.800',
                         boxShadow: 'md',
-                        _dark: { bg: 'cyan.700', color: 'white' },
+                        _dark: { bg: 'purple.700', color: 'white' },
                       }}
-                      onClick={() => setRoutineName(nick)}
+                      onClick={() => {
+                        setRoutineName(generateRandomRoutineName());
+                      }}
+                      aria-label="Generate a funny random name"
                     >
-                      {nick}
+                      <FaDice style={{ marginRight: 4 }} />
+                      Random
                     </Tag>
-                  ))}
-                  <Tag
-                    colorScheme="purple"
-                    variant="subtle"
-                    cursor="pointer"
-                    boxShadow="sm"
-                    _hover={{
-                      bg: 'purple.100',
-                      color: 'purple.800',
-                      boxShadow: 'md',
-                      _dark: { bg: 'purple.700', color: 'white' },
-                    }}
-                    onClick={() => {
-                      setRoutineName(generateRandomRoutineName());
-                    }}
-                    aria-label="Generate a funny random name"
+                  </Flex>
+                )}
+                <Text fontSize="sm" color="gray.500" _dark={{ color: 'gray.400' }} mb={4}>
+                  After creating your routine, you can fully customize it: swap out template days, add or remove exercises, and even use AI to suggest changes or generate new workouts. Make it your own and adjust as you go!
+                </Text>
+                <Flex gap={2} mt={2}>
+                  <Button
+                    colorScheme="gray"
+                    variant="ghost"
+                    leftIcon={<FaArrowLeft />}
+                    onClick={() => setShowNaming(false)}
+                    w="50%"
                   >
-                    <FaDice style={{ marginRight: 4 }} />
-                    Random
-                  </Tag>
+                    Back
+                  </Button>
+                  <Button
+                    colorScheme="cyan"
+                    leftIcon={<FaPlus />}
+                    onClick={() => onSelect({ ...template, name: routineName.trim() || template.name })}
+                    w="50%"
+                  >
+                    Create Routine
+                  </Button>
                 </Flex>
-              )}
-              <Text fontSize="sm" color="gray.500" _dark={{ color: 'gray.400' }} mb={4}>
-                After creating your routine, you can fully customize it: swap out template days, add or remove exercises, and even use AI to suggest changes or generate new workouts. Make it your own and adjust as you go!
-              </Text>
-              <Flex gap={2} mt={2}>
-                <Button
-                  colorScheme="gray"
-                  variant="ghost"
-                  leftIcon={<FaArrowLeft />}
-                  onClick={() => setShowNaming(false)}
-                  w="50%"
-                >
-                  Back
-                </Button>
-                <Button
-                  colorScheme="cyan"
-                  leftIcon={<FaPlus />}
-                  onClick={() => onSelect({ ...template, name: routineName.trim() || template.name })}
-                  w="50%"
-                >
-                  Create Routine
-                </Button>
-              </Flex>
-            </>
-          )}
+              </>
+            )}
+          </Box>
         </Box>
       </motion.div>
     );
