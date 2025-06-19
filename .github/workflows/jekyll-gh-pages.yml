@@ -31,4 +31,4 @@ jobs:
         uses: skywarth/vite-github-pages-deployer@master
         id: deploy_to_pages
         env:
-          VITE_BASE_PATH: /your-repo-name/
+          VITE_BASE_PATH: /pulsar/
