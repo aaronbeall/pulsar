@@ -63,7 +63,7 @@ const App: React.FC = () => {
                   transition="transform 0.2s"
                 >
                   <Image 
-                    src="/favicon.svg" 
+                    src="favicon.svg" 
                     alt="App Icon" 
                     boxSize="32px"
                     filter="drop-shadow(0 2px 4px rgba(0,0,0,0.2))"
