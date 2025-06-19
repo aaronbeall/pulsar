@@ -22,6 +22,7 @@ import Home from './views/Home';
 import Workout from './views/Workout';
 import Settings from './views/Settings';
 import { usePulsarStoreInit } from './store/pulsarStore';
+import LogoSvg from '../assets/logo.svg';
 
 const App: React.FC = () => {
   usePulsarStoreInit(); // Load all data from DB into Zustand store on app mount
@@ -63,7 +64,7 @@ const App: React.FC = () => {
                   transition="transform 0.2s"
                 >
                   <Image 
-                    src="favicon.svg" 
+                    src={LogoSvg} 
                     alt="App Icon" 
                     boxSize="32px"
                     filter="drop-shadow(0 2px 4px rgba(0,0,0,0.2))"
