@@ -22,7 +22,7 @@ import Home from './views/Home';
 import Workout from './views/Workout';
 import Settings from './views/Settings';
 import { usePulsarStoreInit } from './store/pulsarStore';
-import LogoSvg from '../assets/logo.svg';
+import LogoSvg from './assets/logo.svg';
 
 const App: React.FC = () => {
   usePulsarStoreInit(); // Load all data from DB into Zustand store on app mount
