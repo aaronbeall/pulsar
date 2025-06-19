@@ -30,7 +30,15 @@ jobs:
           BASE: /pulsar/
         run: |
           npm run build
-          cp dist/index.html dist/404.html
+      - name: Add SPA fallback
+        run: |
+          touch dist/.nojekyll
+          (
+            echo '---'
+            echo 'permalink: /404.html'
+            echo '---'
+            cat dist/index.html
+          ) > dist/404.html
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
