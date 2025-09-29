@@ -4,7 +4,7 @@ import { keyframes } from '@emotion/react';
 import { CheckIcon } from '@chakra-ui/icons';
 import { FaTimes, FaRegClock, FaExclamationTriangle } from 'react-icons/fa';
 import { Workout, Routine } from '../models/types';
-import { getWorkoutStatusForToday, hasRoutineForToday, getStreakInfo, StreakDay, getDayOfWeek, findRoutineForDay, findExercisesForDay, findWorkoutForDay, findScheduleForDay } from '../utils/workoutUtils';
+import { getStreakInfo, StreakDay, getDayOfWeek, findRoutineForDay, findExercisesForDay, findWorkoutForDay } from '../utils/workoutUtils';
 import { DAYS_OF_WEEK } from '../constants/days';
 import { usePulsarStore } from '../store/pulsarStore';
 import { v4 as uuidv4 } from 'uuid';

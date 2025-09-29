@@ -12,15 +12,19 @@ export const getTodayDayOfWeek = (): DayOfWeek => {
 
 // Core utility functions that work with any day
 export const hasRoutineForDay = (routines: Routine[], day: DayOfWeek): boolean => {
-  return routines.some((routine) =>
-    routine.dailySchedule.some((schedule) => schedule.day === day)
-  );
+  return routines
+    .filter(routine => routine.active)
+    .some((routine) =>
+      routine.dailySchedule.some((schedule) => schedule.day === day)
+    );
 };
 
 export const findRoutineForDay = (routines: Routine[], day: DayOfWeek): Routine | undefined => {
-  return routines.find((routine) =>
-    routine.dailySchedule.some((schedule) => schedule.day === day)
-  );
+  return routines
+    .filter(routine => routine.active)
+    .find((routine) =>
+      routine.dailySchedule.some((schedule) => schedule.day === day)
+    );
 };
 
 export const findScheduleForDay = (routines: Routine[], day: DayOfWeek) => {
@@ -139,7 +143,9 @@ export function getStreakInfo(workouts: Workout[], routines: Routine[]): StreakI
     const key = d.toDateString();
     const completed = completedMap.has(key);
     const dayOfWeek = getDayOfWeek(d);
-    const hasRoutine = routines.some(r => r.dailySchedule.some(s => s.day === dayOfWeek));
+    const hasRoutine = routines
+      .filter(r => r.active)
+      .some(r => r.dailySchedule.some(s => s.day === dayOfWeek));
     streakDaysArr.push({
       date: new Date(d),
       completed,
