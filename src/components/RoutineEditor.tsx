@@ -228,14 +228,14 @@ export const RoutineEditor: React.FC<{
   );
 };
 
-const SaveBar: React.FC<{
+const SaveBar = React.memo<{
   editName: string;
   onChangeName: (newName: string) => void;
   editChanged: boolean;
   onSave: () => void;
   onSaveAs: (saveAsName: string) => void;
   onRevert: () => void;
-}> = ({ editName, onChangeName: onChange, editChanged, onSave, onSaveAs, onRevert }) => {
+}>(({ editName, onChangeName: onChange, editChanged, onSave, onSaveAs, onRevert }) => {
   const [showSaveAs, setShowSaveAs] = useState(false);
   const [saveAsName, setSaveAsName] = useState(editName);
   const saveAsDisclosure = useDisclosure();
@@ -351,16 +351,16 @@ const SaveBar: React.FC<{
 
       </>
   );
-}
+});
 
-const ExerciseScheduleEditor: React.FC<{ 
+const ExerciseScheduleEditor = React.memo<{ 
   dailySchedule: Routine['dailySchedule'];
   onChangeDay: (dayIdx: number, newDay: DayOfWeek) => void;
   onEditDayKind: (dayIdx: number, newKind: string) => void;
   onEditExercise: (dayIdx: number, exIdx: number, ex: ScheduledExercise | null) => void;
   onAddExercise: (dayIdx: number, exercise: Exercise) => void;
   onDragExercise: OnDragEndResponder;
-}> = ({ dailySchedule, onChangeDay, onEditDayKind, onEditExercise, onAddExercise, onDragExercise }) => {
+}>(({ dailySchedule, onChangeDay, onEditDayKind, onEditExercise, onAddExercise, onDragExercise }) => {
 
   // Add state and handler for exercise details dialog
   const [exerciseDetailsId, setExerciseDetailsId] = useState<string | null>(null);
@@ -396,9 +396,9 @@ const ExerciseScheduleEditor: React.FC<{
       )}
     </DragDropContext>
   );
-}
+});
 
-const ExerciseDayEditor: React.FC<{ 
+const ExerciseDayEditor = React.memo<{ 
   schedule: RoutineDay;
   dailySchedule: Routine['dailySchedule'];
   dayIdx: number;
@@ -408,7 +408,7 @@ const ExerciseDayEditor: React.FC<{
   onAddExercise: (dayIdx: number, exercise: Exercise) => void;
   onOpenExerciseDetails: (exerciseId: string) => void;
   isMdOrLarger?: boolean;
-}> = ({ schedule, dailySchedule, dayIdx, onChangeDay, onEditDayKind, onEditExercise, onOpenExerciseDetails, onAddExercise, isMdOrLarger }) => {
+}>(({ schedule, dailySchedule, dayIdx, onChangeDay, onEditDayKind, onEditExercise, onOpenExerciseDetails, onAddExercise, isMdOrLarger }) => {
   // Add state and handler for editing kind
   const [editKind, setEditKind] = useState(false);
   const [editKindValue, setEditKindValue] = useState('');
@@ -469,7 +469,10 @@ const ExerciseDayEditor: React.FC<{
           <DayKindEditor
             value={editKindValue}
             onChange={setEditKindValue}
-            onSave={() => onEditDayKind(dayIdx, editKindValue)}
+            onSave={() => {
+              onEditDayKind(dayIdx, editKindValue);
+              setEditKind(false);
+            }}
             onCancel={() => setEditKind(false)}
           />
         ) : (
@@ -477,7 +480,7 @@ const ExerciseDayEditor: React.FC<{
             kind={schedule.kind}
             editable
             onClick={() => {
-              setEditKind(false);
+              setEditKind(true);
               setEditKindValue(schedule.kind || '');
             }}
           />
@@ -527,16 +530,16 @@ const ExerciseDayEditor: React.FC<{
       </Droppable>
     </Box>
   );
-}
+});
 
-const DraggableExerciseEditorRow: React.FC<{ 
+const DraggableExerciseEditorRow = React.memo<{ 
   dayIdx: number; 
   exIdx: number; 
   ex: ScheduledExercise; 
   onEditExercise: (dayIdx: number, exIdx: number, ex: ScheduledExercise | null) => void;
   onOpenExerciseDetails: (exerciseId: string) => void;
   isMdOrLarger?: boolean;
-}> = ({ dayIdx, exIdx, ex, onEditExercise, onOpenExerciseDetails, isMdOrLarger }) => {
+}>(({ dayIdx, exIdx, ex, onEditExercise, onOpenExerciseDetails, isMdOrLarger }) => {
   const exercise = useExercise(ex.exerciseId);
   return (
     <Draggable key={`ex-${dayIdx}-${exIdx}`} draggableId={`ex-${dayIdx}-${exIdx}`} index={exIdx}>
@@ -652,12 +655,12 @@ const DraggableExerciseEditorRow: React.FC<{
     )}
     </Draggable>
   );
-}
+});
 
-const AddExerciseRow: React.FC<{ 
+const AddExerciseRow = React.memo<{ 
   onAddExercise: (exercise: Exercise) => void;
   isDraggingOver: boolean;
-}> = ({ onAddExercise, isDraggingOver }) => {
+}>(({ onAddExercise, isDraggingOver }) => {
   const [addExerciseInput, setAddExerciseInput] = useState("");
 
   const exercises = usePulsarStore(s => s.exercises);
@@ -749,4 +752,4 @@ const AddExerciseRow: React.FC<{
       />
     </Flex>
   );
-}
+});
