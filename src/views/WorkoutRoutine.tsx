@@ -257,7 +257,6 @@ const WorkoutRoutine: React.FC = () => {
         {isEditing && routine && (
           <RoutineEditor
             initialRoutine={routine}
-            exercises={exercises}
             onSave={handleSave}
             onSaveAs={handleSaveAs}
             onRevert={handleRevert}

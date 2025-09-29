@@ -59,7 +59,9 @@
 - [ ] Warn when deleting a routine that has workouts
 - [ ] Ad hoc workouts
 - [ ] Activity log - view any past workout, repeat
+- [ ] Change exercise images and links
 
 ## Issues
 - [ ] Inactive routines are impacting the TimeToWorkoutAlert
 - [ ] Routine view banner gets mixed up with multiple started days
+- [ ] Editor optimization is bad, need to split up and memoize components, and not use clone()
