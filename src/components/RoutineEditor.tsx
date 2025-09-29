@@ -27,6 +27,7 @@ import {
   Switch,
 } from '@chakra-ui/react';
 import React, { useCallback, useEffect, useState } from 'react';
+import { produce } from 'immer';
 import { DragDropContext, Draggable, DraggableProvided, DraggableStateSnapshot, Droppable, DroppableProvided, DroppableStateSnapshot, DropResult, OnDragEndResponder } from 'react-beautiful-dnd';
 import { FaCheck, FaCheckCircle, FaCog, FaDumbbell, FaEdit, FaExchangeAlt, FaGripVertical, FaPlus, FaRegCalendarAlt, FaSearch, FaStopwatch, FaSync, FaThumbsDown, FaThumbsUp, FaTimes, FaUndo } from 'react-icons/fa'; // Import icons
 import ExerciseDetailsDialog from './ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
@@ -50,12 +51,6 @@ function ensureAllDays(schedule: Routine['dailySchedule']): Routine['dailySchedu
   });
 }
 
-// Deep clone helper
-// TODO: Replace with immer()
-function cloneRoutine(r: Routine): Routine {
-  return JSON.parse(JSON.stringify(r));
-}
-
 // Editable routine with drag and drop, now using react-beautiful-dnd
 export const RoutineEditor: React.FC<{
   initialRoutine: Routine;
@@ -71,114 +66,126 @@ export const RoutineEditor: React.FC<{
 
   useEffect(() => {
     // Ensure all days are present when routine changes
-    const next = cloneRoutine(initialRoutine);
-    next.dailySchedule = ensureAllDays(next.dailySchedule);
+    const next = produce(initialRoutine, draft => {
+      draft.dailySchedule = ensureAllDays(draft.dailySchedule);
+    });
     setEditRoutine(next);
     setEditChanged(false);
   }, [initialRoutine]);
 
   // react-beautiful-dnd handlers
-  const handleExerciseDragEnd = (result: DropResult) => {
+  const handleExerciseDragEnd = useCallback((result: DropResult) => {
     const { source, destination } = result;
     if (!destination) return;
     const sourceDayIdx = parseInt(source.droppableId.replace('day-', ''));
     const destDayIdx = parseInt(destination.droppableId.replace('day-', ''));
     if (sourceDayIdx === destDayIdx && source.index === destination.index) return;
-    const newRoutine = cloneRoutine(editRoutine);
-    const [moved] = newRoutine.dailySchedule[sourceDayIdx].exercises.splice(source.index, 1);
-    newRoutine.dailySchedule[destDayIdx].exercises.splice(destination.index, 0, moved);
-    setEditRoutine(newRoutine);
+    
+    setEditRoutine(current => produce(current, draft => {
+      const [moved] = draft.dailySchedule[sourceDayIdx].exercises.splice(source.index, 1);
+      draft.dailySchedule[destDayIdx].exercises.splice(destination.index, 0, moved);
+    }));
     setEditChanged(true);
-  };
+  }, []);
 
   // Edit exercise handler
-  const handleEditExercise = (dayIdx: number, exIdx: number, newExercise: ScheduledExercise | null) => {
-    const newRoutine = cloneRoutine(editRoutine);
-    if (newExercise === null) {
-      newRoutine.dailySchedule[dayIdx].exercises.splice(exIdx, 1);
-    } else {
-      newRoutine.dailySchedule[dayIdx].exercises[exIdx] = newExercise;
-    }
-    setEditRoutine(newRoutine);
+  const handleEditExercise = useCallback((dayIdx: number, exIdx: number, newExercise: ScheduledExercise | null) => {
+    setEditRoutine(current => produce(current, draft => {
+      if (newExercise === null) {
+        draft.dailySchedule[dayIdx].exercises.splice(exIdx, 1);
+      } else {
+        draft.dailySchedule[dayIdx].exercises[exIdx] = newExercise;
+      }
+    }));
     setEditChanged(true);
-  };
+  }, []);
 
   // Add exercise handler
-  const handleAddExercise = (dayIdx: number, exercise: Exercise) => {
-    const newRoutine = cloneRoutine(editRoutine);
-    const { id: exerciseId, timed } = exercise;
-    newRoutine.dailySchedule[dayIdx].exercises.push({ 
-      exerciseId, 
-      sets: 1, 
-      // TODO: find a default value from exercises
-      ...(timed ? { duration: 30 } : { reps: 10 }) 
-    });
-    setEditRoutine(newRoutine);
+  const handleAddExercise = useCallback((dayIdx: number, exercise: Exercise) => {
+    setEditRoutine(current => produce(current, draft => {
+      const { id: exerciseId, timed } = exercise;
+      draft.dailySchedule[dayIdx].exercises.push({ 
+        exerciseId, 
+        sets: 1, 
+        // TODO: find a default value from exercises
+        ...(timed ? { duration: 30 } : { reps: 10 }) 
+      });
+    }));
     setEditChanged(true);
-  };
+  }, []);
 
   // Handle changing the day for a schedule (swap days)
-  const handleChangeDay = (fromDayIdx: number, newDay: string) => {
-    const toDayIdx = editRoutine.dailySchedule.findIndex(s => s.day === newDay);
-    if (toDayIdx === -1) return; // Should not happen
-    const newRoutine = cloneRoutine(editRoutine);
-    // Swap the two days' data, but also swap their 'day' fields
-    const temp = { ...newRoutine.dailySchedule[fromDayIdx] };
-    newRoutine.dailySchedule[fromDayIdx] = {
-      ...newRoutine.dailySchedule[toDayIdx],
-      day: newRoutine.dailySchedule[fromDayIdx].day,
-    };
-    newRoutine.dailySchedule[toDayIdx] = {
-      ...temp,
-      day: newRoutine.dailySchedule[toDayIdx].day,
-    };
-    setEditRoutine(newRoutine);
+  const handleChangeDay = useCallback((fromDayIdx: number, newDay: string) => {
+    setEditRoutine(current => {
+      const toDayIdx = current.dailySchedule.findIndex(s => s.day === newDay);
+      if (toDayIdx === -1) return current; // Should not happen
+      
+      return produce(current, draft => {
+        // Swap the two days' data, but also swap their 'day' fields
+        const temp = { ...draft.dailySchedule[fromDayIdx] };
+        draft.dailySchedule[fromDayIdx] = {
+          ...draft.dailySchedule[toDayIdx],
+          day: draft.dailySchedule[fromDayIdx].day,
+        };
+        draft.dailySchedule[toDayIdx] = {
+          ...temp,
+          day: draft.dailySchedule[toDayIdx].day,
+        };
+      });
+    });
     setEditChanged(true);
-  };
+  }, []);
 
-  const handleEditDayKind = (dayIdx: number, newKind: string) => {
-    const newRoutine = cloneRoutine(editRoutine);
-    newRoutine.dailySchedule[dayIdx].kind = newKind;
-    setEditRoutine(newRoutine);
+  const handleEditDayKind = useCallback((dayIdx: number, newKind: string) => {
+    setEditRoutine(current => produce(current, draft => {
+      draft.dailySchedule[dayIdx].kind = newKind;
+    }));
     setEditChanged(true);
-  }
+  }, []);
 
-  const handleNameChange = (newName: string) => {
-    setEditRoutine(r => ({ ...r, name: newName }));
+  const handleNameChange = useCallback((newName: string) => {
+    setEditRoutine(current => produce(current, draft => {
+      draft.name = newName;
+    }));
     setEditChanged(true);
-  }      
+  }, []);      
 
   // Save changes
-  const handleSave = () => {
-    const trimmed = cloneRoutine(editRoutine);
-    trimmed.dailySchedule = trimmed.dailySchedule.filter(s => s.exercises.length > 0);
+  const handleSave = useCallback(() => {
+    const trimmed = produce(editRoutine, draft => {
+      draft.dailySchedule = draft.dailySchedule.filter((s: RoutineDay) => s.exercises.length > 0);
+    });
     onSave(trimmed);
     setEditChanged(false);
-  };
+  }, [editRoutine, onSave]);
 
   // Save As handler
-  const handleSaveAs = (saveAsName: string) => {
-    const trimmed = cloneRoutine(editRoutine);
+  const handleSaveAs = useCallback((saveAsName: string) => {
+    const trimmed = produce(editRoutine, draft => {
+      draft.dailySchedule = draft.dailySchedule.filter((s: RoutineDay) => s.exercises.length > 0);
+    });
     const { id, favorite, ...rest } = trimmed;
     const uuid = uuidv4();
     const newRoutine: Routine = {
       ...rest,
       id: uuid,
       name: saveAsName,
-      dailySchedule: trimmed.dailySchedule.filter(s => s.exercises.length > 0),
+      dailySchedule: trimmed.dailySchedule,
       active: false,
       createdAt: Date.now(),
     };
     onSaveAs(newRoutine);
     setEditChanged(false);
-  };
+  }, [editRoutine, onSaveAs]);
 
   // Revert changes
-  const handleRevert = () => {
-    setEditRoutine(cloneRoutine(initialRoutine));
+  const handleRevert = useCallback(() => {
+    setEditRoutine(produce(initialRoutine, draft => {
+      draft.dailySchedule = ensureAllDays(draft.dailySchedule);
+    }));
     setEditChanged(false);
     onRevert();
-  };
+  }, [initialRoutine, onRevert]);
 
   return (
     <Box>
@@ -195,7 +202,9 @@ export const RoutineEditor: React.FC<{
       <Textarea
         value={editRoutine.description || ''}
         onChange={e => {
-          setEditRoutine(r => ({ ...r, description: e.target.value }));
+          setEditRoutine(current => produce(current, draft => {
+            draft.description = e.target.value;
+          }));
           setEditChanged(true);
         }}
         placeholder="Add a description (optional)"
