@@ -37,6 +37,8 @@
 - [ ] Monetization (Buy Me a Coffee, premium, ads)
 - [ ] AI-free routine library (generated with LLM) with semantic search
 - [ ] Onboarding/Help
+- [ ] PWA + Hosting
+- [ ] Publish to app stores
 
 ## Bells and whistles
 - [ ] Like/dislike routine/workout/exercise
