@@ -1,4 +1,5 @@
 import { ExerciseName } from './ExerciseName';
+import DayRoutineTemplateChooser from './DayRoutineTemplateChooser';
 // RoutineEditor.tsx
 // Provides an interactive editor for routines, allowing drag-and-drop reordering, day/kind editing, and exercise management.
 
@@ -431,6 +432,24 @@ const ExerciseDayEditor = React.memo<{
   const [showRemoveAllConfirm, setShowRemoveAllConfirm] = useState(false);
   // State for paste confirmation
   const [showPasteConfirm, setShowPasteConfirm] = useState(false);
+  // State for template chooser
+  const [showTemplateChooser, setShowTemplateChooser] = useState(false);
+  // Handler for selecting a template
+  const handleSelectTemplate = (template: RoutineDay) => {
+    // Overwrite exercises and kind, keep the current day
+    onEditDayKind(dayIdx, template.kind);
+    // Remove all current exercises
+    schedule.exercises.forEach((_, exIdx) => onEditExercise(dayIdx, 0, null));
+    // Add template exercises
+    template.exercises.forEach(ex => onAddExercise(dayIdx, ex));
+    setShowTemplateChooser(false);
+    toast({
+      title: `Template applied to ${schedule.day}`,
+      status: 'success',
+      duration: 2000,
+      isClosable: true,
+    });
+  };
 
   // Import toast and store
   const toast = useToast();
@@ -555,6 +574,14 @@ const ExerciseDayEditor = React.memo<{
               Actions
             </Box>
             <MenuItem
+              icon={<FaPlus style={{ color: 'var(--chakra-colors-cyan-400)' }} />}
+              onClick={() => setShowTemplateChooser(true)}
+              bg="white"
+              _dark={{ bg: 'gray.800', color: 'gray.100', _hover: { bg: 'gray.700' } }}
+            >
+              Select from template
+            </MenuItem>
+            <MenuItem
               icon={<FaCopy style={{ color: 'var(--chakra-colors-blue-400)' }} />}
               onClick={handleCopyDay}
               bg="white"
@@ -571,33 +598,6 @@ const ExerciseDayEditor = React.memo<{
             >
               Paste copied routine
             </MenuItem>
-            {/* Paste confirmation modal */}
-            <Modal isOpen={showPasteConfirm} onClose={() => setShowPasteConfirm(false)} isCentered>
-              <ModalOverlay />
-              <ModalContent>
-                <ModalHeader>Overwrite all exercises?</ModalHeader>
-                <ModalCloseButton />
-                <ModalBody>
-                  <Box mb={2}>This will replace all exercises in <b>{schedule.day}</b> with the copied routine. The following exercises will be <b>added</b>:</Box>
-                  <Box as="ul" pl={4} color="gray.600">
-                    {copiedRoutineDay?.exercises.map((ex, idx) => (
-                      <li key={ex.exerciseId || idx}>
-                        <ExerciseName exerciseId={ex.exerciseId} schedule={ex} />
-                      </li>
-                    ))}
-                  </Box>
-                </ModalBody>
-                <ModalFooter>
-                  <Button onClick={() => setShowPasteConfirm(false)} mr={3} leftIcon={<FaTimes />} variant="ghost">
-                    Cancel
-                  </Button>
-                  <Button colorScheme="cyan" onClick={confirmPaste} leftIcon={<FaPaste />} fontWeight="bold">
-                    Overwrite
-                  </Button>
-                </ModalFooter>
-              </ModalContent>
-            </Modal>
-
             <MenuItem
               icon={<FaTimes style={{ color: 'var(--chakra-colors-red-400)' }} />}
               onClick={() => setShowRemoveAllConfirm(true)}
@@ -607,36 +607,91 @@ const ExerciseDayEditor = React.memo<{
             >
               Remove all exercises
             </MenuItem>
-            {/* Remove all confirmation modal */}
-            <Modal isOpen={showRemoveAllConfirm} onClose={() => setShowRemoveAllConfirm(false)} isCentered>
-              <ModalOverlay />
-              <ModalContent>
-                <ModalHeader>Remove all exercises?</ModalHeader>
-                <ModalCloseButton />
-                <ModalBody>
-                  Are you sure you want to remove all exercises from {schedule.day}?
-                </ModalBody>
-                <ModalFooter>
-                  <Button onClick={() => setShowRemoveAllConfirm(false)} mr={3} leftIcon={<FaTimes />} variant="ghost">
-                    Cancel
-                  </Button>
-                  <Button colorScheme="red" onClick={() => {
-                    schedule.exercises.forEach((_, exIdx) => onEditExercise(dayIdx, 0, null));
-                    setShowRemoveAllConfirm(false);
-                    toast({
-                      title: `Removed all exercises from ${schedule.day}`,
-                      status: 'info',
-                      duration: 2000,
-                      isClosable: true,
-                    });
-                  }} leftIcon={<FaTimes />} fontWeight="bold">
-                    Remove All
-                  </Button>
-                </ModalFooter>
-              </ModalContent>
-            </Modal>
           </MenuList>
         </Menu>
+        {/* Paste confirmation modal */}
+        <Modal isOpen={showPasteConfirm} onClose={() => setShowPasteConfirm(false)} isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Overwrite all exercises?</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <Box mb={2}>This will replace all exercises in <b>{schedule.day}</b> with the copied routine. The following exercises will be <b>added</b>:</Box>
+              <Box as="ul" pl={4} color="gray.600">
+                {copiedRoutineDay?.exercises.map((ex, idx) => (
+                  <li key={ex.exerciseId || idx}>
+                    <ExerciseName exerciseId={ex.exerciseId} schedule={ex} />
+                  </li>
+                ))}
+              </Box>
+            </ModalBody>
+            <ModalFooter>
+              <Button onClick={() => setShowPasteConfirm(false)} mr={3} leftIcon={<FaTimes />} variant="ghost">
+                Cancel
+              </Button>
+              <Button colorScheme="cyan" onClick={confirmPaste} leftIcon={<FaPaste />} fontWeight="bold">
+                Overwrite
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+        {/* Remove all confirmation modal */}
+        <Modal isOpen={showRemoveAllConfirm} onClose={() => setShowRemoveAllConfirm(false)} isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Remove all exercises?</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              Are you sure you want to remove all exercises from {schedule.day}?
+            </ModalBody>
+            <ModalFooter>
+              <Button onClick={() => setShowRemoveAllConfirm(false)} mr={3} leftIcon={<FaTimes />} variant="ghost">
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={() => {
+                schedule.exercises.forEach((_, exIdx) => onEditExercise(dayIdx, 0, null));
+                setShowRemoveAllConfirm(false);
+                toast({
+                  title: `Removed all exercises from ${schedule.day}`,
+                  status: 'info',
+                  duration: 2000,
+                  isClosable: true,
+                });
+              }} leftIcon={<FaTimes />} fontWeight="bold">
+                Remove All
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+        {/* Template chooser modal */}
+        <Modal isOpen={showTemplateChooser} onClose={() => setShowTemplateChooser(false)} isCentered>
+          <ModalOverlay />
+          <ModalContent maxW="3xl">
+            <ModalHeader>Select a Routine Template</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <DayRoutineTemplateChooser
+                day={schedule.day}
+                exercises={usePulsarStore(s => s.exercises)}
+                addExercise={usePulsarStore(s => s.addExercise)}
+                onSelect={async (template) => {
+                  // Overwrite exercises and kind, keep the current day
+                  onEditDayKind(dayIdx, template.kind);
+                  schedule.exercises.forEach((_, exIdx) => onEditExercise(dayIdx, 0, null));
+                  template.exercises.forEach(ex => onAddExercise(dayIdx, ex));
+                  setShowTemplateChooser(false);
+                  toast({
+                    title: `Template applied to ${schedule.day}`,
+                    status: 'success',
+                    duration: 2000,
+                    isClosable: true,
+                  });
+                }}
+                onCancel={() => setShowTemplateChooser(false)}
+              />
+            </ModalBody>
+          </ModalContent>
+        </Modal>
         {editKind ? (
           <DayKindEditor
             value={editKindValue}
