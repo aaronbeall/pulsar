@@ -1,7 +1,7 @@
 import React from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Exercise, Routine, Workout } from '../models/types';
+import { Exercise, Routine, RoutineDay, Workout } from '../models/types';
 import * as db from '../db/indexedDb';
 import { getExerciseStats as calcExerciseStats, ExerciseStats } from '../utils/workoutUtils';
 
@@ -10,6 +10,8 @@ interface PulsarStoreState {
   routines: Routine[];
   workouts: Workout[];
   loading: boolean;
+  copiedRoutineDay?: RoutineDay | null;
+  setCopiedRoutineDay: (day: RoutineDay | null) => void;
   // Load all data from DB
   loadAll: () => Promise<void>;
   // Exercise methods
@@ -35,6 +37,8 @@ export const usePulsarStore = create<PulsarStoreState>()(
       routines: [],
       workouts: [],
       loading: true,
+      copiedRoutineDay: null,
+      setCopiedRoutineDay: (day) => set({ copiedRoutineDay: day }),
       loadAll: async () => {
         set({ loading: true });
         const [exercises, routines, workouts] = await Promise.all([
@@ -91,6 +95,7 @@ export const usePulsarStore = create<PulsarStoreState>()(
 );
 
 // Convenience hooks
+export const useCopiedRoutineDay = () => usePulsarStore(s => s.copiedRoutineDay);
 export const useExercises = () => usePulsarStore(s => s.exercises);
 export const useRoutines = () => usePulsarStore(s => s.routines);
 export const useWorkouts = () => usePulsarStore(s => s.workouts);

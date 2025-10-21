@@ -1,3 +1,4 @@
+import { ExerciseName } from './ExerciseName';
 // RoutineEditor.tsx
 // Provides an interactive editor for routines, allowing drag-and-drop reordering, day/kind editing, and exercise management.
 
@@ -25,7 +26,9 @@ import {
   ModalFooter,
   ModalCloseButton,
   Switch,
+  useToast,
 } from '@chakra-ui/react';
+import { FaCopy, FaPaste, FaArrowRight } from 'react-icons/fa';
 import React, { useCallback, useEffect, useState } from 'react';
 import { produce } from 'immer';
 import { DragDropContext, Draggable, DraggableProvided, DraggableStateSnapshot, Droppable, DroppableProvided, DroppableStateSnapshot, DropResult, OnDragEndResponder } from 'react-beautiful-dnd';
@@ -101,14 +104,26 @@ export const RoutineEditor: React.FC<{
   }, []);
 
   // Add exercise handler
-  const handleAddExercise = useCallback((dayIdx: number, exercise: Exercise) => {
+  const handleAddExercise = useCallback((dayIdx: number, exercise: Exercise | ScheduledExercise) => {
     setEditRoutine(current => produce(current, draft => {
-      const { id: exerciseId, timed } = exercise;
+      const exerciseId = 'exerciseId' in exercise ? exercise.exerciseId : exercise.id;
+      const { timed, sets, reps, duration } = "exerciseId" in exercise 
+        ? {
+          timed: undefined,
+          ...exercise
+        }
+        : {
+          ...exercise,
+          reps: undefined,
+          sets: undefined,
+          duration: undefined
+        };
       draft.dailySchedule[dayIdx].exercises.push({ 
         exerciseId, 
-        sets: 1, 
         // TODO: find a default value from exercises
-        ...(timed ? { duration: 30 } : { reps: 10 }) 
+        sets: sets ?? 1, 
+        reps: reps ?? (timed ? undefined : 10),
+        duration: duration ?? (timed ? 30 : undefined) 
       });
     }));
     setEditChanged(true);
@@ -358,7 +373,7 @@ const ExerciseScheduleEditor = React.memo<{
   onChangeDay: (dayIdx: number, newDay: DayOfWeek) => void;
   onEditDayKind: (dayIdx: number, newKind: string) => void;
   onEditExercise: (dayIdx: number, exIdx: number, ex: ScheduledExercise | null) => void;
-  onAddExercise: (dayIdx: number, exercise: Exercise) => void;
+  onAddExercise: (dayIdx: number, exercise: Exercise | ScheduledExercise) => void;
   onDragExercise: OnDragEndResponder;
 }>(({ dailySchedule, onChangeDay, onEditDayKind, onEditExercise, onAddExercise, onDragExercise }) => {
 
@@ -405,15 +420,69 @@ const ExerciseDayEditor = React.memo<{
   onChangeDay: (dayIdx: number, newDay: DayOfWeek) => void;
   onEditDayKind: (dayIdx: number, newKind: string) => void;
   onEditExercise: (dayIdx: number, exIdx: number, ex: ScheduledExercise | null) => void;
-  onAddExercise: (dayIdx: number, exercise: Exercise) => void;
+  onAddExercise: (dayIdx: number, exercise: Exercise | ScheduledExercise) => void;
   onOpenExerciseDetails: (exerciseId: string) => void;
   isMdOrLarger?: boolean;
 }>(({ schedule, dailySchedule, dayIdx, onChangeDay, onEditDayKind, onEditExercise, onOpenExerciseDetails, onAddExercise, isMdOrLarger }) => {
   // Add state and handler for editing kind
   const [editKind, setEditKind] = useState(false);
   const [editKindValue, setEditKindValue] = useState('');
+  // State for remove all confirmation
+  const [showRemoveAllConfirm, setShowRemoveAllConfirm] = useState(false);
+  // State for paste confirmation
+  const [showPasteConfirm, setShowPasteConfirm] = useState(false);
+
+  // Import toast and store
+  const toast = useToast();
+  const setCopiedRoutineDay = usePulsarStore(s => s.setCopiedRoutineDay);
+  const copiedRoutineDay = usePulsarStore(s => s.copiedRoutineDay);
 
   const handleAddExercise = useCallback((exercise: Exercise) => onAddExercise(dayIdx, exercise), [dayIdx, onAddExercise]);
+
+  // Copy handler
+  const handleCopyDay = useCallback(() => {
+    setCopiedRoutineDay({ ...schedule });
+    toast({
+      title: `Copied ${schedule.day} routine`,
+      description: 'You can now paste this day elsewhere.',
+      status: 'success',
+      duration: 2000,
+      isClosable: true,
+    });
+  }, [schedule, setCopiedRoutineDay, toast]);
+
+  // Paste handler
+  const handlePasteDay = useCallback(() => {
+    if (!copiedRoutineDay) return;
+    if (schedule.exercises.length === 0) {
+      // Paste immediately if empty
+      copiedRoutineDay.exercises.forEach(ex => onAddExercise(dayIdx, ex));
+      toast({
+        title: `Pasted to ${schedule.day}`,
+        description: 'Exercises have been added.',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
+    } else {
+      setShowPasteConfirm(true);
+    }
+  }, [copiedRoutineDay, schedule, dayIdx, onAddExercise, toast]);
+
+  // Confirm paste handler
+  const confirmPaste = useCallback(() => {
+    if (!copiedRoutineDay) return;
+    schedule.exercises.forEach((_, exIdx) => onEditExercise(dayIdx, 0, null));
+    copiedRoutineDay.exercises.forEach(ex => onAddExercise(dayIdx, ex));
+    setShowPasteConfirm(false);
+    toast({
+      title: `Pasted to ${schedule.day}`,
+      description: 'Exercises have been replaced.',
+      status: 'success',
+      duration: 2000,
+      isClosable: true,
+    });
+  }, [copiedRoutineDay, schedule, dayIdx, onEditExercise, onAddExercise, toast]);
 
   return (
     <Box
@@ -447,22 +516,125 @@ const ExerciseDayEditor = React.memo<{
           >
             {schedule.day}
           </MenuButton>
-          <MenuList>
-            <Box px={3} py={1} fontWeight="bold" color="gray.600">Move to...</Box>
+          <MenuList
+            bg="white"
+            _dark={{ bg: 'gray.800', borderColor: 'gray.700' }}
+            borderColor="gray.200"
+          >
+            <Box px={3} py={1} fontWeight="semibold" fontSize="sm" fontStyle="italic" letterSpacing="wide" color="gray.400" _dark={{ color: 'gray.500' }}>
+              Move to...
+            </Box>
             {dailySchedule.map((s, idx) => {
               const isCurrent = s.day === schedule.day;
+              const isEmpty = s.exercises.length === 0;
               const hasExercises = !isCurrent && s.exercises && s.exercises.length > 0;
+              let icon = undefined;
+              if (isCurrent) {
+                icon = <FaRegCalendarAlt style={{ color: 'var(--chakra-colors-cyan-400)', filter: 'drop-shadow(0 0 2px var(--chakra-colors-cyan-200))' }} />;
+              } else if (isEmpty) {
+                icon = <FaArrowRight style={{ color: 'var(--chakra-colors-cyan-400)' }} />;
+              } else if (hasExercises) {
+                icon = <FaExchangeAlt style={{ color: 'var(--chakra-colors-orange-400)' }} />;
+              }
               return (
                 <MenuItem
                   key={s.day}
                   onClick={() => !isCurrent && onChangeDay(dayIdx, s.day)}
                   isDisabled={isCurrent}
-                  icon={isCurrent ? <FaRegCalendarAlt color="#38bdf8" /> : hasExercises ? <FaExchangeAlt /> : undefined}
+                  icon={icon}
+                  bg="white"
+                  _dark={{ bg: 'gray.800', color: isCurrent ? 'cyan.300' : 'gray.100', _hover: { bg: 'gray.700' } }}
                 >
                   {s.day}
                 </MenuItem>
               );
             })}
+            {/* Divider and copy/paste section */}
+            <Box as="hr" my={2} borderColor="gray.200" _dark={{ borderColor: 'gray.700' }} />
+            <Box px={3} py={1} fontWeight="semibold" fontSize="sm" fontStyle="italic" letterSpacing="wide" color="gray.400" _dark={{ color: 'gray.500' }}>
+              Actions
+            </Box>
+            <MenuItem
+              icon={<FaCopy style={{ color: 'var(--chakra-colors-blue-400)' }} />}
+              onClick={handleCopyDay}
+              bg="white"
+              _dark={{ bg: 'gray.800', color: 'gray.100', _hover: { bg: 'gray.700' } }}
+            >
+              Copy this day's routine
+            </MenuItem>
+            <MenuItem
+              icon={<FaPaste style={{ color: 'var(--chakra-colors-green-400)' }} />}
+              onClick={handlePasteDay}
+              isDisabled={!copiedRoutineDay}
+              bg="white"
+              _dark={{ bg: 'gray.800', color: 'gray.100', _hover: { bg: 'gray.700' } }}
+            >
+              Paste copied routine
+            </MenuItem>
+            {/* Paste confirmation modal */}
+            <Modal isOpen={showPasteConfirm} onClose={() => setShowPasteConfirm(false)} isCentered>
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader>Overwrite all exercises?</ModalHeader>
+                <ModalCloseButton />
+                <ModalBody>
+                  <Box mb={2}>This will replace all exercises in <b>{schedule.day}</b> with the copied routine. The following exercises will be <b>added</b>:</Box>
+                  <Box as="ul" pl={4} color="gray.600">
+                    {copiedRoutineDay?.exercises.map((ex, idx) => (
+                      <li key={ex.exerciseId || idx}>
+                        <ExerciseName exerciseId={ex.exerciseId} schedule={ex} />
+                      </li>
+                    ))}
+                  </Box>
+                </ModalBody>
+                <ModalFooter>
+                  <Button onClick={() => setShowPasteConfirm(false)} mr={3} leftIcon={<FaTimes />} variant="ghost">
+                    Cancel
+                  </Button>
+                  <Button colorScheme="cyan" onClick={confirmPaste} leftIcon={<FaPaste />} fontWeight="bold">
+                    Overwrite
+                  </Button>
+                </ModalFooter>
+              </ModalContent>
+            </Modal>
+
+            <MenuItem
+              icon={<FaTimes style={{ color: 'var(--chakra-colors-red-400)' }} />}
+              onClick={() => setShowRemoveAllConfirm(true)}
+              isDisabled={schedule.exercises.length === 0}
+              bg="white"
+              _dark={{ bg: 'gray.800', color: 'red.300', _hover: { bg: 'gray.700' } }}
+            >
+              Remove all exercises
+            </MenuItem>
+            {/* Remove all confirmation modal */}
+            <Modal isOpen={showRemoveAllConfirm} onClose={() => setShowRemoveAllConfirm(false)} isCentered>
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader>Remove all exercises?</ModalHeader>
+                <ModalCloseButton />
+                <ModalBody>
+                  Are you sure you want to remove all exercises from {schedule.day}?
+                </ModalBody>
+                <ModalFooter>
+                  <Button onClick={() => setShowRemoveAllConfirm(false)} mr={3} leftIcon={<FaTimes />} variant="ghost">
+                    Cancel
+                  </Button>
+                  <Button colorScheme="red" onClick={() => {
+                    schedule.exercises.forEach((_, exIdx) => onEditExercise(dayIdx, 0, null));
+                    setShowRemoveAllConfirm(false);
+                    toast({
+                      title: `Removed all exercises from ${schedule.day}`,
+                      status: 'info',
+                      duration: 2000,
+                      isClosable: true,
+                    });
+                  }} leftIcon={<FaTimes />} fontWeight="bold">
+                    Remove All
+                  </Button>
+                </ModalFooter>
+              </ModalContent>
+            </Modal>
           </MenuList>
         </Menu>
         {editKind ? (
