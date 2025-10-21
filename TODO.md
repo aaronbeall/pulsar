@@ -60,6 +60,7 @@
 - [ ] Ad hoc workouts
 - [ ] Activity log - view any past workout, repeat
 - [ ] Change exercise images and links
+- [x] Copy/Paste workout days
 
 ## Issues
 - [ ] Inactive routines are impacting the TimeToWorkoutAlert
