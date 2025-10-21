@@ -1,4 +1,5 @@
 # Pulsar
-AI powered fitness routine builder and tracker
+Personalized workout tracker
 
-<img width="315" alt="image" src="https://github.com/user-attachments/assets/d94928b6-5b32-4911-ac94-1c45083999e3" />
+<img width="331" height="68" alt="image" src="https://github.com/user-attachments/assets/859f82e6-1e48-46d1-bdde-58a47e59cf8a" />
+
