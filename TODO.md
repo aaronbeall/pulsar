@@ -18,6 +18,7 @@
   - [x] Skip/Finish
   - [x] Image/how-to link
 - [x] Streak calendar
+  - [ ] Expanded streak calendar with details, stats
 - [x] Archive/delete routine
 - [x] Switch routine
 - [ ] Handle multiple routines
@@ -39,6 +40,7 @@
 - [ ] Onboarding/Help
 - [ ] PWA + Hosting
 - [ ] Publish to app stores
+- [ ] Testing/feedback
 
 ## Bells and whistles
 - [ ] Like/dislike routine/workout/exercise
@@ -51,6 +53,7 @@
 - [ ] Favorite/best workouts
 - [ ] Preserve streak history even if workout routine is changed
 - [ ] Optional days (not required for streaks)
+- [ ] Optional exercises (not required for completion)
 - [ ] Leaderboards
 - [ ] Graphs and charts
 - [ ] Weight tracking
@@ -59,7 +62,7 @@
 - [ ] Timeline
 - [ ] Exercise library
 - [ ] Warn when deleting a routine that has workouts
-- [ ] Ad hoc workouts
+- [ ] Ad hoc workouts (not routine based)
 - [ ] Activity log - view any past workout, repeat
 - [ ] Change exercise images and links
 - [x] Copy/Paste workout days
@@ -68,3 +71,6 @@
 - [ ] Inactive routines are impacting the TimeToWorkoutAlert
 - [ ] Routine view banner gets mixed up with multiple started days
 - [ ] Editor optimization is bad, need to split up and memoize components, and not use clone()
+- [ ] On timeline, only show "in progress" state if at least 1 exercise is started/completed
+- [ ] Need to add Vitests
+- [ ] Wake lock isn't working
