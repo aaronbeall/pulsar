@@ -4,7 +4,7 @@
 
 import { Routine, Exercise, DayOfWeek } from '../models/types';
 import { v4 as uuidv4 } from 'uuid';
-import { getSearchUrl, getHowToQuery, fetchExerciseSearchImageUrl } from '../utils/webUtils';
+import { getSearchUrl, getHowToQuery, getExerciseSearchImageUrl } from '../utils/webUtils';
 import { exerciseTemplates, ExerciseTemplate } from './exerciseTemplates';
 import { routineTemplates, RoutineTemplate } from './routineTemplates';
 import { dailyWorkoutTemplates } from './dailyWorkoutTemplates';
@@ -17,7 +17,7 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  */
 export async function createNewExercise(template: ExerciseTemplate): Promise<Exercise> {
   const howToUrl = getSearchUrl(getHowToQuery(template.name));
-  const imageUrl = await fetchExerciseSearchImageUrl(template.name);
+  const imageUrl = await getExerciseSearchImageUrl(template.name);
   return {
     id: uuidv4(),
     name: template.name,

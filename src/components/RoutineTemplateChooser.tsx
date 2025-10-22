@@ -5,10 +5,9 @@ import { dailyWorkoutTemplates } from '../services/dailyWorkoutTemplates';
 import { RoutineTemplate, routineTemplates } from '../services/routineTemplates';
 import { AnimatePresence, motion } from 'framer-motion';
 import { generateRandomRoutineName } from '../services/routineBuilderService';
-import { fetchExerciseSearchImageUrl } from '../utils/webUtils';
+import { getExerciseSearchImageUrl } from '../utils/webUtils';
 
 const templateTextCache = new WeakMap<RoutineTemplate, string>();
-const templateImageCache = new WeakMap<RoutineTemplate, string | null>();
 
 // Utility to duplicate a value n times in an array
 function dup<T>(val: T, n: number): T[] {
@@ -227,19 +226,19 @@ export const RoutineTemplateChooser: React.FC<RoutineTemplateChooserProps> = ({ 
     const [showNaming, setShowNaming] = useState(false);
     const [routineName, setRoutineName] = useState(template.name);
     const nicknameSuggestions = template.nicknames || [];
-    const [imageUrl, setImageUrl] = useState<string | null>(() => templateImageCache.get(template) ?? null);
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
 
-    // Fetch and cache the image on mount if not already cached
+    // Fetch image via centralized helper which uses localStorage cache
     useEffect(() => {
       let isMounted = true;
-      if (imageUrl === null && !templateImageCache.has(template)) {
-        fetchExerciseSearchImageUrl(template.name).then(url => {
-          if (isMounted) {
-            templateImageCache.set(template, url);
-            setImageUrl(url ?? null);
-          }
-        });
-      }
+      (async () => {
+        try {
+          const url = await getExerciseSearchImageUrl(template.name);
+          if (isMounted) setImageUrl(url ?? null);
+        } catch (e) {
+          if (isMounted) setImageUrl(null);
+        }
+      })();
       return () => { isMounted = false; };
     }, [template]);
 

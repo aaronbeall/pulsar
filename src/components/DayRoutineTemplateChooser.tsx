@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FaSearch, FaTimes, FaArrowLeft } from 'react-icons/fa';
 import { DailyWorkoutTemplate, dailyWorkoutTemplates } from '../services/dailyWorkoutTemplates';
 import type { RoutineDay, Exercise } from '../models/types';
-import { fetchExerciseSearchImageUrl } from '../utils/webUtils';
+import { getExerciseSearchImageUrl } from '../utils/webUtils';
 
 interface DayRoutineTemplateChooserProps {
   day: DayOfWeek;
@@ -60,8 +60,6 @@ function scoreTemplate(tmpl: DailyWorkoutTemplate, words: string[]) {
   return score;
 }
 
-const templateImageCache = new WeakMap<DailyWorkoutTemplate, string | null>();
-
 
 // DayTemplateCard component for animated template display
 import { FaMedal } from 'react-icons/fa';
@@ -79,18 +77,18 @@ const DayTemplateCard: React.FC<DayTemplateCardProps> = ({ tmpl, score, day, exe
   const highlightShadow = useColorModeValue('0 0 0 3px #0BC5EA, 0 2px 8px rgba(0,0,0,0.08)', 'md');
   const cardBg = useColorModeValue('white', 'gray.900');
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
-  const [imageUrl, setImageUrl] = useState<string | null>(() => templateImageCache.get(tmpl) ?? null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
-    if (imageUrl === null && !templateImageCache.has(tmpl)) {
-      fetchExerciseSearchImageUrl(tmpl.day).then(url => {
-        if (isMounted) {
-          templateImageCache.set(tmpl, url);
-          setImageUrl(url ?? null);
-        }
-      });
-    }
+    (async () => {
+      try {
+        const url = await getExerciseSearchImageUrl(tmpl.day);
+        if (isMounted) setImageUrl(url ?? null);
+      } catch (e) {
+        if (isMounted) setImageUrl(null);
+      }
+    })();
     return () => { isMounted = false; };
   }, [tmpl]);
 

@@ -5,7 +5,7 @@ export interface ExerciseTemplate {
   description: string;
   targetMuscles: string[];
   timed?: boolean;
-  relativeWeight: number; // 0 (lightest) to 1 (heaviest)
+  relativeWeight?: number; // 0 (lightest) to 1 (heaviest)
 }
 
 export const exerciseTemplatesData = `

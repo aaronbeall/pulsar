@@ -1,3 +1,4 @@
+import { normalizeExerciseName } from "../services/routineBuilderService";
 
 export const openUrl = (url: string) => {
   window.open(url, "_blank", "noopener,noreferrer");
@@ -48,3 +49,36 @@ export const fetchExerciseSearchImageUrl = async (
     return null;
   }
 };
+
+/**
+ * getExerciseSearchImageUrl
+ * - Checks localStorage-backed cache first (key: `pulsar:imageUrl:${normalizedName}`)
+ * - If cached (including explicit 'null'), returns cached value
+ * - Otherwise calls fetchExerciseSearchImageUrl, stores the result in cache, and returns it
+ */
+export async function getExerciseSearchImageUrl(exerciseName: string): Promise<string | null> {
+  const norm = normalizeExerciseName(exerciseName);
+  if (!norm) return null;
+  const key = `pulsar:imageUrl:${norm}`;
+
+  try {
+    const existing = localStorage.getItem(key);
+    if (existing !== null) {
+      // store 'null' as explicit null marker
+      if (existing === 'null') return null;
+      return existing;
+    }
+  } catch (e) {
+    // localStorage might be unavailable (private mode), continue to fetch
+  }
+
+  const fetched = await fetchExerciseSearchImageUrl(exerciseName);
+
+  try {
+    localStorage.setItem(key, fetched === null ? 'null' : fetched);
+  } catch (e) {
+    // ignore localStorage set errors
+  }
+
+  return fetched;
+}
