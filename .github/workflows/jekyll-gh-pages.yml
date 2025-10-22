@@ -25,6 +25,8 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
+          VITE_GOOGLE_CSE_ID: ${{ secrets.VITE_GOOGLE_CSE_ID }}
+          VITE_GOOGLE_CSE_API_KEY: ${{ secrets.VITE_GOOGLE_CSE_API_KEY }}
           BASE: /pulsar/
       - run: |
           touch dist/.nojekyll
