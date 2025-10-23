@@ -110,7 +110,7 @@ export const RoutineEditor: React.FC<{
       const exerciseId = 'exerciseId' in exercise ? exercise.exerciseId : exercise.id;
       const { timed, sets, reps, duration } = "exerciseId" in exercise 
         ? {
-          timed: undefined,
+          timed: !!exercise.duration,
           ...exercise
         }
         : {
