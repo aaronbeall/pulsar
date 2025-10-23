@@ -72,6 +72,7 @@
 
 ## Issues
 - [ ] Inactive routines are impacting the TimeToWorkoutAlert
+- [ ] Workouts for inactive routines are impacting the streak calendar
 - [ ] Routine view banner gets mixed up with multiple started days
 - [x] Editor optimization is bad, need to split up and memoize components, and not use clone()
 - [ ] On timeline, only show "in progress" state if at least 1 exercise is started/completed
@@ -81,3 +82,6 @@
 - [x] Copy/Paste and add day from template is putting reps on duration based exercises
 - [ ] Workout timer should only be when active
 - [ ] Caching on new builds results in broken SVG image
+- [ ] Streak calendar shows current day as an X when incomplete, should be a pending state like an outline circle
+- [ ] Some actions like switching sometimes cause double actions
+- [ ] Restarting workout edited routine alert isn't very noticeable
