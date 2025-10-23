@@ -64,9 +64,9 @@ export async function getExerciseSearchImageUrl(exerciseName: string): Promise<s
 
   try {
     const existing = localStorage.getItem(key);
-    if (existing !== null) {
-      // store 'null' as explicit null marker
-      if (existing === 'null') return null;
+    // If we previously stored a real URL, return it. If the stored value is the
+    // legacy explicit 'null' marker or empty, treat as a cache miss and re-fetch.
+    if (existing !== null && existing !== 'null' && existing !== '') {
       return existing;
     }
   } catch (e) {
@@ -75,8 +75,11 @@ export async function getExerciseSearchImageUrl(exerciseName: string): Promise<s
 
   const fetched = await fetchExerciseSearchImageUrl(exerciseName);
 
+  // Only cache successful fetches (non-null, non-empty string). Do not cache failures.
   try {
-    localStorage.setItem(key, fetched === null ? 'null' : fetched);
+    if (fetched) {
+      localStorage.setItem(key, fetched);
+    }
   } catch (e) {
     // ignore localStorage set errors
   }
