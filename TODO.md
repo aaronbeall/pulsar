@@ -26,6 +26,9 @@
   - [ ] Streak calendar for specific routines, including inactive ones
   - [ ] Routines should have activity (start, end) for use with streak calendar
 - [ ] Import/export data
+  - [ ] Export/Import database
+  - [x] Export Routine
+  - [ ] Import Routine
 - [ ] Stats view
 
 ## MMP
@@ -51,14 +54,14 @@
 - [ ] JSONBin to transfer data
 - [ ] Best Streak / All Streaks
 - [ ] Favorite/best workouts
-- [ ] Preserve streak history even if workout routine is changed
+- [ ] Preserve streak history even if workout routine is changed (ie show inactive routine streaks)
 - [ ] Optional days (not required for streaks)
 - [ ] Optional exercises (not required for completion)
 - [ ] Leaderboards
 - [ ] Graphs and charts
 - [ ] Weight tracking
 - [ ] Diet tracking
-- [ ] Print/Export PDF support
+- [x] Print/Export PDF support
 - [ ] Timeline
 - [ ] Exercise library
 - [ ] Warn when deleting a routine that has workouts
