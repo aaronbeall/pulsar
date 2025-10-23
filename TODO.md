@@ -79,3 +79,4 @@
 - [ ] Wake lock isn't working
 - [ ] Upgrade to Chakra v3: https://www.chakra-ui.com/docs/get-started/migration
 - [x] Copy/Paste and add day from template is putting reps on duration based exercises
+- [ ] Workout timer should only be when active
