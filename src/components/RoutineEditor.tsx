@@ -33,7 +33,7 @@ import { FaCopy, FaPaste, FaArrowRight } from 'react-icons/fa';
 import React, { useCallback, useEffect, useState } from 'react';
 import { produce } from 'immer';
 import { DragDropContext, Draggable, DraggableProvided, DraggableStateSnapshot, Droppable, DroppableProvided, DroppableStateSnapshot, DropResult, OnDragEndResponder } from 'react-beautiful-dnd';
-import { FaCheck, FaCheckCircle, FaCog, FaDumbbell, FaEdit, FaExchangeAlt, FaGripVertical, FaPlus, FaRegCalendarAlt, FaSearch, FaStopwatch, FaSync, FaThumbsDown, FaThumbsUp, FaTimes, FaUndo } from 'react-icons/fa'; // Import icons
+import { FaCheck, FaCheckCircle, FaCog, FaDumbbell, FaEdit, FaExchangeAlt, FaGripVertical, FaPlus, FaRegCalendarAlt, FaSearch, FaStopwatch, FaSync, FaThumbsDown, FaThumbsUp, FaTimes, FaUndo, FaEllipsisV, FaBook } from 'react-icons/fa'; // Import icons
 import ExerciseDetailsDialog from './ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import NumericStepper from './NumericStepper';
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
@@ -434,27 +434,55 @@ const ExerciseDayEditor = React.memo<{
   const [showPasteConfirm, setShowPasteConfirm] = useState(false);
   // State for template chooser
   const [showTemplateChooser, setShowTemplateChooser] = useState(false);
+  // State for pending template selection that requires confirmation
+  const [pendingTemplate, setPendingTemplate] = useState<RoutineDay | null>(null);
+  const [showTemplateApplyConfirm, setShowTemplateApplyConfirm] = useState(false);
+  // Import toast and store
+  const toast = useToast();
+  const setCopiedRoutineDay = usePulsarStore(s => s.setCopiedRoutineDay);
+  const copiedRoutineDay = usePulsarStore(s => s.copiedRoutineDay);
+
   // Handler for selecting a template
-  const handleSelectTemplate = (template: RoutineDay) => {
-    // Overwrite exercises and kind, keep the current day
-    onEditDayKind(dayIdx, template.kind);
-    // Remove all current exercises
+  const handleSelectTemplate = useCallback((template: RoutineDay) => {
+    // If the current day is empty, apply immediately. Otherwise ask for confirmation like paste.
+    if (!schedule.exercises || schedule.exercises.length === 0) {
+      onEditDayKind(dayIdx, template.kind);
+      schedule.exercises.forEach((_, exIdx) => onEditExercise(dayIdx, 0, null));
+      template.exercises.forEach(ex => onAddExercise(dayIdx, ex));
+      setShowTemplateChooser(false);
+      toast({
+        title: `Template applied to ${schedule.day}`,
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
+      return;
+    }
+    // Otherwise store pending template and show confirmation modal
+    setPendingTemplate(template);
+    setShowTemplateApplyConfirm(true);
+  }, [dayIdx, schedule, onEditDayKind, onEditExercise, onAddExercise, toast]);
+
+  const confirmApplyTemplate = useCallback(() => {
+    if (!pendingTemplate) return;
+    onEditDayKind(dayIdx, pendingTemplate.kind);
     schedule.exercises.forEach((_, exIdx) => onEditExercise(dayIdx, 0, null));
-    // Add template exercises
-    template.exercises.forEach(ex => onAddExercise(dayIdx, ex));
+    pendingTemplate.exercises.forEach(ex => onAddExercise(dayIdx, ex));
+    setShowTemplateApplyConfirm(false);
     setShowTemplateChooser(false);
+    setPendingTemplate(null);
     toast({
       title: `Template applied to ${schedule.day}`,
       status: 'success',
       duration: 2000,
       isClosable: true,
     });
-  };
+  }, [pendingTemplate, dayIdx, schedule, onEditDayKind, onEditExercise, onAddExercise, toast]);
 
-  // Import toast and store
-  const toast = useToast();
-  const setCopiedRoutineDay = usePulsarStore(s => s.setCopiedRoutineDay);
-  const copiedRoutineDay = usePulsarStore(s => s.copiedRoutineDay);
+  const cancelApplyTemplate = useCallback(() => {
+    setPendingTemplate(null);
+    setShowTemplateApplyConfirm(false);
+  }, []);
 
   const handleAddExercise = useCallback((exercise: Exercise) => onAddExercise(dayIdx, exercise), [dayIdx, onAddExercise]);
 
@@ -568,47 +596,73 @@ const ExerciseDayEditor = React.memo<{
                 </MenuItem>
               );
             })}
-            {/* Divider and copy/paste section */}
-            <Box as="hr" my={2} borderColor="gray.200" _dark={{ borderColor: 'gray.700' }} />
-            <Box px={3} py={1} fontWeight="semibold" fontSize="sm" fontStyle="italic" letterSpacing="wide" color="gray.400" _dark={{ color: 'gray.500' }}>
-              Actions
-            </Box>
-            <MenuItem
-              icon={<FaPlus style={{ color: 'var(--chakra-colors-cyan-400)' }} />}
-              onClick={() => setShowTemplateChooser(true)}
-              bg="white"
-              _dark={{ bg: 'gray.800', color: 'gray.100', _hover: { bg: 'gray.700' } }}
-            >
-              Select from template
-            </MenuItem>
-            <MenuItem
-              icon={<FaCopy style={{ color: 'var(--chakra-colors-blue-400)' }} />}
-              onClick={handleCopyDay}
-              bg="white"
-              _dark={{ bg: 'gray.800', color: 'gray.100', _hover: { bg: 'gray.700' } }}
-            >
-              Copy this day's routine
-            </MenuItem>
-            <MenuItem
-              icon={<FaPaste style={{ color: 'var(--chakra-colors-green-400)' }} />}
-              onClick={handlePasteDay}
-              isDisabled={!copiedRoutineDay}
-              bg="white"
-              _dark={{ bg: 'gray.800', color: 'gray.100', _hover: { bg: 'gray.700' } }}
-            >
-              Paste copied routine
-            </MenuItem>
-            <MenuItem
-              icon={<FaTimes style={{ color: 'var(--chakra-colors-red-400)' }} />}
-              onClick={() => setShowRemoveAllConfirm(true)}
-              isDisabled={schedule.exercises.length === 0}
-              bg="white"
-              _dark={{ bg: 'gray.800', color: 'red.300', _hover: { bg: 'gray.700' } }}
-            >
-              Remove all exercises
-            </MenuItem>
           </MenuList>
         </Menu>
+        {/* Kind label remains immediately after the day button */}
+        {editKind ? (
+          <DayKindEditor
+            value={editKindValue}
+            onChange={setEditKindValue}
+            onSave={() => {
+              onEditDayKind(dayIdx, editKindValue);
+              setEditKind(false);
+            }}
+            onCancel={() => setEditKind(false)}
+          />
+        ) : (
+          <DayKindBadge
+            kind={schedule.kind}
+            editable
+            onClick={() => {
+              setEditKind(true);
+              setEditKindValue(schedule.kind || '');
+            }}
+          />
+        )}
+        {/* Actions menu on the far right */}
+        <Box ml="auto">
+          <Menu>
+            <MenuButton as={IconButton} aria-label="Day actions" icon={<FaEllipsisV />} size="sm" variant="ghost" />
+            <MenuList bg="white" _dark={{ bg: 'gray.800', borderColor: 'gray.700' }} borderColor="gray.200">
+              <MenuItem
+                icon={<FaBook style={{ color: 'var(--chakra-colors-cyan-400)' }} />}
+                onClick={() => setShowTemplateChooser(true)}
+                bg="white"
+                _dark={{ bg: 'gray.800', color: 'gray.100', _hover: { bg: 'gray.700' } }}
+              >
+                Choose from Template...
+              </MenuItem>
+              <Box as="hr" my={2} borderColor="gray.200" _dark={{ borderColor: 'gray.700' }} />
+              <MenuItem
+                icon={<FaCopy style={{ color: 'var(--chakra-colors-blue-400)' }} />}
+                onClick={handleCopyDay}
+                bg="white"
+                _dark={{ bg: 'gray.800', color: 'gray.100', _hover: { bg: 'gray.700' } }}
+              >
+                Copy this day's routine
+              </MenuItem>
+              <MenuItem
+                icon={<FaPaste style={{ color: 'var(--chakra-colors-green-400)' }} />}
+                onClick={handlePasteDay}
+                isDisabled={!copiedRoutineDay}
+                bg="white"
+                _dark={{ bg: 'gray.800', color: 'gray.100', _hover: { bg: 'gray.700' } }}
+              >
+                Paste copied routine
+              </MenuItem>
+              <Box as="hr" my={2} borderColor="gray.200" _dark={{ borderColor: 'gray.700' }} />
+              <MenuItem
+                icon={<FaTimes style={{ color: 'var(--chakra-colors-red-400)' }} />}
+                onClick={() => setShowRemoveAllConfirm(true)}
+                isDisabled={schedule.exercises.length === 0}
+                bg="white"
+                _dark={{ bg: 'gray.800', color: 'red.300', _hover: { bg: 'gray.700' } }}
+              >
+                Remove all exercises
+              </MenuItem>
+            </MenuList>
+          </Menu>
+        </Box>
         {/* Paste confirmation modal */}
         <Modal isOpen={showPasteConfirm} onClose={() => setShowPasteConfirm(false)} isCentered>
           <ModalOverlay />
@@ -674,44 +728,39 @@ const ExerciseDayEditor = React.memo<{
                 day={schedule.day}
                 exercises={usePulsarStore(s => s.exercises)}
                 addExercise={usePulsarStore(s => s.addExercise)}
-                onSelect={async (template) => {
-                  // Overwrite exercises and kind, keep the current day
-                  onEditDayKind(dayIdx, template.kind);
-                  schedule.exercises.forEach((_, exIdx) => onEditExercise(dayIdx, 0, null));
-                  template.exercises.forEach(ex => onAddExercise(dayIdx, ex));
-                  setShowTemplateChooser(false);
-                  toast({
-                    title: `Template applied to ${schedule.day}`,
-                    status: 'success',
-                    duration: 2000,
-                    isClosable: true,
-                  });
-                }}
+                onSelect={handleSelectTemplate}
                 onCancel={() => setShowTemplateChooser(false)}
               />
             </ModalBody>
           </ModalContent>
         </Modal>
-        {editKind ? (
-          <DayKindEditor
-            value={editKindValue}
-            onChange={setEditKindValue}
-            onSave={() => {
-              onEditDayKind(dayIdx, editKindValue);
-              setEditKind(false);
-            }}
-            onCancel={() => setEditKind(false)}
-          />
-        ) : (
-          <DayKindBadge
-            kind={schedule.kind}
-            editable
-            onClick={() => {
-              setEditKind(true);
-              setEditKindValue(schedule.kind || '');
-            }}
-          />
-        )}
+        {/* Template apply confirmation modal (when day already has exercises) */}
+        <Modal isOpen={showTemplateApplyConfirm} onClose={cancelApplyTemplate} isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Overwrite all exercises?</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <Box mb={2}>This will replace all exercises in <b>{schedule.day}</b> with the selected template. The following exercises will be <b>added</b>:</Box>
+              <Box as="ul" pl={4} color="gray.600">
+                {pendingTemplate?.exercises.map((ex, idx) => (
+                  <li key={ex.exerciseId || idx}>
+                    <ExerciseName exerciseId={ex.exerciseId} schedule={ex} />
+                  </li>
+                ))}
+              </Box>
+            </ModalBody>
+            <ModalFooter>
+              <Button onClick={cancelApplyTemplate} mr={3} leftIcon={<FaTimes />} variant="ghost">
+                Cancel
+              </Button>
+              <Button colorScheme="cyan" onClick={confirmApplyTemplate} leftIcon={<FaPlus />} fontWeight="bold">
+                Overwrite
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+        
       </Flex>
       <Droppable droppableId={`day-${dayIdx}`}>
         {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => (
