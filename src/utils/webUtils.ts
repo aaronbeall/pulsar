@@ -34,7 +34,6 @@ export const fetchExerciseSearchImageUrl = async (
   // VITE_GOOGLE_CSE_ID and VITE_GOOGLE_CSE_API_KEY should be defined in your .env file
   const searchCx = import.meta.env.VITE_GOOGLE_CSE_ID;
   const apiKey = import.meta.env.VITE_GOOGLE_CSE_API_KEY;
-  console.log("fetchExerciseSearchImageUrl", { exerciseName, searchCx, apiKey });
   if (!apiKey || !searchCx) return null;
   const query = `${exerciseName} exercise`;
   const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&searchType=image&num=1&key=${apiKey}&cx=${searchCx}`;
