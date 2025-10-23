@@ -70,9 +70,9 @@
 ## Issues
 - [ ] Inactive routines are impacting the TimeToWorkoutAlert
 - [ ] Routine view banner gets mixed up with multiple started days
-- [ ] Editor optimization is bad, need to split up and memoize components, and not use clone()
+- [x] Editor optimization is bad, need to split up and memoize components, and not use clone()
 - [ ] On timeline, only show "in progress" state if at least 1 exercise is started/completed
 - [ ] Need to add Vitests
 - [ ] Wake lock isn't working
 - [ ] Upgrade to Chakra v3: https://www.chakra-ui.com/docs/get-started/migration
-- [ ] Copy/Paste and add day from template is putting reps on duration based exercises
+- [x] Copy/Paste and add day from template is putting reps on duration based exercises

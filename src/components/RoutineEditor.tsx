@@ -29,7 +29,7 @@ import {
   Switch,
   useToast,
 } from '@chakra-ui/react';
-import { FaCopy, FaPaste, FaArrowRight } from 'react-icons/fa';
+import { FaCopy, FaPaste, FaArrowRight, FaSave, FaChevronDown } from 'react-icons/fa';
 import React, { useCallback, useEffect, useState } from 'react';
 import { produce } from 'immer';
 import { DragDropContext, Draggable, DraggableProvided, DraggableStateSnapshot, Droppable, DroppableProvided, DroppableStateSnapshot, DropResult, OnDragEndResponder } from 'react-beautiful-dnd';
@@ -327,7 +327,7 @@ const SaveBar = React.memo<{
                   borderColor="gray.300"
                   _dark={{ borderColor: 'gray.600' }}
                 >
-                  <Box as={FaCog} />
+                  <Box as={FaChevronDown} />
                 </MenuButton>
                 <MenuList>
                   <MenuItem icon={<FaCheck />} onClick={onSave} isDisabled={!editChanged}>Save</MenuItem>
