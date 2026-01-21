@@ -22,7 +22,7 @@ import Home from './views/Home';
 import Workout from './views/Workout';
 import Settings from './views/Settings';
 import { usePulsarStoreInit } from './store/pulsarStore';
-import LogoSvg from './assets/logo.svg';
+import logoSvg from './assets/logo.svg';
 
 const App: React.FC = () => {
   usePulsarStoreInit(); // Load all data from DB into Zustand store on app mount
@@ -34,7 +34,7 @@ const App: React.FC = () => {
   const [headerBgColor] = useToken('colors', [`${colorScheme}.500`]);
 
   const colorSchemes = [
-    'blue', 'cyan', 'teal', 'green', 'yellow', 
+    'blue', 'cyan', 'teal', 'green', 'yellow',
     'orange', 'red', 'pink', 'purple', 'gray'
   ];
 
@@ -45,9 +45,9 @@ const App: React.FC = () => {
 
   return (
     <Flex direction="column" minHeight="100dvh">
-      <Box 
-        bg={`${colorScheme}.500`} 
-        color="white" 
+      <Box
+        bg={`${colorScheme}.500`}
+        color="white"
         transition="all 0.2s ease-in-out"
         position="relative"
         zIndex="2"
@@ -57,15 +57,15 @@ const App: React.FC = () => {
           <Flex py={4} justify="space-between" align="center">
             <Flex align="center" gap={2}>
               <RouterLink to="/">
-                <Flex 
-                  align="center" 
-                  gap={3} 
+                <Flex
+                  align="center"
+                  gap={3}
                   _hover={{ transform: 'translateY(-1px)' }}
                   transition="transform 0.2s"
                 >
-                  <Image 
-                    src={LogoSvg} 
-                    alt="App Icon" 
+                  <Image
+                    src={logoSvg}
+                    alt="App Icon"
                     boxSize="32px"
                     filter="drop-shadow(0 2px 4px rgba(0,0,0,0.2))"
                   />
@@ -73,9 +73,9 @@ const App: React.FC = () => {
                     <Heading size="md" fontWeight="black" textShadow="0 2px 4px rgba(0,0,0,0.1)">
                       PULSAR
                     </Heading>
-                    <Text 
-                      fontSize="xs" 
-                      color="whiteAlpha.800" 
+                    <Text
+                      fontSize="xs"
+                      color="whiteAlpha.800"
                       letterSpacing="wide"
                       mt={-1}
                     >
@@ -134,9 +134,9 @@ const App: React.FC = () => {
         </Container>
       </Box>
 
-      <Box 
-        flex="1 1 auto" 
-        bg={colorMode === 'light' ? 'gray.50' : 'gray.900'} 
+      <Box
+        flex="1 1 auto"
+        bg={colorMode === 'light' ? 'gray.50' : 'gray.900'}
         position="relative"
         zIndex="1"
         pb={24}
@@ -153,12 +153,12 @@ const App: React.FC = () => {
         </Container>
       </Box>
 
-      <Box 
-        bg={`${colorScheme}.500`} 
-        color="white" 
+      <Box
+        bg={`${colorScheme}.500`}
+        color="white"
         pt={4}
         pb={4}
-        position="fixed" 
+        position="fixed"
         left={0}
         right={0}
         bottom={0}

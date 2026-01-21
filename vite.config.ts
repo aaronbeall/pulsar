@@ -12,8 +12,6 @@ export default defineConfig({
     port: 9092
   },
   build: {
-    rollupOptions: {
-      // input: path.resolve(__dirname, 'index.html')
-    }
+    assetsInlineLimit: 0
   }
 });
