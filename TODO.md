@@ -71,17 +71,18 @@
 - [x] Copy/Paste workout days
 
 ## Issues
-- [ ] Inactive routines are impacting the TimeToWorkoutAlert
-- [ ] Workouts for inactive routines are impacting the streak calendar
+- [ ] Inactive routines are impacting the TimeToWorkoutAlert (investigated 2026-07-30: the underlying utils already filter by `routine.active` internally — no repro found; re-check if it recurs, may be the multi-active-routine ordering work instead)
+- [x] Workouts for inactive routines are impacting the streak calendar
 - [ ] Routine view banner gets mixed up with multiple started days
 - [x] Editor optimization is bad, need to split up and memoize components, and not use clone()
 - [ ] On timeline, only show "in progress" state if at least 1 exercise is started/completed
-- [ ] Need to add Vitests
-- [ ] Wake lock isn't working
+- [x] Need to add Vitests (Vitest set up 2026-07-30, basic coverage on `src/utils/*.ts`; still no coverage on components/services)
+- [x] Wake lock isn't working
 - [ ] Upgrade to Chakra v3: https://www.chakra-ui.com/docs/get-started/migration
 - [x] Copy/Paste and add day from template is putting reps on duration based exercises
 - [ ] Workout timer should only be when active
 - [ ] Caching on new builds results in broken SVG image
-- [ ] Streak calendar shows current day as an X when incomplete, should be a pending state like an outline circle
-- [ ] Some actions like switching sometimes cause double actions
-- [ ] Restarting workout edited routine alert isn't very noticeable
+- [x] Streak calendar shows current day as an X when incomplete, should be a pending state like an outline circle
+- [x] Some actions like switching sometimes cause double actions
+- [x] Restarting workout edited routine alert isn't very noticeable
+- [x] Clicking day to start workout creates it but redirects back to workout
