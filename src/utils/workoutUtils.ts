@@ -118,9 +118,13 @@ function getScheduledDate(workout: Workout): Date {
 }
 
 export function getStreakInfo(workouts: Workout[], routines: Routine[]): StreakInfo {
+  // Only workouts belonging to a currently-active routine count toward the streak —
+  // otherwise a workout under a routine the user later deactivated would count forever.
+  const activeRoutineIds = new Set(routines.filter(r => r.active).map(r => r.id));
+
   // 1. Convert workouts to workoutDates, preserving the scheduled date
   const workoutDates: Date[] = workouts
-    .filter(w => !!w.completedAt)
+    .filter(w => !!w.completedAt && activeRoutineIds.has(w.routineId))
     .map(getScheduledDate);
   workoutDates.sort((a, b) => b.getTime() - a.getTime());
   const completedMap = new Map<string, boolean>();

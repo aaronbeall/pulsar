@@ -49,6 +49,7 @@ const SwitchRoutineDialog: React.FC<SwitchRoutineDialogProps> = ({ isOpen, onClo
   }, [isOpen, hasOtherActive, routine.id]);
 
   const handleSwitch = async () => {
+    if (switching) return;
     setSwitching(true);
     for (const r of routines) {
       if (r.id === routine.id && !r.active) {
@@ -69,6 +70,7 @@ const SwitchRoutineDialog: React.FC<SwitchRoutineDialogProps> = ({ isOpen, onClo
   };
 
   const handleUseBoth = async () => {
+    if (switching) return;
     setSwitching(true);
     await updateRoutine({ ...routine, active: true });
     setSwitching(false);

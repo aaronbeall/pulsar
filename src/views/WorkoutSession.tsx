@@ -1,6 +1,7 @@
-import { AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, Box, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Button, Flex, Heading, SlideFade, Spinner, Text, useColorModeValue, VStack } from '@chakra-ui/react';
+import { AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, Box, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Button, Flex, Heading, SlideFade, Spinner, Text, useColorModeValue, useToast, VStack } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useMutation } from '@tanstack/react-query';
 import React from 'react';
 import { FaFlagCheckered, FaInfoCircle, FaTimesCircle } from 'react-icons/fa';
 import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -30,58 +31,90 @@ export const WorkoutSession: React.FC = () => {
   const [finishDialogOpen, setFinishDialogOpen] = React.useState(false);
   const finishCancelRef = React.useRef<HTMLButtonElement>(null);
   const [showInterstitial, setShowInterstitial] = React.useState(false);
+  const toast = useToast();
 
-  React.useEffect(() => {
-    // If sessionId is present, find the workout in store
-    if (sessionId && workouts.length > 0) {
-      const existingWorkout = workouts.find(w => w.id === sessionId);
-      if (existingWorkout) {
-        setWorkout(existingWorkout);
-        // Use findRoutineForDay from utils to get the routine for the workout's day
-        const workoutRoutine = routines.find(r => r.id === existingWorkout.routineId) || null;
-        setRoutine(workoutRoutine);
-        return;
+  // Find-or-create a workout for a given routine/day. Reads fresh store state via
+  // getState() (not the reactive hook values) so the mutation itself never becomes a
+  // dependency that re-triggers the effect below.
+  const findOrCreateWorkoutMutation = useMutation({
+    mutationFn: async ({ routineId, day }: { routineId: string; day: DayOfWeek | null }) => {
+      const { routines: currentRoutines, workouts: currentWorkouts, addWorkout: addWorkoutToStore } = usePulsarStore.getState();
+      const targetRoutine = currentRoutines.find(r => r.id === routineId);
+      if (!targetRoutine) {
+        return { redirectTo: '/workout' };
       }
+      const workoutDay = day && DAYS_OF_WEEK.includes(day) ? day : getTodayDayOfWeek();
+      const existingWorkoutForDay = findWorkoutForDay(currentWorkouts, [targetRoutine], workoutDay);
+      if (existingWorkoutForDay) {
+        return { redirectTo: `/workout/session/${existingWorkoutForDay.id}` };
+      }
+      const scheduledExercises = findExercisesForDay(targetRoutine, workoutDay);
+      const newWorkout: Workout = {
+        id: uuidv4(),
+        day: workoutDay,
+        nickname: generateRandomName(),
+        routineId: targetRoutine.id,
+        startedAt: Date.now(),
+        exercises: scheduledExercises.map(exercise => ({
+          ...exercise,
+          completedSets: 0,
+          completedDuration: 0,
+          startedAt: undefined,
+          completedAt: undefined,
+          skipped: false
+        }))
+      };
+      await addWorkoutToStore(newWorkout);
+      return { redirectTo: `/workout/session/${newWorkout.id}` };
+    },
+    onSuccess: ({ redirectTo }) => {
+      navigate(redirectTo, { replace: true });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not start workout',
+        description: error instanceof Error ? error.message : undefined,
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    },
+  });
+
+  // Look up an existing workout by sessionId — pure reactive read, no writes, so no race.
+  React.useEffect(() => {
+    if (!sessionId) return;
+    const existingWorkout = workouts.find(w => w.id === sessionId);
+    if (existingWorkout) {
+      setWorkout(existingWorkout);
+      setRoutine(routines.find(r => r.id === existingWorkout.routineId) || null);
     }
-    // If no sessionId, try to create/init a new workout
+  }, [sessionId, workouts, routines]);
+
+  // Trigger the find-or-create mutation exactly once when there's no sessionId yet.
+  // Deps intentionally exclude workouts/routines/exercises: those change as a side
+  // effect of the mutation itself, which previously caused this effect to re-fire
+  // mid-flight and create/redirect twice.
+  const hasTriggeredCreateRef = React.useRef(false);
+  React.useEffect(() => {
+    if (sessionId || hasTriggeredCreateRef.current) return;
     const routineId = searchParams.get('routineId');
-    const dayParam = searchParams.get('day') as DayOfWeek | null;
-    // Use findRoutineForDay to get the routine
-    const routine = routines.find(r => r.id === routineId) || null;
-    if (!routine) {
+    if (!routineId) {
       navigate('/workout', { replace: true });
       return;
     }
-    // Use getTodayDayOfWeek from utils
-    const workoutDay = dayParam && DAYS_OF_WEEK.includes(dayParam) ? dayParam : getTodayDayOfWeek();
-    // Use findWorkoutForDay from utils
-    const existingWorkoutForDay = findWorkoutForDay(workouts, [routine], workoutDay);
-    if (existingWorkoutForDay) {
-      navigate(`/workout/session/${existingWorkoutForDay.id}`, { replace: true });
-      return;
-    }
-    // Use findExercisesForDay from utils
-    const scheduledExercises = findExercisesForDay(routine, workoutDay);
-    const newWorkout: Workout = {
-      id: sessionId || uuidv4(),
-      day: workoutDay,
-      nickname: generateRandomName(),
-      routineId: routine.id,
-      startedAt: Date.now(),
-      exercises: scheduledExercises.map(exercise => ({
-        ...exercise,
-        completedSets: 0,
-        completedDuration: 0,
-        startedAt: undefined,
-        completedAt: undefined,
-        skipped: false
-      }))
-    };
-    addWorkout(newWorkout);
-    setWorkout(newWorkout);
-    setRoutine(routine);
-    navigate(`/workout/session/${newWorkout.id}`, { replace: true });
-  }, [sessionId, workouts, routines, exercises, searchParams, navigate, addWorkout]);
+    hasTriggeredCreateRef.current = true;
+    const dayParam = searchParams.get('day') as DayOfWeek | null;
+    findOrCreateWorkoutMutation.mutate({ routineId, day: dayParam });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, searchParams]);
+
+  // Tracks whether the workout is still active, without making the wake-lock effect
+  // below depend on (and re-run for) every workout state change.
+  const workoutActiveRef = React.useRef(true);
+  React.useEffect(() => {
+    workoutActiveRef.current = !workout?.completedAt;
+  }, [workout?.completedAt]);
 
   React.useEffect(() => {
     let wakeLock: WakeLockSentinel | null = null;
@@ -94,8 +127,17 @@ export const WorkoutSession: React.FC = () => {
         // Ignore errors (e.g., not supported)
       }
     };
+    // The browser auto-releases the wake lock whenever the tab/screen is backgrounded
+    // (visibilitychange), so it must be explicitly re-requested when it comes back.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && workoutActiveRef.current) {
+        requestWakeLock();
+      }
+    };
     requestWakeLock();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (wakeLock && wakeLock.release) {
         wakeLock.release();
       }
@@ -780,39 +822,104 @@ const PerfectWorkoutBanner: React.FC = () => {
 };
 
 const RoutineUpdatedBanner: React.FC<{ onRestart: () => void }> = ({ onRestart }) => {
-  const bg = useColorModeValue('gray.100', 'gray.850');
-  const border = useColorModeValue('gray.200', 'gray.800');
-  const textColor = useColorModeValue('gray.400', 'gray.500');
-  const buttonColor = useColorModeValue('blue.400', 'blue.300');
+  // Bold info (blue/cyan) style, matching the visual weight of IncompleteWorkoutBanner
+  // and PerfectWorkoutBanner rather than reading as a muted footnote.
+  const borderGradient = useColorModeValue(
+    'linear(90deg, #7dd3fc 0%, #38bdf8 60%, #0ea5e9 100%)',
+    'linear(90deg, #38bdf8 0%, #0ea5e9 60%, #0284c7 100%)'
+  );
+  const glassBg = useColorModeValue('rgba(235, 248, 255, 0.9)', 'rgba(15, 35, 50, 0.9)');
+  const iconShadow = useColorModeValue(
+    '0 0 4px #38bdf8, 0 0 8px #0ea5e9',
+    '0 0 4px #38bdf8, 0 0 8px #0284c7'
+  );
+  const textColor = useColorModeValue('#0c4a6e', '#7dd3fc');
+  const subTextColor = useColorModeValue('#0284c7', '#38bdf8');
+
   return (
-    <Flex
-      align="center"
-      bg={bg}
-      color={textColor}
-      borderRadius="md"
-      px={2}
-      py={0.5}
-      mb={2}
-      borderWidth={1}
-      borderColor={border}
-      fontSize="xs"
-      style={{ opacity: 0.7, minHeight: 0 }}
-      gap={2}
-    >
-      <Box flex={1}>
-        This routine has been updated. Would you like to restart this workout to use the latest routine?
-      </Box>
-      <Button
-        size="xs"
-        variant="ghost"
-        color={buttonColor}
-        fontWeight="medium"
-        px={2}
-        py={0.5}
-        onClick={onRestart}
+    <SlideFade in={true} offsetY="8px">
+      <Flex
+        align="center"
+        borderRadius="lg"
+        p={0}
+        mb={3}
+        minHeight="48px"
+        width="100%"
+        mx="auto"
+        style={{ position: 'relative' }}
       >
-        Restart
-      </Button>
-    </Flex>
+        {/* Outer info glow border */}
+        <Box
+          borderRadius="0.8em"
+          bgGradient={borderGradient}
+          p="1px"
+          width="100%"
+          height="100%"
+          boxShadow="0 0 0 1.5px #38bdf833, 0 0 6px 0 #0ea5e922, 0 2px 8px 0 #0002"
+          display="flex"
+          alignItems="stretch"
+        >
+          {/* Inner glassy background */}
+          <Flex
+            align="center"
+            borderRadius="0.7em"
+            p={{ base: 2, md: 2.5 }}
+            width="100%"
+            minHeight="44px"
+            bg={glassBg}
+            style={{
+              backdropFilter: 'blur(6px)',
+              width: '100%',
+            }}
+            justify="flex-start"
+            gap={2}
+          >
+            <Box
+              fontSize={{ base: '1.2em', md: '1.4em' }}
+              mr={{ base: 1.5, md: 2 }}
+              style={{
+                userSelect: 'none',
+                filter: iconShadow,
+                textShadow: iconShadow,
+                transition: 'filter 0.2s',
+              }}
+              aria-label="routine updated"
+            >
+              🔄
+            </Box>
+            <Flex direction="column" align="flex-start" flex={1} minW={0}>
+              <Text
+                fontSize={{ base: 'sm', md: 'md' }}
+                fontWeight="semibold"
+                color={textColor}
+                mb={0.5}
+                letterSpacing="tight"
+                style={{ textShadow: '0 1px 2px #38bdf844, 0 1px 0 #fff2' }}
+              >
+                This routine has been updated
+              </Text>
+              <Text fontSize="xs" color={subTextColor}>
+                Restart this workout to use the latest version of the routine.
+              </Text>
+            </Flex>
+            <Button
+              size="xs"
+              colorScheme="cyan"
+              variant="ghost"
+              fontWeight="medium"
+              ml={2}
+              style={{
+                boxShadow: '0 0 4px #38bdf844',
+                borderRadius: '0.6em',
+                fontSize: '0.92em',
+              }}
+              onClick={onRestart}
+            >
+              Restart
+            </Button>
+          </Flex>
+        </Box>
+      </Flex>
+    </SlideFade>
   );
 };

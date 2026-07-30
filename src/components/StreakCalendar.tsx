@@ -181,6 +181,10 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
               const isFuture = date > today;
               const isStreak = streakDay?.inStreak;
               const isCompleted = streakDay?.completed;
+              // Today's not-yet-done cell should read as neutral/pending, not a miss —
+              // independent of the whole-calendar `status === 'pending'` flag, which is
+              // only true when today continues an existing streak (see getStreakInfo).
+              const isTodayPendingCell = isToday && !isCompleted && !isFuture && !!streakDay && !streakDay.rest;
               // Styling for all cases
               const bg = isFuture ? useColorModeValue('gray.100', 'gray.700') : isStreak ? bgActive : bgInactive;
               const bgColor = isFuture
@@ -224,7 +228,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                   cursor={findRoutineForDay(routines, getDayOfWeek(date)) ? 'pointer' : undefined}
                 >
                   {/* Inner pill/dot for all days, style toggled by state */}
-                  {(!isCompleted && !isPending && !isFuture && streakDay && !streakDay.rest) ? (
+                  {(!isCompleted && !isPending && !isTodayPendingCell && !isFuture && streakDay && !streakDay.rest) ? (
                     <Box
                       display="flex"
                       alignItems="center"
@@ -267,7 +271,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                           sx={isStreak ? { filter: 'drop-shadow(0 0 6px #FFD600) drop-shadow(0 0 12px #FFD600)' } : undefined}
                         />
                       )}
-                      {isPending && isToday && (
+                      {(isPending || isTodayPendingCell) && isToday && (
                         <Box
                           position="absolute"
                           top="50%"
