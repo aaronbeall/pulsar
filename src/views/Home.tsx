@@ -9,6 +9,7 @@ import FinishedWorkoutAlert from '../components/FinishedWorkoutAlert';
 import RestDayAlert from '../components/RestDayAlert';
 import { findRoutineForToday, findWorkoutForToday, getWorkoutStatusForToday, hasRoutineForToday } from '../utils/workoutUtils';
 import StreakCalendar from '../components/StreakCalendar';
+import InstallAppAlert from '../components/InstallAppAlert';
 
 const Home: React.FC = () => {
   const routines = useRoutines();
@@ -32,6 +33,7 @@ const Home: React.FC = () => {
 
   return (
     <Container maxW="container.lg" p={4}>
+      <InstallAppAlert />
       <Flex direction="column" align="center" justify="center" minH="60vh" w="100%">
         {routines.length === 0 ? (
           <>

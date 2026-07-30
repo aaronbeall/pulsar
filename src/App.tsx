@@ -22,10 +22,12 @@ import Home from './views/Home';
 import Workout from './views/Workout';
 import Settings from './views/Settings';
 import { usePulsarStoreInit } from './store/pulsarStore';
+import { useInstallPromptInit } from './store/installPromptStore';
 import logoSvg from './assets/logo.svg';
 
 const App: React.FC = () => {
   usePulsarStoreInit(); // Load all data from DB into Zustand store on app mount
+  useInstallPromptInit(); // Listen for PWA installability as early as possible
   const { colorMode, toggleColorMode } = useColorMode();
   const [colorScheme, setColorScheme] = React.useState<string>(() => {
     return localStorage.getItem('colorScheme') || 'cyan';
