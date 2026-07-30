@@ -105,17 +105,32 @@ that `loadAll()`/`addX`/`updateX` already do. Practically:
   isn't even worth persisting across reloads) and drop `exercises`/`routines`/`workouts`
   from the localStorage snapshot entirely, since IndexedDB is already the source of truth.
 
-## PWA caching bug (matches TODO: "Caching on new builds results in broken SVG image")
+## PWA was never actually installable — FIXED 2026-07-30
 
-`vite.pwa.config.ts` precaches `**/*.{js,css,html,png,svg,ico}` via Workbox with
-`registerType: 'autoUpdate'`. Classic vite-plugin-pwa footgun: precache manifest revisions
-its own build assets by content hash, but the exercise cover/icon images referenced via
-`coverImageUrl`/`iconImageUrl` are runtime-fetched URLs from Google CSE, not build assets —
-those aren't in the precache manifest and rely on the browser HTTP cache, which can go
-stale/opaque across deploys since there's no `runtimeCaching` rule for arbitrary image
-hosts (only `googleapis.com/customsearch` is covered). Likely fix: add a `runtimeCaching`
-entry (`CacheFirst`, image destination matcher) for the actual image URLs Google returns,
-not just the search API call.
+The bug reported as "Caching on new builds results in broken SVG image" had a much bigger
+root cause than its name suggested: `vite-plugin-pwa` was only configured in
+`vite.pwa.config.ts`, a completely orphaned file — `npm run build` / `vite build` always
+resolve the default `vite.config.ts`, which never included the PWA plugin at all. Verified
+by building and inspecting `dist/`: no `sw.js`, no `manifest.webmanifest`, no `<link
+rel="manifest">` in `index.html` — the deployed site had zero service worker and was not
+actually installable on any platform, despite `public/site.webmanifest` and all the icon
+files sitting there unused. A second latent bug in that same dead config: it hardcoded
+manifest/icon paths at the domain root (`/pwa-192x192.png`), which would 404 once actually
+served from the GitHub Pages `/pulsar/` subpath.
+
+Fixed by merging the plugin into the real `vite.config.ts` with relative
+`start_url`/`scope`/icon paths (resolve correctly under any base), adding the
+missing Apple/mobile meta tags and `apple-touch-icon` link to `index.html` (found and
+fixed a pre-existing double-slash bug in the `%BASE_URL%` icon href pattern while at it),
+reconciling the manifest's stale purple branding (`#6200ee`) to the app's actual cyan
+(`#06b6d4`), and adding a proper `CacheFirst` runtime-caching rule keyed on image
+*destination* rather than a single URL host — the original rule only covered the CSE
+search API call, not the arbitrary-host image URLs it returns, which was the literal
+"broken SVG" symptom. Deleted the now-fully-redundant `vite.pwa.config.ts` and the stale
+static `public/site.webmanifest` (the plugin generates its own from config). Verified via
+real `vite build` at both root and `BASE=/pulsar/`, plus `vite preview` + `curl` checks
+confirming `manifest.webmanifest` (served as `application/manifest+json`), `sw.js`, and
+all icons resolve with correct paths and content-types.
 
 ## Suggested priority order (independent of TODO.md's own grouping)
 

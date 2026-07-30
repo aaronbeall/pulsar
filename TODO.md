@@ -41,7 +41,7 @@
 - [ ] Monetization (Buy Me a Coffee, premium, ads)
 - [ ] AI-free routine library (generated with LLM) with semantic search
 - [ ] Onboarding/Help
-- [ ] PWA + Hosting
+- [x] PWA + Hosting
 - [ ] Publish to app stores
 - [ ] Testing/feedback
 
@@ -81,7 +81,7 @@
 - [ ] Upgrade to Chakra v3: https://www.chakra-ui.com/docs/get-started/migration
 - [x] Copy/Paste and add day from template is putting reps on duration based exercises
 - [ ] Workout timer should only be when active
-- [ ] Caching on new builds results in broken SVG image
+- [x] Caching on new builds results in broken SVG image (root cause was bigger than the SVG: the PWA plugin was configured in an orphaned `vite.pwa.config.ts` never wired into the real build, so there was no service worker or manifest at all in production; consolidated into `vite.config.ts` 2026-07-30 with a proper image-destination runtime-caching rule)
 - [x] Streak calendar shows current day as an X when incomplete, should be a pending state like an outline circle
 - [x] Some actions like switching sometimes cause double actions
 - [x] Restarting workout edited routine alert isn't very noticeable
