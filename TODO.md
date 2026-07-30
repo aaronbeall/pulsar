@@ -59,6 +59,7 @@
 - [ ] Optional exercises (not required for completion)
 - [ ] Leaderboards
 - [ ] Graphs and charts
+- [ ] Track active vs. rest time within a workout session, not just overall start/end (currently `Workout.startedAt`/`completedAt` and `TimeElapsed.tsx` only measure wall-clock duration)
 - [ ] Weight tracking
 - [ ] Diet tracking
 - [x] Print/Export PDF support
