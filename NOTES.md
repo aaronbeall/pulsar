@@ -48,9 +48,10 @@ confirms there is **no LLM integration at all** yet, despite the UI already impl
   shuffles `exerciseTemplates` and picks 5 at random, wrapped in an artificial
   `await delay(2000)` to simulate "thinking." The routine name is a Mad-Libs generator
   (`funnyWords` array + `generateRandomRoutineName`).
-- The only real external API call in the app is Google Programmable Search (CSE) for
-  exercise cover images (`webUtils.ts: fetchExerciseSearchImageUrl`) — that one's real,
-  cached in `localStorage`, and has a Workbox runtime-caching rule.
+- The only real external API call in the app is exercise cover image search
+  (`webUtils.ts: fetchExerciseSearchImageUrl`) — that one's real, cached in `localStorage`,
+  and has a Workbox runtime-caching rule. It ran on Google Custom Search until 2026-07-30
+  (see below — replaced with Wikimedia Commons, no API key required).
 
 **Implication:** "AI generation" isn't a small remaining task, it's the actual core
 feature and hasn't started. Everything else in MVP is polish around a routine-management
@@ -58,15 +59,69 @@ app that currently has no personalization engine. Worth deciding early whether t
 built as a real LLM call (needs a backend/proxy — see security note below) or scoped down
 for v1.
 
-## Security/config note: Google CSE key is a public client secret
+## Exercise resolution: now a 4-tier system — Google CSE retired 2026-07-30
 
-`.env` → `VITE_GOOGLE_CSE_API_KEY` / `VITE_GOOGLE_CSE_ID` are bundled into the client JS
-(Vite `VITE_` prefix = public by design) and also injected as GitHub Actions secrets into
-a **static** build (`.github/workflows/jekyll-gh-pages.yml`). Anyone can extract the key
-from the deployed bundle and burn the CSE quota. Low stakes today (free tier, side
-project), but if real AI generation gets added later, the same pattern must NOT be reused
-for an LLM API key — that needs a server-side proxy (e.g. a small Cloudflare
-Worker/Vercel function) or it will get scraped and abused within hours of going public.
+Google Custom Search was actually broken in production (live-tested against the app's real
+credentials: `403 PERMISSION_DENIED — This project does not have the access to Custom
+Search JSON API`, a Google Cloud project config issue, reproducible, not transient). It
+clearly worked at some point — 56 of the app's original 60 exercises had real,
+correctly-matched `coverImageUrl`s pointing to Wikimedia Commons, and nothing in the static
+`exerciseTemplates.ts` catalog has image URLs, so those could only have come from past
+successful CSE searches. It failed completely silently (try/catch swallows the error, both
+render sites just skip the image block when the URL is falsy) — a user creating a new
+exercise had zero indication anything was wrong.
+
+`getAddedExercise` / `createRoutineFromTemplate` in `routineBuilderService.ts` now resolve
+an exercise name through four tiers, each one only reached if the previous misses:
+
+1. **Live exercises already in the store** — unchanged.
+2. **Curated `exerciseTemplates.ts`** (114 hand-tuned entries, `timed`/`relativeWeight`
+   metadata, tightly coupled to `dailyWorkoutTemplates.ts`'s 43 day templates by exact
+   name) — unchanged, deliberately left alone. Considered replacing this catalog outright
+   with free-exercise-db (873 entries) but rejected it: free-exercise-db has no `timed`
+   equivalent and the naming wouldn't line up cleanly with the hand-crafted day templates,
+   so a wholesale swap risked breaking that curation for marginal gain. Kept as its own tier
+   instead — see `freeExerciseDb.ts` file header for the fuller reasoning.
+3. **`freeExerciseDb.ts`** — new. [free-exercise-db](https://github.com/yuhonas/free-exercise-db)
+   (873 exercises, real photos, Unlicense/public domain), bundled as a static asset
+   (`public/free-exercise-db.json`, pruned from the source's ~1MB to ~310KB by dropping
+   fields Pulsar doesn't use) rather than fetched from a third party at runtime — exercise
+   *lookup* then never depends on an external service staying up (exactly the failure mode
+   that killed Google CSE); only the actual per-exercise photo bytes are fetched from
+   `raw.githubusercontent.com` on demand, same as any other image src.
+   `timed` is inferred from category (`cardio`/`stretching` → timed, everything else →
+   reps). Verified end-to-end in the running app: "Barbell Squat" (absent from the curated
+   catalog) resolves here with a real photo, zero live network calls.
+4. **Live Wikimedia Commons search** (`fetchExerciseSearchImageUrl` in `webUtils.ts`) — free,
+   no API key, CORS-enabled via `origin=*`. Only ever reached for names in neither catalog
+   above (verified: a nonsense name correctly falls through to here and returns empty,
+   not an error).
+
+**Why not wger** (a purpose-built, free, open-source fitness API — the obvious "just use a
+domain-specific live query API" answer): tested it live and its `exercise-translation`
+search endpoint doesn't actually filter — identical result count for `search=Squat` and a
+nonsense string. Great structured data (828 exercises, real images) sitting behind a search
+parameter that's a no-op through the public API as discoverable. Even used properly it
+would only work in bulk-fetch-then-locally-match mode, which is structurally identical to
+the free-exercise-db approach, just with less coverage — so it wasn't a real alternative to
+tier 3, just supporting evidence that "bulk dataset, not live query" is the right shape for
+the domain-specific tier.
+
+**Remaining known trade-off**: live Wikimedia search (tier 4) has real relevance limits for
+specific/compound names not covered by tiers 2-3 — "face pull" matched an unrelated
+ethnographic photo in testing (a keyword collision: Commons search is closer to full-text
+search over file metadata than content-aware image ranking). Only matters for names outside
+both the curated catalog and free-exercise-db's 873 entries, which should now be the
+minority case.
+
+Also removed as part of retiring Google CSE: `VITE_GOOGLE_CSE_ID`/`VITE_GOOGLE_CSE_API_KEY`
+from `.env`, the custom `ImportMetaEnv` augmentation in `vite-env.d.ts`, the workflow
+secrets in `.github/workflows/jekyll-gh-pages.yml`, and the Google-specific Workbox
+runtime-caching rule in `vite.config.ts` (repointed at Wikimedia's API host; `globPatterns`
+also extended to precache `*.json` so `free-exercise-db.json` works offline from first
+install). No security concern either way now — nothing secret to expose. If real AI
+generation gets a paid LLM key later (see below), that must NOT reuse the old "public
+client-side key" pattern regardless — needs a server-side proxy.
 
 ## Bug root cause: double-navigation / duplicate-workout issue — FIXED 2026-07-30
 

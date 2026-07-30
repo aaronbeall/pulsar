@@ -50,11 +50,19 @@ describe('getExerciseSearchImageUrl', () => {
   });
 
   it('fetches, caches, and returns a fresh image URL on a cache miss', async () => {
-    vi.stubEnv('VITE_GOOGLE_CSE_ID', 'test-cx');
-    vi.stubEnv('VITE_GOOGLE_CSE_API_KEY', 'test-key');
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
-      json: async () => ({ items: [{ link: 'https://fresh.example/squat.jpg' }] }),
+      json: async () => ({
+        query: {
+          pages: {
+            '12345': {
+              pageid: 12345,
+              title: 'File:Squat.jpg',
+              imageinfo: [{ url: 'https://fresh.example/squat.jpg' }],
+            },
+          },
+        },
+      }),
     })));
 
     const result = await getExerciseSearchImageUrl('Squat');
@@ -64,17 +72,24 @@ describe('getExerciseSearchImageUrl', () => {
     expect(localStorage.getItem(`pulsar:imageUrl:${norm}`)).toBe('https://fresh.example/squat.jpg');
   });
 
-  it('returns null and does not cache when no API key is configured', async () => {
-    vi.stubEnv('VITE_GOOGLE_CSE_ID', '');
-    vi.stubEnv('VITE_GOOGLE_CSE_API_KEY', '');
-    const fetchSpy = vi.fn();
-    vi.stubGlobal('fetch', fetchSpy);
+  it('returns null and does not cache when no search results are found', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ query: { pages: {} } }),
+    })));
+
+    const result = await getExerciseSearchImageUrl('Some Made Up Nonexistent Exercise');
+
+    expect(result).toBeNull();
+    const norm = normalizeExerciseName('Some Made Up Nonexistent Exercise');
+    expect(localStorage.getItem(`pulsar:imageUrl:${norm}`)).toBeNull();
+  });
+
+  it('returns null without throwing when the request fails', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false })));
 
     const result = await getExerciseSearchImageUrl('Lunge');
 
     expect(result).toBeNull();
-    expect(fetchSpy).not.toHaveBeenCalled();
-    const norm = normalizeExerciseName('Lunge');
-    expect(localStorage.getItem(`pulsar:imageUrl:${norm}`)).toBeNull();
   });
 });

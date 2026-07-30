@@ -14,13 +14,13 @@ export default defineConfig({
       },
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png'],
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+        globPatterns: ['**/*.{js,css,html,png,svg,ico,json}'],
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/www\.googleapis\.com\/customsearch\/v1/,
+            urlPattern: /^https:\/\/commons\.wikimedia\.org\/w\/api\.php/,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'google-cse-api-cache',
+              cacheName: 'wikimedia-search-cache',
               expiration: {
                 maxEntries: 100,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
@@ -31,11 +31,11 @@ export default defineConfig({
             },
           },
           {
-            // Exercise cover/icon images come from arbitrary hosts returned by the CSE
-            // API, not just googleapis.com, so match by request destination instead of
-            // a single URL pattern. CacheFirst since these images rarely change once
-            // fetched. (Fixes stale/broken images across deploys — previously these
-            // weren't covered by any runtime caching rule at all.)
+            // Exercise cover/icon images come from arbitrary Wikimedia upload hosts, so
+            // match by request destination instead of a single URL pattern. CacheFirst
+            // since these images rarely change once fetched. (Fixes stale/broken images
+            // across deploys — previously these weren't covered by any runtime caching
+            // rule at all.)
             urlPattern: ({ request }) => request.destination === 'image',
             handler: 'CacheFirst',
             options: {

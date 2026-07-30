@@ -25,26 +25,24 @@ export const getHowToQuery = (exerciseName: string) => {
 }
 
 /**
- * Use Google Programmable Search Engine (CSE) to search for images for an exercise and return the top image URL.
- * Requires a CSE API key and cx (search engine ID).
+ * Search Wikimedia Commons for an image matching an exercise and return the top result's
+ * URL. Free, no API key required — Commons' API is CORS-enabled for anonymous client-side
+ * use via `origin=*`. `filetype:bitmap|drawing` biases results toward actual images,
+ * away from audio/video files that also live in the File: namespace (gsrnamespace=6).
  */
 export const fetchExerciseSearchImageUrl = async (
   exerciseName: string
 ): Promise<string | null> => {
-  // VITE_GOOGLE_CSE_ID and VITE_GOOGLE_CSE_API_KEY should be defined in your .env file
-  const searchCx = import.meta.env.VITE_GOOGLE_CSE_ID;
-  const apiKey = import.meta.env.VITE_GOOGLE_CSE_API_KEY;
-  if (!apiKey || !searchCx) return null;
-  const query = `${exerciseName} exercise`;
-  const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&searchType=image&num=1&key=${apiKey}&cx=${searchCx}`;
+  const query = `filetype:bitmap|drawing ${exerciseName} exercise`;
+  const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&format=json&origin=*`;
   try {
     const response = await fetch(url);
     if (!response.ok) return null;
     const data = await response.json();
-    if (data.items && data.items.length > 0) {
-      return data.items[0].link;
-    }
-    return null;
+    const pages = data?.query?.pages;
+    if (!pages) return null;
+    const firstPage = Object.values(pages)[0] as { imageinfo?: { url: string }[] } | undefined;
+    return firstPage?.imageinfo?.[0]?.url || null;
   } catch (e) {
     return null;
   }

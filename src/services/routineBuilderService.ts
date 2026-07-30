@@ -8,16 +8,18 @@ import { getSearchUrl, getHowToQuery, getExerciseSearchImageUrl } from '../utils
 import { exerciseTemplates, ExerciseTemplate } from './exerciseTemplates';
 import { routineTemplates, RoutineTemplate } from './routineTemplates';
 import { dailyWorkoutTemplates } from './dailyWorkoutTemplates';
+import { findFreeExerciseDbEntry, getFreeExerciseDbImageUrl, isTimedCategory } from './freeExerciseDb';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Create a new Exercise from a template (ExerciseTemplate).
- * Fetches how-to and image URLs, and returns a new Exercise object.
+ * Fetches a how-to URL, and an image URL unless the template already has one (e.g.
+ * resolved from free-exercise-db) — in which case the live search is skipped entirely.
  */
 export async function createNewExercise(template: ExerciseTemplate): Promise<Exercise> {
   const howToUrl = getSearchUrl(getHowToQuery(template.name));
-  const imageUrl = await getExerciseSearchImageUrl(template.name);
+  const imageUrl = template.imageUrl || await getExerciseSearchImageUrl(template.name);
   return {
     id: uuidv4(),
     name: template.name,
@@ -63,7 +65,11 @@ export function findExistingExercise(name: string, exercises: Exercise[]): Exerc
 
 /**
  * Find or create and add an Exercise by name.
- * Returns an existing Exercise if found, otherwise creates from template or stub and expects caller to add to store.
+ * Returns an existing Exercise if found, otherwise creates one — checking, in order: the
+ * curated exerciseTemplates catalog (hand-tuned, wins if present), then the bundled
+ * free-exercise-db dataset (873 exercises with real photos, no live query needed), then
+ * finally an ad hoc stub whose image gets resolved via a live Wikimedia search. This way
+ * a live network call only ever happens for exercise names truly outside both catalogs.
  */
 export async function getAddedExercise(name: string, exercises: Exercise[], addExercise: (ex: Exercise) => Promise<void>): Promise<Exercise> {
   const norm = normalizeExerciseName(name);
@@ -71,9 +77,22 @@ export async function getAddedExercise(name: string, exercises: Exercise[], addE
   for (const ex of exercises) {
     if (normalizeExerciseName(ex.name) === norm) return ex;
   }
-  // 2. Search in templates
+  // 2. Search in the curated template catalog
   let template = exerciseTemplates.find(t => normalizeExerciseName(t.name) === norm);
-  // 3. If not found, create ad hoc template stub
+  // 3. Search the bundled free-exercise-db dataset
+  if (!template) {
+    const dbEntry = await findFreeExerciseDbEntry(name);
+    if (dbEntry) {
+      template = {
+        name: dbEntry.name,
+        description: dbEntry.description,
+        targetMuscles: [...dbEntry.primaryMuscles, ...dbEntry.secondaryMuscles],
+        timed: isTimedCategory(dbEntry.category),
+        imageUrl: getFreeExerciseDbImageUrl(dbEntry),
+      };
+    }
+  }
+  // 4. Still nothing — ad hoc stub; createNewExercise will fall back to a live image search
   if (!template) {
     template = {
       name,
@@ -82,7 +101,7 @@ export async function getAddedExercise(name: string, exercises: Exercise[], addE
       timed: false,
     };
   }
-  // 4. Create and add to store
+  // 5. Create and add to store
   const newExercise = await createNewExercise(template);
   await addExercise(newExercise);
   return newExercise;
@@ -296,8 +315,21 @@ export async function createRoutineFromTemplate(
       // Try to find an existing exercise (forgiving match)
       let found = allExercises.find(e => normalizeExerciseName(e.name) === normalizeExerciseName(ex.name));
       if (!found) {
-        // Try to find in templates
+        // Try to find in the curated template catalog
         let templateEx = exerciseTemplates.find(t => normalizeExerciseName(t.name) === normalizeExerciseName(ex.name));
+        // Then the bundled free-exercise-db dataset
+        if (!templateEx) {
+          const dbEntry = await findFreeExerciseDbEntry(ex.name);
+          if (dbEntry) {
+            templateEx = {
+              name: dbEntry.name,
+              description: dbEntry.description,
+              targetMuscles: [...dbEntry.primaryMuscles, ...dbEntry.secondaryMuscles],
+              timed: isTimedCategory(dbEntry.category),
+              imageUrl: getFreeExerciseDbImageUrl(dbEntry),
+            };
+          }
+        }
         if (!templateEx) {
           templateEx = { name: ex.name, description: '', targetMuscles: [], timed: !!ex.duration };
         }
