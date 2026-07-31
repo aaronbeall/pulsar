@@ -231,6 +231,48 @@ export function getStreakInfo(workouts: Workout[], routines: Routine[]): StreakI
   return { streak, status, days };
 }
 
+export interface YearDay {
+  date: Date;
+  completed: boolean;
+  rest: boolean;
+  future: boolean;
+}
+
+// Classifies every day of a calendar year for a year-at-a-glance view — unlike
+// getStreakInfo (which only walks backward from today to the first workout), this covers
+// the full Jan 1 - Dec 31 range, including days before any workout history and days still
+// to come. "rest" reuses the same active-routine-schedule check as the rest of the app
+// (hasRoutineForDay), so a day only counts as a miss if it was scheduled for a routine
+// that's still active — matching how streaks and the month calendar already reason about
+// rest days.
+export function getYearActivity(year: number, workouts: Workout[], routines: Routine[]): Record<string, YearDay> {
+  const activeRoutineIds = new Set(routines.filter(r => r.active).map(r => r.id));
+  const completedDates = new Set<string>();
+  for (const workout of workouts) {
+    if (workout.completedAt && activeRoutineIds.has(workout.routineId)) {
+      completedDates.add(getScheduledDate(workout).toDateString());
+    }
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const result: Record<string, YearDay> = {};
+  const end = new Date(year, 11, 31);
+  let d = new Date(year, 0, 1);
+  while (!isAfter(d, end)) {
+    const key = d.toDateString();
+    result[key] = {
+      date: new Date(d),
+      completed: completedDates.has(key),
+      rest: !hasRoutineForDay(routines, getDayOfWeek(d)),
+      future: isAfter(d, today),
+    };
+    d = addDays(d, 1);
+  }
+  return result;
+}
+
 export type ExerciseStats = {
   routines: number;
   days: number;

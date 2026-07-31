@@ -8,6 +8,7 @@ import {
   getStreakInfo,
   getExerciseStats,
   getRoutineStats,
+  getYearActivity,
 } from './workoutUtils';
 import type { Routine, RoutineDay, Workout, DayOfWeek } from '../models/types';
 
@@ -186,6 +187,49 @@ describe('getStreakInfo', () => {
     expect(result.streak).toBe(1);
     expect(result.status).toBe('up_to_date');
     expect(result.days[d(2026, 7, 28).toDateString()]).toBeUndefined();
+  });
+});
+
+describe('getYearActivity', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('classifies completed, missed, rest, and future days across the whole year', () => {
+    vi.setSystemTime(d(2026, 7, 29)); // Wednesday
+    const routine = makeRoutine({ id: 'r1', dailySchedule: [scheduleDay('Monday'), scheduleDay('Wednesday')] });
+    const workouts = [
+      makeWorkout({ routineId: 'r1', day: 'Monday', startedAt: d(2026, 7, 27).getTime(), completedAt: d(2026, 7, 27).getTime() }),
+    ];
+
+    const result = getYearActivity(2026, workouts, [routine]);
+
+    expect(result[d(2026, 7, 27).toDateString()].completed).toBe(true); // completed Monday
+    expect(result[d(2026, 7, 28).toDateString()].rest).toBe(true); // Tuesday, not scheduled
+    expect(result[d(2026, 7, 29).toDateString()]).toEqual({
+      date: d(2026, 7, 29, 0),
+      completed: false,
+      rest: false,
+      future: false,
+    }); // scheduled today, not completed — a miss
+    expect(result[d(2026, 7, 30).toDateString()].future).toBe(true); // Thursday hasn't happened yet
+    expect(Object.keys(result).length).toBe(365); // 2026 is not a leap year
+  });
+
+  it('excludes workouts under an inactive routine from "completed", but the day is still scheduled', () => {
+    vi.setSystemTime(d(2026, 7, 29));
+    const routine = makeRoutine({ id: 'r1', active: false, dailySchedule: [scheduleDay('Monday')] });
+    const workouts = [
+      makeWorkout({ routineId: 'r1', day: 'Monday', startedAt: d(2026, 7, 27).getTime(), completedAt: d(2026, 7, 27).getTime() }),
+    ];
+
+    const result = getYearActivity(2026, workouts, [routine]);
+    const monday = result[d(2026, 7, 27).toDateString()];
+    expect(monday.completed).toBe(false);
+    expect(monday.rest).toBe(true); // no active routine schedules Monday anymore
   });
 });
 
