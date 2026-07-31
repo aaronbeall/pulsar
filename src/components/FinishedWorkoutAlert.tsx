@@ -33,6 +33,7 @@ const FinishedWorkoutAlert: React.FC<FinishedWorkoutAlertProps> = ({ routines, w
         p={{ base: 5, md: 8 }}
         flexDirection={{ base: 'column', sm: 'row' }}
         bgGradient="linear(to-r, yellow.400, orange.400)"
+        color="white"
         boxShadow="2xl"
         _hover={{ transform: 'scale(1.01)', transition: 'transform 0.2s' }}
       >

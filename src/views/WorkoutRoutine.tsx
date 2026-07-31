@@ -146,7 +146,7 @@ const WorkoutRoutine: React.FC = () => {
   }
 
   return (
-    <Flex direction="column" align="center" p={4} width="100%">
+    <Flex direction="column" align="center" width="100%">
       <Breadcrumb mb={4} width="100%">
         <BreadcrumbItem>
           <BreadcrumbLink as={RouterLink} to="/workout">
@@ -166,8 +166,14 @@ const WorkoutRoutine: React.FC = () => {
             <RoutineStatusBanner routine={routine} />
           </Box>
         )}
-        <Flex justify="space-between" align="center" mb={4}>
-          <Heading size="lg" bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text" display="flex" alignItems="center" gap={2}>
+        <Flex
+          direction={{ base: 'column', sm: 'row' }}
+          justify="space-between"
+          align={{ base: 'stretch', sm: 'center' }}
+          gap={3}
+          mb={4}
+        >
+          <Heading fontSize={{ base: 'xl', sm: '2xl' }} bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text" display="flex" alignItems="center" gap={2}>
             {routine.name}
             {routine.favorite && (
               <Box as="span" color="yellow.400" ml={1} fontSize="1.1em" title="Favorite">
@@ -175,7 +181,7 @@ const WorkoutRoutine: React.FC = () => {
               </Box>
             )}
           </Heading>
-          <Flex gap={2} align="center">
+          <Flex gap={2} align="center" justify={{ base: 'space-between', sm: 'flex-end' }}>
             <Text fontSize="sm" color="gray.600">
               Active
             </Text>

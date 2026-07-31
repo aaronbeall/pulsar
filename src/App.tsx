@@ -6,17 +6,12 @@ import {
   IconButton,
   Heading,
   useColorMode,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  SimpleGrid,
   Image,
   Text,
   Container,
   useToken,
 } from '@chakra-ui/react';
-import { FaSun, FaMoon, FaPalette, FaHome, FaDumbbell, FaCog } from 'react-icons/fa';
+import { FaSun, FaMoon, FaHome, FaDumbbell, FaCog } from 'react-icons/fa';
 import { Routes, Route, Link, useLocation, Link as RouterLink } from 'react-router-dom';
 import Home from './views/Home';
 import Workout from './views/Workout';
@@ -30,15 +25,10 @@ const App: React.FC = () => {
   useInstallPromptInit(); // Listen for PWA installability as early as possible
   const { colorMode, toggleColorMode } = useColorMode();
   const [colorScheme, setColorScheme] = React.useState<string>(() => {
-    return localStorage.getItem('colorScheme') || 'cyan';
+    return localStorage.getItem('colorScheme') || 'red';
   });
   const location = useLocation();
   const [headerBgColor] = useToken('colors', [`${colorScheme}.500`]);
-
-  const colorSchemes = [
-    'blue', 'cyan', 'teal', 'green', 'yellow',
-    'orange', 'red', 'pink', 'purple', 'gray'
-  ];
 
   const handleColorSchemeChange = (scheme: string) => {
     setColorScheme(scheme);
@@ -98,40 +88,6 @@ const App: React.FC = () => {
                 _hover={{ bg: 'whiteAlpha.300' }}
                 size="md"
               />
-              <Menu>
-                <MenuButton
-                  as={IconButton}
-                  icon={<FaPalette />}
-                  variant="ghost"
-                  _hover={{ bg: 'whiteAlpha.300' }}
-                  size="md"
-                  aria-label="Select Color Scheme"
-                />
-                <MenuList p={4}>
-                  <SimpleGrid columns={5} spacing={2}>
-                    {colorSchemes.map((scheme) => (
-                      <MenuItem
-                        key={scheme}
-                        onClick={() => handleColorSchemeChange(scheme)}
-                        p={0}
-                        m={0}
-                        bg="transparent"
-                      >
-                        <Box
-                          bg={`${scheme}.500`}
-                          w={6}
-                          h={6}
-                          borderRadius="full"
-                          border={scheme === colorScheme ? '2px solid white' : '2px solid transparent'}
-                          cursor="pointer"
-                          transition="transform 0.2s"
-                          _hover={{ transform: 'scale(1.1)' }}
-                        />
-                      </MenuItem>
-                    ))}
-                  </SimpleGrid>
-                </MenuList>
-              </Menu>
             </Flex>
           </Flex>
         </Container>

@@ -110,9 +110,9 @@ export const WorkoutSetup: React.FC = () => {
   }
 
   return (
-    <Flex direction="column" p={4} align="center" justify="center" height="100%" width="100%">
-      <Box textAlign="center" mb={6}>
-        <Heading size="lg" mb={4}>
+    <Flex direction="column" align="center" justify="center" minH="65vh" width="100%">
+      <Box textAlign="center" mb={6} w="100%" maxW="420px">
+        <Heading fontSize={{ base: 'xl', sm: '2xl' }} mb={4}>
           {workoutPrompts[step - 1].question}
         </Heading>
         <Input
@@ -122,18 +122,19 @@ export const WorkoutSetup: React.FC = () => {
           onKeyDown={handleKeyDown}
           mb={2}
           width="100%"
+          size="lg"
         />
         <Text fontSize="sm" color="gray.500">
           {workoutPrompts[step - 1].placeholder}
         </Text>
       </Box>
       {step < workoutPrompts.length ? (
-        <Button colorScheme="cyan" onClick={handleNext} leftIcon={<FaArrowRight />}>
+        <Button colorScheme="cyan" size="lg" w={{ base: '100%', sm: 'auto' }} maxW="420px" onClick={handleNext} leftIcon={<FaArrowRight />}>
           Next
         </Button>
       ) : (
-        <Box w="100%" textAlign="center">
-          <Button colorScheme="cyan" onClick={handleNext} leftIcon={<FaMagic />} mb={2}>
+        <Box w="100%" maxW="420px" textAlign="center">
+          <Button colorScheme="cyan" size="lg" w="100%" onClick={handleNext} leftIcon={<FaMagic />} mb={2}>
             Make my routine!
           </Button>
           <Text fontSize="sm" color={orTextColor} my={1} fontWeight="normal" letterSpacing="wider">

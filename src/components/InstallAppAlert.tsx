@@ -1,11 +1,14 @@
 import React from 'react';
-import { Box, Button, CloseButton, Flex, Alert, AlertTitle, AlertDescription, SlideFade, useToast } from '@chakra-ui/react';
+import { Box, Button, CloseButton, Flex, Text, SlideFade, useToast, useColorModeValue } from '@chakra-ui/react';
 import { FaMobileAlt, FaDownload, FaShareSquare } from 'react-icons/fa';
 import { useInstallPromptStore } from '../store/installPromptStore';
 
 const InstallAppAlert: React.FC = () => {
   const { deferredPrompt, isInstalled, isIOS, dismissed, dismiss, promptInstall } = useInstallPromptStore();
   const toast = useToast();
+  const glassBg = useColorModeValue('whiteAlpha.700', 'blackAlpha.400');
+  const glassBorder = useColorModeValue('whiteAlpha.800', 'whiteAlpha.100');
+  const mutedColor = useColorModeValue('gray.600', 'gray.300');
 
   const canPromptInstall = !!deferredPrompt;
   const showIOSInstructions = !canPromptInstall && isIOS;
@@ -23,55 +26,61 @@ const InstallAppAlert: React.FC = () => {
 
   return (
     <SlideFade in={true} offsetY="20px">
-      <Alert
-        status="info"
-        variant="solid"
-        borderRadius="xl"
-        mb={6}
-        p={6}
-        bgGradient="linear(to-r, cyan.500, blue.500)"
-        boxShadow="xl"
-        justifyContent="flex-start"
-        alignItems="center"
+      <Box
         position="relative"
+        borderRadius="xl"
+        mb={{ base: 4, sm: 5 }}
+        p={{ base: 4, sm: 5 }}
+        bg={glassBg}
+        backdropFilter="blur(16px) saturate(180%)"
+        border="1px solid"
+        borderColor={glassBorder}
+        boxShadow="0 4px 20px rgba(0,0,0,0.1)"
       >
         <CloseButton
           position="absolute"
           top={2}
           right={2}
-          color="whiteAlpha.800"
-          _hover={{ color: 'white', bg: 'whiteAlpha.300' }}
+          size="sm"
           onClick={dismiss}
           aria-label="Dismiss install prompt"
         />
-        <Box fontSize="3.5em" mr={5} color="whiteAlpha.900" display="flex" alignItems="center">
-          <FaMobileAlt />
-        </Box>
-        <Flex direction="column" align="start" flex={1}>
-          <AlertTitle fontSize="xl" fontWeight="extrabold" mb={1} color="white">
-            Install Pulsar
-          </AlertTitle>
-          <AlertDescription fontSize="md" mb={showIOSInstructions ? 0 : 4} color="whiteAlpha.900">
-            {showIOSInstructions
-              ? <>Tap <FaShareSquare style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }} /> Share, then "Add to Home Screen" for quick access and a full-screen experience.</>
-              : 'Add it to your home screen for quick access, offline support, and a full-screen experience.'}
-          </AlertDescription>
-          {canPromptInstall && (
-            <Button
-              size="md"
-              bg="white"
-              color="cyan.600"
-              variant="solid"
-              fontWeight="bold"
-              leftIcon={<FaDownload />}
-              _hover={{ bg: 'whiteAlpha.900' }}
-              onClick={handleInstall}
-            >
-              Install App
-            </Button>
-          )}
+        <Flex align="center" gap={4} pr={8}>
+          <Flex
+            flexShrink={0}
+            align="center"
+            justify="center"
+            boxSize={{ base: '44px', sm: '52px' }}
+            borderRadius="full"
+            bgGradient="linear(to-br, cyan.400, blue.500)"
+            color="white"
+            fontSize="lg"
+          >
+            <FaMobileAlt />
+          </Flex>
+          <Box flex={1} minW={0}>
+            <Text fontWeight="bold" fontSize={{ base: 'sm', sm: 'md' }} mb={0.5}>
+              Install Pulsar
+            </Text>
+            <Text fontSize="xs" color={mutedColor} mb={canPromptInstall ? 2 : 0}>
+              {showIOSInstructions
+                ? <>Tap <FaShareSquare style={{ display: 'inline', verticalAlign: 'middle', margin: '0 4px' }} /> Share, then "Add to Home Screen"</>
+                : 'Add to your home screen for offline, full-screen access.'}
+            </Text>
+            {canPromptInstall && (
+              <Button
+                size="sm"
+                colorScheme="blue"
+                fontWeight="bold"
+                leftIcon={<FaDownload />}
+                onClick={handleInstall}
+              >
+                Install App
+              </Button>
+            )}
+          </Box>
         </Flex>
-      </Alert>
+      </Box>
     </SlideFade>
   );
 };

@@ -6,7 +6,6 @@ import {
   Heading,
   Text,
   VStack,
-  Container,
   SlideFade,
   useColorModeValue,
   Icon,
@@ -34,7 +33,7 @@ const AddRoutineCard: React.FC<{ onClick: () => void }> = ({ onClick }) => {
       borderStyle="dashed"
       borderColor={useColorModeValue('gray.200', 'gray.700')}
       borderRadius="xl"
-      p={8}
+      p={{ base: 6, sm: 8 }}
       mb={8}
       w="100%"
       bg={useColorModeValue('gray.50', 'gray.900')}
@@ -103,7 +102,7 @@ export const WorkoutLanding: React.FC = () => {
   }
 
   return (
-    <Container maxW="container.lg" p={4}>
+    <Box width="100%">
       <SlideFade in={true} offsetY="20px">
         <VStack spacing={6} align="stretch" width="100%">
           {activeRoutines.length === 0 && inactiveRoutines.length > 0 ? (
@@ -126,8 +125,14 @@ export const WorkoutLanding: React.FC = () => {
 
           <Timeline activeRoutines={activeRoutines} workouts={workouts} />
 
-          <Box bg={bgColor} borderRadius="xl" p={6} boxShadow="sm" borderWidth="1px" borderColor={borderColor}>
-            <Flex justify="space-between" align="center" mb={6}>
+          <Box bg={bgColor} borderRadius="xl" p={{ base: 4, sm: 6 }} boxShadow="sm" borderWidth="1px" borderColor={borderColor}>
+            <Flex
+              direction={{ base: 'column', sm: 'row' }}
+              justify="space-between"
+              align={{ base: 'stretch', sm: 'center' }}
+              gap={3}
+              mb={6}
+            >
               <Heading size="lg" bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
                 My Workout
               </Heading>
@@ -137,6 +142,7 @@ export const WorkoutLanding: React.FC = () => {
                   colorScheme={showFavoritesOnly ? 'yellow' : undefined}
                   variant={showFavoritesOnly ? 'solid' : 'ghost'}
                   size="sm"
+                  alignSelf={{ base: 'flex-start', sm: 'auto' }}
                   onClick={() => setShowFavoritesOnly(fav => !fav)}
                   aria-pressed={showFavoritesOnly}
                   sx={!showFavoritesOnly ? {
@@ -195,6 +201,6 @@ export const WorkoutLanding: React.FC = () => {
           </Box>
         </VStack>
       </SlideFade>
-    </Container>
+    </Box>
   );
 };

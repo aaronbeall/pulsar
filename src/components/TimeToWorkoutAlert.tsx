@@ -63,6 +63,7 @@ const TimeToWorkoutAlert: React.FC<TimeToWorkoutAlertProps> = ({ routines, worko
         p={{ base: 5, md: 8 }}
         flexDirection={{ base: 'column', sm: 'row' }}
         bgGradient="linear(to-r, cyan.500, blue.500)"
+        color="white"
         boxShadow="xl"
         _hover={{ transform: 'scale(1.01)', transition: 'transform 0.2s' }}
       >

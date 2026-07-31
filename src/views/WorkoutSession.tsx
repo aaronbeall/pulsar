@@ -287,7 +287,7 @@ export const WorkoutSession: React.FC = () => {
   }
 
   return (
-    <Flex direction="column" p={4} width="100%">
+    <Flex direction="column" width="100%">
       {isRoutineUpdated && (
         <RoutineUpdatedBanner onRestart={handleRestartToRoutine} />
       )}
@@ -316,13 +316,19 @@ export const WorkoutSession: React.FC = () => {
         </BreadcrumbItem>
       </Breadcrumb>
 
-      <Flex justify="space-between" align="start" mb={6}>
+      <Flex
+        direction={{ base: 'column', sm: 'row' }}
+        justify="space-between"
+        align={{ base: 'stretch', sm: 'start' }}
+        gap={3}
+        mb={6}
+      >
         <Box>
           <Text as={RouterLink} to={`/workout/routine/${routine.id}`} fontSize="sm" color="gray.500" mb={1} display="flex" alignItems="center" gap={1} _hover={{ color: 'cyan.500', textDecoration: 'underline' }}>
             {routine.name}
             <Box as={FaInfoCircle} fontSize="1em" ml={1} color="gray.400" _hover={{ color: 'cyan.400' }} aria-label="View routine details" />
           </Text>
-          <Heading size="lg" mb={2} bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
+          <Heading fontSize={{ base: 'xl', sm: '2xl' }} mb={2} bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
             "{workout.nickname}"
           </Heading>
         </Box>

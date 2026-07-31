@@ -4,19 +4,16 @@ import {
   Button,
   Flex,
   Heading,
+  Icon,
   Link,
   Select,
-  Table,
-  Tbody,
   Text,
-  Tr,
-  Td,
-  Th,
-  Thead,
   VStack,
   useColorMode,
+  useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
+import { FaCog, FaExclamationTriangle, FaImages, FaPalette } from 'react-icons/fa';
 import { deleteDB } from 'idb'; // Import deleteDB to delete IndexedDB
 import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
 
@@ -28,6 +25,11 @@ interface SettingsProps {
 const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange }) => {
   const { colorMode, setColorMode } = useColorMode();
   const toast = useToast();
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const cardBorder = useColorModeValue('gray.200', 'gray.700');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const dangerBg = useColorModeValue('red.50', 'rgba(254, 178, 178, 0.06)');
+  const dangerBorder = useColorModeValue('red.200', 'red.700');
 
   const handleClearSettings = () => {
     localStorage.clear();
@@ -52,81 +54,96 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
   };
 
   return (
-    <Flex direction="column" p={4}>
-      <Heading size="lg" mb={4}>
-        Settings
-      </Heading>
-      <Box borderWidth="1px" borderRadius="md" overflow="hidden">
-        <Table variant="simple">
-          <Thead>
-            <Tr>
-              <Th>Setting</Th>
-              <Th>Value</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            <Tr>
-              <Td>Color Scheme</Td>
-              <Td>
-                <Select
-                  value={colorScheme}
-                  onChange={(e) => onColorSchemeChange(e.target.value)}
-                >
-                  {['blue', 'cyan', 'teal', 'green', 'yellow', 'orange', 'red', 'pink', 'purple', 'gray'].map(
-                    (scheme) => (
-                      <option key={scheme} value={scheme}>
-                        {scheme.charAt(0).toUpperCase() + scheme.slice(1)}
-                      </option>
-                    )
-                  )}
-                </Select>
-              </Td>
-            </Tr>
-            <Tr>
-              <Td>Color Mode</Td>
-              <Td>
-                <Select
-                  value={colorMode}
-                  onChange={(e) => setColorMode(e.target.value)}
-                >
-                  <option value="system">System</option>
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                </Select>
-              </Td>
-            </Tr>
-          </Tbody>
-        </Table>
+    <Flex direction="column" gap={{ base: 4, sm: 5 }} maxW="560px" mx="auto">
+      <Flex align="center" gap={2} mb={1}>
+        <Icon as={FaCog} boxSize={5} color="cyan.500" />
+        <Heading size="lg">Settings</Heading>
+      </Flex>
+
+      <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
+        <Flex align="center" gap={2} mb={4}>
+          <Icon as={FaPalette} color="cyan.500" />
+          <Heading size="sm">Appearance</Heading>
+        </Flex>
+        <VStack spacing={4} align="stretch">
+          <Flex align="center" justify="space-between" gap={3}>
+            <Text fontSize="sm" fontWeight="medium">Color Scheme</Text>
+            <Select
+              value={colorScheme}
+              onChange={(e) => onColorSchemeChange(e.target.value)}
+              w={{ base: '55%', sm: '60%' }}
+              size="sm"
+              borderRadius="md"
+            >
+              {['blue', 'cyan', 'teal', 'green', 'yellow', 'orange', 'red', 'pink', 'purple', 'gray'].map(
+                (scheme) => (
+                  <option key={scheme} value={scheme}>
+                    {scheme.charAt(0).toUpperCase() + scheme.slice(1)}
+                  </option>
+                )
+              )}
+            </Select>
+          </Flex>
+          <Flex align="center" justify="space-between" gap={3}>
+            <Text fontSize="sm" fontWeight="medium">Color Mode</Text>
+            <Select
+              value={colorMode}
+              onChange={(e) => setColorMode(e.target.value)}
+              w={{ base: '55%', sm: '60%' }}
+              size="sm"
+              borderRadius="md"
+            >
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </Select>
+          </Flex>
+        </VStack>
       </Box>
-      <Button colorScheme="red" mt={4} onClick={handleClearSettings}>
-        Clear All Settings
-      </Button>
-      <Button colorScheme="red" mt={4} onClick={handleDeleteAllData}>
-        Delete All Data
-      </Button>
 
-      <Heading size="sm" mt={8} mb={2} color="gray.500">
-        Photo Credits
-      </Heading>
-      <Text fontSize="xs" color="gray.500" mb={2}>
-        Home screen background photos, from Wikimedia Commons:
-      </Text>
-      <VStack align="start" spacing={1} mb={4}>
-        {ALL_HOME_BACKGROUNDS.map(bg => (
-          <Text key={bg.sourceUrl} fontSize="xs" color="gray.500">
-            <Link href={bg.sourceUrl} isExternal color="cyan.500">{bg.title}</Link>
-            {' '}by {bg.author}, {bg.license}
-          </Text>
-        ))}
-      </VStack>
+      <Box bg={dangerBg} borderWidth="1px" borderColor={dangerBorder} borderRadius="xl" p={{ base: 4, sm: 5 }}>
+        <Flex align="center" gap={2} mb={1}>
+          <Icon as={FaExclamationTriangle} color="red.400" />
+          <Heading size="sm" color={useColorModeValue('red.700', 'red.300')}>Danger Zone</Heading>
+        </Flex>
+        <Text fontSize="xs" color={mutedColor} mb={4}>
+          These actions are permanent and cannot be undone.
+        </Text>
+        <VStack spacing={3} align="stretch">
+          <Button variant="outline" colorScheme="red" size="sm" onClick={handleClearSettings}>
+            Clear All Settings
+          </Button>
+          <Button variant="outline" colorScheme="red" size="sm" onClick={handleDeleteAllData}>
+            Delete All Data
+          </Button>
+        </VStack>
+      </Box>
 
-      <Text fontSize="xs" color="gray.500">
-        Exercise photos come from{' '}
-        <Link href="https://github.com/yuhonas/free-exercise-db" isExternal color="cyan.500">free-exercise-db</Link>
-        {', with additional photos found via '}
-        <Link href="https://commons.wikimedia.org" isExternal color="cyan.500">Wikimedia Commons</Link>
-        {' search.'}
-      </Text>
+      <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
+        <Flex align="center" gap={2} mb={3}>
+          <Icon as={FaImages} color="cyan.500" />
+          <Heading size="sm">Photo Credits</Heading>
+        </Flex>
+        <Text fontSize="xs" color={mutedColor} mb={2}>
+          Home screen background photos, from Wikimedia Commons:
+        </Text>
+        <VStack align="start" spacing={1} mb={4}>
+          {ALL_HOME_BACKGROUNDS.map(bg => (
+            <Text key={bg.sourceUrl} fontSize="xs" color={mutedColor}>
+              <Link href={bg.sourceUrl} isExternal color="cyan.500">{bg.title}</Link>
+              {' '}by {bg.author}, {bg.license}
+            </Text>
+          ))}
+        </VStack>
+
+        <Text fontSize="xs" color={mutedColor}>
+          Exercise photos come from{' '}
+          <Link href="https://github.com/yuhonas/free-exercise-db" isExternal color="cyan.500">free-exercise-db</Link>
+          {', with additional photos found via '}
+          <Link href="https://commons.wikimedia.org" isExternal color="cyan.500">Wikimedia Commons</Link>
+          {' search.'}
+        </Text>
+      </Box>
     </Flex>
   );
 };

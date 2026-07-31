@@ -1,16 +1,21 @@
 import React from 'react';
-import { Box, Button, Container, Flex, Heading, Text, useToken, useColorModeValue, Highlight, Spinner } from '@chakra-ui/react';
+import { Box, Button, Container, Flex, Heading, Text, useColorModeValue, Highlight, Spinner, Icon } from '@chakra-ui/react';
+import { format } from 'date-fns';
 import { FaDumbbell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useExercises, useRoutines, useWorkouts } from '../store/pulsarStore';
-import { Routine, Workout } from '../models/types';
-import TimeToWorkoutAlert from '../components/TimeToWorkoutAlert';
-import FinishedWorkoutAlert from '../components/FinishedWorkoutAlert';
-import RestDayAlert from '../components/RestDayAlert';
+import TodayCard from '../components/TodayCard';
 import { findExercisesForToday, findRoutineForToday, getWorkoutStatusForToday, hasRoutineForToday } from '../utils/workoutUtils';
 import StreakCalendar from '../components/StreakCalendar';
 import InstallAppAlert from '../components/InstallAppAlert';
 import { pickTodaysHomeBackground } from '../assets/homeBackgrounds';
+
+const getGreeting = (hour: number): string => {
+  if (hour < 5) return 'Still up?';
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+};
 
 const Home: React.FC = () => {
   const routines = useRoutines();
@@ -18,7 +23,10 @@ const Home: React.FC = () => {
   const exercises = useExercises();
   const isLoading = routines === undefined || workouts === undefined;
   const navigate = useNavigate();
-  const [red500] = useToken('colors', ['red.500']);
+  const now = new Date();
+  const glassBg = useColorModeValue('whiteAlpha.700', 'blackAlpha.400');
+  const glassBorder = useColorModeValue('whiteAlpha.800', 'whiteAlpha.100');
+  const mutedColor = useColorModeValue('gray.600', 'gray.300');
   const backgroundTint = useColorModeValue(
     'linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.32) 100%)',
     'linear-gradient(135deg, rgba(30,30,40,0.45) 0%, rgba(0,0,0,0.32) 100%)'
@@ -78,41 +86,74 @@ const Home: React.FC = () => {
       </Box>
       <Container maxW="container.lg" position="relative" zIndex={1} pt={6} pb={6}>
         <InstallAppAlert />
-        <Flex direction="column" align="center" justify="center" minH="calc(100vh - 200px)" w="100%" p={{ base: 4, md: 8 }}>
-          {routines.length === 0 ? (
-            <>
-              <Box textAlign="center" mb={6}>
-                <FaDumbbell size="100px" color={red500} />
-              </Box>
-              <Box textAlign="center">
-                <Heading size="lg" mb={4}>
-                  <Highlight
-                    query="Pulsar"
-                    styles={{
-                      display: 'inline-block',
-                      color: 'cyan.500',
-                      fontWeight: 'bold',
-                    }}
-                  >
-                    Welcome to Pulsar!
-                  </Highlight>
-                </Heading>
-                <Text mb={4}>Get started by creating your first workout routine.</Text>
-                <Button colorScheme="cyan" onClick={() => navigate('/workout')}>
-                  Create My First Workout
-                </Button>
-              </Box>
-            </>
-          ) : (
-            <Box w="100%">
-              {todayStatus === 'rest' && <RestDayAlert />}
-              {todayStatus === 'not started' && <TimeToWorkoutAlert routines={routines} workouts={workouts} />}
-              {todayStatus === 'in progress' && <TimeToWorkoutAlert routines={routines} workouts={workouts} />}
-              {todayStatus === 'completed' && <FinishedWorkoutAlert routines={routines} workouts={workouts} />}
-              {workouts.length > 0 && <StreakCalendar workouts={workouts} routines={routines} />}
+        {routines.length === 0 ? (
+          <Flex align="center" justify="center" minH="calc(100vh - 200px)" w="100%" p={{ base: 4, md: 8 }}>
+            <Box
+              textAlign="center"
+              maxW="440px"
+              w="100%"
+              borderRadius="2xl"
+              p={{ base: 8, sm: 10 }}
+              bg={glassBg}
+              backdropFilter="blur(20px) saturate(180%)"
+              border="1px solid"
+              borderColor={glassBorder}
+              boxShadow="0 8px 32px rgba(0,0,0,0.12)"
+            >
+              <Flex
+                align="center"
+                justify="center"
+                borderRadius="full"
+                boxSize={{ base: '88px', sm: '104px' }}
+                bgGradient="linear(to-br, cyan.400, blue.500)"
+                color="white"
+                mx="auto"
+                mb={5}
+                boxShadow="0 8px 24px rgba(0,0,0,0.25)"
+              >
+                <Icon as={FaDumbbell} boxSize={{ base: 9, sm: 10 }} />
+              </Flex>
+              <Heading size="lg" mb={2}>
+                <Highlight
+                  query="Pulsar"
+                  styles={{
+                    display: 'inline-block',
+                    color: 'cyan.500',
+                    fontWeight: 'black',
+                  }}
+                >
+                  Welcome to Pulsar!
+                </Highlight>
+              </Heading>
+              <Text color={mutedColor} mb={6}>Get started by creating your first workout routine.</Text>
+              <Button
+                size="lg"
+                bgGradient="linear(to-r, cyan.400, blue.500)"
+                color="white"
+                fontWeight="bold"
+                _hover={{ transform: 'scale(1.03)' }}
+                _active={{ transform: 'scale(0.98)' }}
+                transition="all 0.2s"
+                onClick={() => navigate('/workout')}
+              >
+                Create My First Workout
+              </Button>
             </Box>
-          )}
-        </Flex>
+          </Flex>
+        ) : (
+          <Box w="100%" minH="calc(100vh - 200px)">
+            <Box mb={{ base: 4, sm: 5 }} px={1}>
+              <Text fontSize="sm" fontWeight="semibold" color={mutedColor}>
+                {getGreeting(now.getHours())}
+              </Text>
+              <Heading fontSize={{ base: 'xl', sm: '2xl' }}>
+                {format(now, 'EEEE, MMMM d')}
+              </Heading>
+            </Box>
+            <TodayCard status={todayStatus} routines={routines} workouts={workouts} />
+            {workouts.length > 0 && <StreakCalendar workouts={workouts} routines={routines} />}
+          </Box>
+        )}
       </Container>
     </Box>
   );
