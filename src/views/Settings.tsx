@@ -111,7 +111,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
       <Text fontSize="xs" color="gray.500" mb={2}>
         Home screen background photos, from Wikimedia Commons:
       </Text>
-      <VStack align="start" spacing={1}>
+      <VStack align="start" spacing={1} mb={4}>
         {ALL_HOME_BACKGROUNDS.map(bg => (
           <Text key={bg.sourceUrl} fontSize="xs" color="gray.500">
             <Link href={bg.sourceUrl} isExternal color="cyan.500">{bg.title}</Link>
@@ -119,6 +119,14 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
           </Text>
         ))}
       </VStack>
+
+      <Text fontSize="xs" color="gray.500">
+        Exercise photos come from{' '}
+        <Link href="https://github.com/yuhonas/free-exercise-db" isExternal color="cyan.500">free-exercise-db</Link>
+        {', with additional photos found via '}
+        <Link href="https://commons.wikimedia.org" isExternal color="cyan.500">Wikimedia Commons</Link>
+        {' search.'}
+      </Text>
     </Flex>
   );
 };
