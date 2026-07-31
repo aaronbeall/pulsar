@@ -286,9 +286,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                           justifyContent="center"
                           boxShadow={isStreak ? '0 0 6px #FFD600' : undefined}
                           animation={`${pulsate} 1.5s infinite`}
-                        >
-                          <FaExclamationTriangle size={16} color={useColorModeValue('#E53E3E', '#F56565')} />
-                        </Box>
+                        />
                       )}
                     </Box>
                   )}
