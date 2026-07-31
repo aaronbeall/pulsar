@@ -57,7 +57,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
     <Flex direction="column" gap={{ base: 4, sm: 5 }} maxW="560px" mx="auto">
       <Flex align="center" gap={2} mb={1}>
         <Icon as={FaCog} boxSize={5} color="cyan.500" />
-        <Heading size="lg">Settings</Heading>
+        <Heading fontSize={{ base: 'xl', sm: '2xl' }}>Settings</Heading>
       </Flex>
 
       <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">

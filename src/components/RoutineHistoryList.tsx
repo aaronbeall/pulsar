@@ -40,7 +40,7 @@ const RoutineHistoryList: React.FC<RoutineHistoryListProps> = ({ entries }) => {
           />
           <Box flex={1} minW={0}>
             <Flex justify="space-between" align="start" gap={2} mb={1}>
-              <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
+              <Text fontWeight="bold" fontSize="sm" color={routine.active ? 'cyan.500' : 'gray.400'} noOfLines={1}>
                 {routine.name}
               </Text>
               <Badge colorScheme={routine.active ? 'green' : 'gray'} flexShrink={0}>

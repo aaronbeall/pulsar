@@ -13,7 +13,7 @@ const StatCard: React.FC<StatCardProps> = ({ icon, label, value, color }) => {
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   return (
-    <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={4} boxShadow="sm">
+    <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
       <Icon as={icon} boxSize={5} color={color} mb={2} />
       <Text fontSize="2xl" fontWeight="extrabold" lineHeight={1}>
         {value}

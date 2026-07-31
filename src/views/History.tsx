@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flex, Heading, Icon, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
+import { Flex, Heading, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
 import { FaClipboardList, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaStar } from 'react-icons/fa';
 import { useRoutines, useWorkouts } from '../store/pulsarStore';
 import { formatTotalDuration, getHistorySummaryStats, getRoutineTimeline, getWorkoutHistory } from '../utils/historyStats';
@@ -40,10 +40,14 @@ const History: React.FC = () => {
 
   return (
     <Flex direction="column" gap={{ base: 4, sm: 5 }}>
-      <Flex align="center" gap={2}>
-        <Icon as={FaHistory} boxSize={5} color="cyan.500" />
-        <Heading size="lg">History</Heading>
-      </Flex>
+      <Heading
+        fontSize={{ base: 'xl', sm: '2xl' }}
+        bgGradient="linear(to-r, cyan.400, blue.500)"
+        bgClip="text"
+        mb={1}
+      >
+        History
+      </Heading>
 
       <SimpleGrid columns={{ base: 2, sm: 3 }} spacing={{ base: 3, sm: 4 }}>
         <StatCard icon={FaFire} label="Day streak" value={summary.streak} color="orange.400" />

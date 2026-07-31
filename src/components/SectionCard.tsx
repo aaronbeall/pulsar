@@ -13,8 +13,10 @@ const SectionCard: React.FC<SectionCardProps> = ({ icon, title, children }) => {
   return (
     <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
       <Flex align="center" gap={2} mb={4}>
-        <Icon as={icon} color="cyan.500" />
-        <Heading size="sm">{title}</Heading>
+        <Icon as={icon} color="cyan.400" boxSize={5} />
+        <Heading size="sm" bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
+          {title}
+        </Heading>
       </Flex>
       {children}
     </Box>
