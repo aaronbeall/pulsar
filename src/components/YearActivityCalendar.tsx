@@ -84,7 +84,7 @@ const YearActivityCalendar: React.FC<YearActivityCalendarProps> = ({ workouts, r
                 const isToday = date.toDateString() === new Date().toDateString();
                 const isMissed = !day.future && !day.rest && !day.completed;
                 const title = `${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}${
-                  day.future ? ' · upcoming' : day.rest ? ' · rest' : day.completed ? ' · workout done' : ' · missed'
+                  day.future ? ' · upcoming' : day.completed ? ' · workout done' : day.rest ? ' · rest' : ' · missed'
                 }`;
                 const ringShadow = isToday ? `0 0 0 1.5px ${todayRingColor}` : undefined;
 
@@ -109,10 +109,10 @@ const YearActivityCalendar: React.FC<YearActivityCalendarProps> = ({ workouts, r
                     key={dayIdx}
                     boxSize="7px"
                     borderRadius="full"
-                    bg={day.future ? 'transparent' : day.rest ? restColor : completedColor}
+                    bg={day.future ? 'transparent' : day.completed ? completedColor : restColor}
                     border={day.future ? '1px solid' : undefined}
                     borderColor={day.future ? futureColor : undefined}
-                    opacity={day.future ? 0.5 : day.rest ? 0.55 : 1}
+                    opacity={day.future ? 0.5 : day.completed ? 1 : 0.55}
                     boxShadow={ringShadow}
                     title={title}
                   />

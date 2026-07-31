@@ -173,20 +173,27 @@ describe('getStreakInfo', () => {
     expect(result.status).toBe('up_to_date');
   });
 
-  it('excludes completed workouts that belong to an inactive routine', () => {
+  it('excludes completed workouts under an inactive routine from streak continuity, but still shows the day as completed', () => {
     vi.setSystemTime(d(2026, 7, 29)); // Wednesday
     const activeRoutine = makeRoutine({ id: 'active-1', active: true, dailySchedule: [scheduleDay('Wednesday')] });
     const inactiveRoutine = makeRoutine({ id: 'inactive-1', active: false, dailySchedule: [scheduleDay('Tuesday')] });
     const workouts = [
       makeWorkout({ routineId: 'active-1', day: 'Wednesday', startedAt: d(2026, 7, 29).getTime(), completedAt: d(2026, 7, 29).getTime() }),
-      // Completed yesterday, but under a now-inactive routine — must not count or extend the streak.
+      // Completed yesterday, under a now-inactive routine — must not count or extend the streak...
       makeWorkout({ routineId: 'inactive-1', day: 'Tuesday', startedAt: d(2026, 7, 28).getTime(), completedAt: d(2026, 7, 28).getTime() }),
     ];
 
     const result = getStreakInfo(workouts, [activeRoutine, inactiveRoutine]);
     expect(result.streak).toBe(1);
     expect(result.status).toBe('up_to_date');
-    expect(result.days[d(2026, 7, 28).toDateString()]).toBeUndefined();
+    // ...but it's still an accurate historical record: the day shows as completed (you did
+    // work out), it's just not part of the active-routine streak chain, and since no active
+    // routine schedules Tuesday anymore it's also treated as a rest day.
+    const tuesday = result.days[d(2026, 7, 28).toDateString()];
+    expect(tuesday).toBeDefined();
+    expect(tuesday.completed).toBe(true);
+    expect(tuesday.rest).toBe(true);
+    expect(tuesday.inStreak).toBe(false);
   });
 });
 
@@ -219,7 +226,7 @@ describe('getYearActivity', () => {
     expect(Object.keys(result).length).toBe(365); // 2026 is not a leap year
   });
 
-  it('excludes workouts under an inactive routine from "completed", but the day is still scheduled', () => {
+  it('still counts a workout under an inactive routine as completed, even though the day is no longer scheduled', () => {
     vi.setSystemTime(d(2026, 7, 29));
     const routine = makeRoutine({ id: 'r1', active: false, dailySchedule: [scheduleDay('Monday')] });
     const workouts = [
@@ -228,8 +235,8 @@ describe('getYearActivity', () => {
 
     const result = getYearActivity(2026, workouts, [routine]);
     const monday = result[d(2026, 7, 27).toDateString()];
-    expect(monday.completed).toBe(false);
-    expect(monday.rest).toBe(true); // no active routine schedules Monday anymore
+    expect(monday.completed).toBe(true); // the workout happened — history is accurate regardless of routine status
+    expect(monday.rest).toBe(true); // but no active routine schedules Monday anymore, so it doesn't count as a miss
   });
 });
 
