@@ -55,19 +55,21 @@ const TimeToWorkoutAlert: React.FC<TimeToWorkoutAlertProps> = ({ routines, worko
 
   return (
     <SlideFade in={true} offsetY="20px">
-      <Alert 
-        status="success" 
-        variant="solid" 
-        borderRadius="xl" 
-        mb={6} 
-        p={8}
+      <Alert
+        status="success"
+        variant="solid"
+        borderRadius="xl"
+        mb={6}
+        p={{ base: 5, md: 8 }}
+        flexDirection={{ base: 'column', sm: 'row' }}
         bgGradient="linear(to-r, cyan.500, blue.500)"
         boxShadow="xl"
         _hover={{ transform: 'scale(1.01)', transition: 'transform 0.2s' }}
       >
-        <Box 
-          fontSize="7em" 
-          mr={6}
+        <Box
+          fontSize={{ base: '4em', sm: '5em', md: '7em' }}
+          mr={{ base: 0, sm: 6 }}
+          mb={{ base: 2, sm: 0 }}
           animation={`${bounce} 2s ease-in-out infinite`}
           cursor="pointer"
           onClick={() => setEmoji(WEIGHTLIFTING_EMOJIS[Math.floor(Math.random() * WEIGHTLIFTING_EMOJIS.length)])}
@@ -76,16 +78,16 @@ const TimeToWorkoutAlert: React.FC<TimeToWorkoutAlertProps> = ({ routines, worko
         >
           {emoji}
         </Box>
-        <Flex direction="column" align="start">
+        <Flex direction="column" align={{ base: 'center', sm: 'start' }} textAlign={{ base: 'center', sm: 'left' }}>
           <AlertTitle
-            fontSize="3xl"
+            fontSize={{ base: 'xl', md: '3xl' }}
             fontWeight="extrabold"
             mb={2}
           >
             Time to crush your workout! 💪
           </AlertTitle>
           <AlertDescription
-            fontSize="lg"
+            fontSize={{ base: 'sm', md: 'lg' }}
             mb={6}
             opacity={1}
           >

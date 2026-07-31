@@ -25,19 +25,21 @@ const FinishedWorkoutAlert: React.FC<FinishedWorkoutAlertProps> = ({ routines, w
 
   return (
     <SlideFade in={true} offsetY="20px">
-      <Alert 
-        status="success" 
-        variant="solid" 
-        borderRadius="xl" 
-        mb={6} 
-        p={8}
+      <Alert
+        status="success"
+        variant="solid"
+        borderRadius="xl"
+        mb={6}
+        p={{ base: 5, md: 8 }}
+        flexDirection={{ base: 'column', sm: 'row' }}
         bgGradient="linear(to-r, yellow.400, orange.400)"
         boxShadow="2xl"
         _hover={{ transform: 'scale(1.01)', transition: 'transform 0.2s' }}
       >
-        <Box 
-          fontSize="7em" 
-          mr={6}
+        <Box
+          fontSize={{ base: '4em', sm: '5em', md: '7em' }}
+          mr={{ base: 0, sm: 6 }}
+          mb={{ base: 2, sm: 0 }}
           animation={`${confetti} 2.5s ease-in-out infinite`}
           cursor="pointer"
           transition="transform 0.2s"
@@ -45,11 +47,11 @@ const FinishedWorkoutAlert: React.FC<FinishedWorkoutAlertProps> = ({ routines, w
         >
           {emoji}
         </Box>
-        <Flex direction="column" align="start">
-          <AlertTitle fontSize="3xl" fontWeight="extrabold" mb={2}>
+        <Flex direction="column" align={{ base: 'center', sm: 'start' }} textAlign={{ base: 'center', sm: 'left' }}>
+          <AlertTitle fontSize={{ base: 'xl', md: '3xl' }} fontWeight="extrabold" mb={2}>
             Awesome work! 🎉
           </AlertTitle>
-          <AlertDescription fontSize="lg" mb={6} opacity={0.95}>
+          <AlertDescription fontSize={{ base: 'sm', md: 'lg' }} mb={6} opacity={0.95}>
             You crushed your workout today. Keep up the amazing work and enjoy your progress!
           </AlertDescription>
           <Flex gap={3}>

@@ -56,7 +56,7 @@ const App: React.FC = () => {
         boxShadow="lg"
       >
         <Container maxW="container.lg">
-          <Flex py={4} justify="space-between" align="center">
+          <Flex py={{ base: 3, sm: 4 }} justify="space-between" align="center">
             <Flex align="center" gap={2}>
               <RouterLink to="/">
                 <Flex
@@ -76,6 +76,7 @@ const App: React.FC = () => {
                       PULSAR
                     </Heading>
                     <Text
+                      display={{ base: 'none', sm: 'block' }}
                       fontSize="xs"
                       color="whiteAlpha.800"
                       letterSpacing="wide"
