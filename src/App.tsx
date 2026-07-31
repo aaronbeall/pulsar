@@ -1,39 +1,74 @@
 import React from 'react';
 import {
   Box,
+  Divider,
+  Drawer,
+  DrawerBody,
+  DrawerCloseButton,
+  DrawerContent,
+  DrawerHeader,
+  DrawerOverlay,
   Flex,
   Icon,
   IconButton,
   Heading,
   useColorMode,
+  useColorModeValue,
+  useDisclosure,
+  useToast,
   Image,
   Text,
   Container,
   useToken,
 } from '@chakra-ui/react';
 import { IconType } from 'react-icons';
-import { FaSun, FaMoon, FaHome, FaDumbbell, FaCog } from 'react-icons/fa';
-import { Routes, Route, Link, useLocation, Link as RouterLink } from 'react-router-dom';
+import { FaBars, FaSun, FaMoon, FaHome, FaDumbbell, FaCog, FaDownload } from 'react-icons/fa';
+import { Routes, Route, Link, useLocation, useNavigate, Link as RouterLink } from 'react-router-dom';
 import Home from './views/Home';
 import Workout from './views/Workout';
 import Settings from './views/Settings';
 import { usePulsarStoreInit } from './store/pulsarStore';
-import { useInstallPromptInit } from './store/installPromptStore';
+import { useInstallPromptInit, useInstallPromptStore } from './store/installPromptStore';
 import logoSvg from './assets/logo.svg';
 
 const App: React.FC = () => {
   usePulsarStoreInit(); // Load all data from DB into Zustand store on app mount
   useInstallPromptInit(); // Listen for PWA installability as early as possible
-  const { colorMode, toggleColorMode } = useColorMode();
+  const { colorMode, setColorMode } = useColorMode();
   const [colorScheme, setColorScheme] = React.useState<string>(() => {
     return localStorage.getItem('colorScheme') || 'red';
   });
   const location = useLocation();
+  const navigate = useNavigate();
   const [headerBgColor] = useToken('colors', [`${colorScheme}.500`]);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const toast = useToast();
+  const { deferredPrompt, isInstalled, isIOS, promptInstall } = useInstallPromptStore();
+  const canPromptInstall = !!deferredPrompt;
+  const showInstallItem = !isInstalled && (canPromptInstall || isIOS);
+  const menuItemHoverBg = useColorModeValue('gray.100', 'gray.700');
 
   const handleColorSchemeChange = (scheme: string) => {
     setColorScheme(scheme);
     localStorage.setItem('colorScheme', scheme);
+  };
+
+  const handleInstallClick = async () => {
+    if (canPromptInstall) {
+      const outcome = await promptInstall();
+      if (outcome === 'accepted') {
+        toast({ title: 'Installing Pulsar...', status: 'success', duration: 2000, isClosable: true });
+      }
+    } else if (isIOS) {
+      toast({
+        title: 'Install Pulsar',
+        description: 'Tap the Share icon, then "Add to Home Screen".',
+        status: 'info',
+        duration: 6000,
+        isClosable: true,
+      });
+    }
+    onClose();
   };
 
   const navItems: { to: string; label: string; icon: IconType; isActive: (path: string) => boolean }[] = [
@@ -88,9 +123,9 @@ const App: React.FC = () => {
 
             <Flex gap={3}>
               <IconButton
-                aria-label="Toggle Theme"
-                icon={colorMode === 'light' ? <FaMoon /> : <FaSun />}
-                onClick={toggleColorMode}
+                aria-label="Open menu"
+                icon={<FaBars />}
+                onClick={onOpen}
                 variant="ghost"
                 _hover={{ bg: 'whiteAlpha.300' }}
                 size="md"
@@ -177,6 +212,84 @@ const App: React.FC = () => {
           </Flex>
         </Container>
       </Box>
+
+      <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="xs">
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerCloseButton />
+          <DrawerHeader borderBottomWidth="1px" display="flex" alignItems="center" gap={2}>
+            <Image src={logoSvg} alt="" boxSize="24px" />
+            Menu
+          </DrawerHeader>
+          <DrawerBody px={0} py={4}>
+            <Text px={4} mb={2} fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase" letterSpacing="wide">
+              Appearance
+            </Text>
+            <Flex px={4} gap={2} mb={4}>
+              {(['light', 'dark'] as const).map((mode) => {
+                const active = colorMode === mode;
+                return (
+                  <Flex
+                    key={mode}
+                    as="button"
+                    flex={1}
+                    direction="column"
+                    align="center"
+                    gap={1}
+                    py={3}
+                    borderRadius="lg"
+                    borderWidth="2px"
+                    borderColor={active ? `${colorScheme}.500` : 'transparent'}
+                    bg={active ? `${colorScheme}.50` : menuItemHoverBg}
+                    _dark={{ bg: active ? `${colorScheme}.900` : 'gray.700' }}
+                    transition="border-color 0.2s"
+                    onClick={() => setColorMode(mode)}
+                  >
+                    <Icon as={mode === 'light' ? FaSun : FaMoon} boxSize={5} color={active ? `${colorScheme}.500` : undefined} />
+                    <Text fontSize="sm" fontWeight={active ? 'bold' : 'medium'} textTransform="capitalize">
+                      {mode}
+                    </Text>
+                  </Flex>
+                );
+              })}
+            </Flex>
+
+            <Divider mb={2} />
+
+            <Flex
+              as="button"
+              w="100%"
+              align="center"
+              gap={3}
+              px={4}
+              py={3}
+              transition="background-color 0.2s"
+              _hover={{ bg: menuItemHoverBg }}
+              onClick={() => { navigate('/settings'); onClose(); }}
+            >
+              <Icon as={FaCog} boxSize={4} color="gray.500" />
+              <Text fontSize="sm" fontWeight="medium">Settings</Text>
+            </Flex>
+
+            {showInstallItem && (
+              <Flex
+                as="button"
+                w="100%"
+                align="center"
+                gap={3}
+                px={4}
+                py={3}
+                transition="background-color 0.2s"
+                _hover={{ bg: menuItemHoverBg }}
+                onClick={handleInstallClick}
+              >
+                <Icon as={FaDownload} boxSize={4} color="gray.500" />
+                <Text fontSize="sm" fontWeight="medium">Install App</Text>
+              </Flex>
+            )}
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </Flex>
   );
 };
