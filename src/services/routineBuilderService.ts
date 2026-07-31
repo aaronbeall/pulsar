@@ -4,11 +4,11 @@
 
 import { Routine, Exercise, DayOfWeek } from '../models/types';
 import { v4 as uuidv4 } from 'uuid';
-import { getSearchUrl, getHowToQuery, getExerciseSearchImageUrl } from '../utils/webUtils';
+import { getSearchUrl, getHowToQuery, getExerciseSearchImageUrl, searchExerciseImages } from '../utils/webUtils';
 import { exerciseTemplates, ExerciseTemplate } from './exerciseTemplates';
 import { routineTemplates, RoutineTemplate } from './routineTemplates';
 import { dailyWorkoutTemplates } from './dailyWorkoutTemplates';
-import { findFreeExerciseDbEntry, getFreeExerciseDbImageUrl, isTimedCategory } from './freeExerciseDb';
+import { findFreeExerciseDbEntry, getFreeExerciseDbImageUrls, isTimedCategory } from './freeExerciseDb';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -66,10 +66,14 @@ export function findExistingExercise(name: string, exercises: Exercise[]): Exerc
 /**
  * Find or create and add an Exercise by name.
  * Returns an existing Exercise if found, otherwise creates one — checking, in order: the
- * curated exerciseTemplates catalog (hand-tuned, wins if present), then the bundled
- * free-exercise-db dataset (873 exercises with real photos, no live query needed), then
- * finally an ad hoc stub whose image gets resolved via a live Wikimedia search. This way
- * a live network call only ever happens for exercise names truly outside both catalogs.
+ * curated exerciseTemplates catalog (hand-tuned text/timed metadata, wins if present), the
+ * bundled free-exercise-db dataset (873 exercises with real photos, no live query needed —
+ * consulted even when the curated catalog matched, since the curated catalog carries no
+ * images of its own and would otherwise fall through to a live search that can return a
+ * confidently wrong result, not just no result — e.g. "Russian Twist" live-searched on
+ * Wikimedia returns an unrelated 1902 book about Russia), then finally an ad hoc stub whose
+ * image gets resolved via a live Wikimedia search. A live network call only ever happens
+ * for exercise names in neither catalog.
  */
 export async function getAddedExercise(name: string, exercises: Exercise[], addExercise: (ex: Exercise) => Promise<void>): Promise<Exercise> {
   const norm = normalizeExerciseName(name);
@@ -79,17 +83,21 @@ export async function getAddedExercise(name: string, exercises: Exercise[], addE
   }
   // 2. Search in the curated template catalog
   let template = exerciseTemplates.find(t => normalizeExerciseName(t.name) === norm);
-  // 3. Search the bundled free-exercise-db dataset
-  if (!template) {
+  // 3. Search the bundled free-exercise-db dataset — for text+image when tier 2 missed, or
+  //    just to borrow an image when tier 2 hit (the curated catalog carries no images).
+  if (!template || !template.imageUrl) {
     const dbEntry = await findFreeExerciseDbEntry(name);
     if (dbEntry) {
-      template = {
-        name: dbEntry.name,
-        description: dbEntry.description,
-        targetMuscles: [...dbEntry.primaryMuscles, ...dbEntry.secondaryMuscles],
-        timed: isTimedCategory(dbEntry.category),
-        imageUrl: getFreeExerciseDbImageUrl(dbEntry),
-      };
+      const imageUrl = getFreeExerciseDbImageUrls(dbEntry)[0];
+      template = template
+        ? { ...template, imageUrl: template.imageUrl ?? imageUrl }
+        : {
+          name: dbEntry.name,
+          description: dbEntry.description,
+          targetMuscles: [...dbEntry.primaryMuscles, ...dbEntry.secondaryMuscles],
+          timed: isTimedCategory(dbEntry.category),
+          imageUrl,
+        };
     }
   }
   // 4. Still nothing — ad hoc stub; createNewExercise will fall back to a live image search
@@ -105,6 +113,37 @@ export async function getAddedExercise(name: string, exercises: Exercise[], addE
   const newExercise = await createNewExercise(template);
   await addExercise(newExercise);
   return newExercise;
+}
+
+/**
+ * Resolve a single best-guess image for an exercise name — the same free-exercise-db-then-
+ * live-Wikimedia-search tiers createNewExercise uses, exposed standalone so an existing
+ * exercise whose image lookup previously failed (e.g. transient rate-limiting, or created
+ * before this tiered system existed) can be retried after the fact.
+ */
+export async function resolveExerciseImage(name: string): Promise<string | undefined> {
+  const dbEntry = await findFreeExerciseDbEntry(name);
+  const dbImage = dbEntry && getFreeExerciseDbImageUrls(dbEntry)[0];
+  if (dbImage) return dbImage;
+  return (await getExerciseSearchImageUrl(name)) || undefined;
+}
+
+/**
+ * Resolve multiple candidate images for an exercise name — free-exercise-db's own photos
+ * (up to 2) plus several live Wikimedia results, deduped — for manually cycling through
+ * alternatives in the exercise details dialog. Deliberately not used at exercise-creation
+ * time (resolveExerciseImage is faster and sufficient there); fetching several live search
+ * results is only worth the cost when a user explicitly asks for alternatives.
+ */
+export async function getExerciseImageCandidates(name: string): Promise<string[]> {
+  const candidates: string[] = [];
+  const dbEntry = await findFreeExerciseDbEntry(name);
+  if (dbEntry) candidates.push(...getFreeExerciseDbImageUrls(dbEntry));
+  const wikiResults = await searchExerciseImages(name, 6);
+  for (const url of wikiResults) {
+    if (!candidates.includes(url)) candidates.push(url);
+  }
+  return candidates;
 }
 
 /**
@@ -317,17 +356,23 @@ export async function createRoutineFromTemplate(
       if (!found) {
         // Try to find in the curated template catalog
         let templateEx = exerciseTemplates.find(t => normalizeExerciseName(t.name) === normalizeExerciseName(ex.name));
-        // Then the bundled free-exercise-db dataset
-        if (!templateEx) {
+        // Then the bundled free-exercise-db dataset — even if the curated catalog already
+        // matched, since it carries no images of its own (see getAddedExercise for why
+        // that matters: a curated-only match falls through to a live search that can
+        // return a confidently wrong image, not just no image).
+        if (!templateEx || !templateEx.imageUrl) {
           const dbEntry = await findFreeExerciseDbEntry(ex.name);
           if (dbEntry) {
-            templateEx = {
-              name: dbEntry.name,
-              description: dbEntry.description,
-              targetMuscles: [...dbEntry.primaryMuscles, ...dbEntry.secondaryMuscles],
-              timed: isTimedCategory(dbEntry.category),
-              imageUrl: getFreeExerciseDbImageUrl(dbEntry),
-            };
+            const imageUrl = getFreeExerciseDbImageUrls(dbEntry)[0];
+            templateEx = templateEx
+              ? { ...templateEx, imageUrl: templateEx.imageUrl ?? imageUrl }
+              : {
+                name: dbEntry.name,
+                description: dbEntry.description,
+                targetMuscles: [...dbEntry.primaryMuscles, ...dbEntry.secondaryMuscles],
+                timed: isTimedCategory(dbEntry.category),
+                imageUrl,
+              };
           }
         }
         if (!templateEx) {

@@ -21,7 +21,7 @@ export interface FreeExerciseDbEntry {
   primaryMuscles: string[];
   secondaryMuscles: string[];
   description: string;
-  image: string | null; // relative path, e.g. "Barbell_Squat/0.jpg"
+  images: string[]; // relative paths, e.g. "Barbell_Squat/0.jpg" — 0-2 per entry
 }
 
 const IMAGE_BASE_URL = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
@@ -68,6 +68,6 @@ export function isTimedCategory(category: string): boolean {
   return TIMED_CATEGORIES.has(category);
 }
 
-export function getFreeExerciseDbImageUrl(entry: FreeExerciseDbEntry): string | undefined {
-  return entry.image ? `${IMAGE_BASE_URL}${entry.image}` : undefined;
+export function getFreeExerciseDbImageUrls(entry: FreeExerciseDbEntry): string[] {
+  return entry.images.map(path => `${IMAGE_BASE_URL}${path}`);
 }

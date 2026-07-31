@@ -19,7 +19,7 @@ import {
   VStack
 } from '@chakra-ui/react';
 import React from 'react';
-import { FaDumbbell, FaQuestionCircle, FaRegCalendarAlt } from 'react-icons/fa'; // Import icons
+import { FaDumbbell, FaPlayCircle, FaRegCalendarAlt } from 'react-icons/fa'; // Import icons
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
 import { Exercise, Routine } from '../models/types';
 import DayKindBadge from './DayKindBadge';
@@ -134,8 +134,8 @@ export const RoutineDisplayTable: React.FC<{
                                   size="xs"
                                   colorScheme="cyan"
                                   variant="ghost"
-                                  aria-label="How To (help)"
-                                  icon={<FaQuestionCircle />}
+                                  aria-label="Watch how-to video"
+                                  icon={<FaPlayCircle />}
                                 />
                               )}
                             </Flex>

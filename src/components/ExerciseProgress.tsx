@@ -17,7 +17,7 @@ import {
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaCheckCircle, FaPlay, FaCheck, FaStopwatch, FaQuestionCircle, FaInfoCircle } from 'react-icons/fa';
+import { FaCheckCircle, FaPlay, FaCheck, FaStopwatch, FaPlayCircle, FaInfoCircle } from 'react-icons/fa';
 import ExerciseDetailsDialog from './ExerciseDetailsDialog';
 import { Exercise, WorkoutExercise } from '../models/types';
 
@@ -241,8 +241,8 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
             size="sm"
             colorScheme="cyan"
             variant="ghost"
-            aria-label="How To (help)"
-            icon={<FaQuestionCircle />}
+            aria-label="Watch how-to video"
+            icon={<FaPlayCircle />}
             bg="rgba(255,255,255,0.7)"
             _dark={{ bg: 'rgba(26,32,44,0.7)' }}
             _hover={{ bg: 'rgba(56,189,248,0.8)', opacity: 1 }}

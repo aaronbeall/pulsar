@@ -18,23 +18,26 @@ describe('isTimedCategory', () => {
   });
 });
 
-describe('getFreeExerciseDbImageUrl', () => {
-  it('builds a full raw-content URL from a relative image path', async () => {
-    const { getFreeExerciseDbImageUrl } = await freshModule();
-    const url = getFreeExerciseDbImageUrl({
+describe('getFreeExerciseDbImageUrls', () => {
+  it('builds full raw-content URLs from an entry\'s relative image paths', async () => {
+    const { getFreeExerciseDbImageUrls } = await freshModule();
+    const urls = getFreeExerciseDbImageUrls({
       name: 'Barbell Squat', category: 'strength', primaryMuscles: [], secondaryMuscles: [],
-      description: '', image: 'Barbell_Squat/0.jpg',
+      description: '', images: ['Barbell_Squat/0.jpg', 'Barbell_Squat/1.jpg'],
     });
-    expect(url).toBe('https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg');
+    expect(urls).toEqual([
+      'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg',
+      'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/1.jpg',
+    ]);
   });
 
-  it('returns undefined when the entry has no image', async () => {
-    const { getFreeExerciseDbImageUrl } = await freshModule();
-    const url = getFreeExerciseDbImageUrl({
+  it('returns an empty array when the entry has no images', async () => {
+    const { getFreeExerciseDbImageUrls } = await freshModule();
+    const urls = getFreeExerciseDbImageUrls({
       name: 'Made Up', category: 'strength', primaryMuscles: [], secondaryMuscles: [],
-      description: '', image: null,
+      description: '', images: [],
     });
-    expect(url).toBeUndefined();
+    expect(urls).toEqual([]);
   });
 });
 
@@ -47,7 +50,7 @@ describe('findFreeExerciseDbEntry', () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
       json: async () => ([
-        { name: 'Barbell Squat', category: 'strength', primaryMuscles: ['quadriceps'], secondaryMuscles: ['glutes'], description: 'Squat down.', image: 'Barbell_Squat/0.jpg' },
+        { name: 'Barbell Squat', category: 'strength', primaryMuscles: ['quadriceps'], secondaryMuscles: ['glutes'], description: 'Squat down.', images: ['Barbell_Squat/0.jpg'] },
       ]),
     })));
     const { findFreeExerciseDbEntry } = await freshModule();
@@ -60,7 +63,7 @@ describe('findFreeExerciseDbEntry', () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: true,
       json: async () => ([
-        { name: 'Barbell Squat', category: 'strength', primaryMuscles: [], secondaryMuscles: [], description: '', image: 'x.jpg' },
+        { name: 'Barbell Squat', category: 'strength', primaryMuscles: [], secondaryMuscles: [], description: '', images: ['x.jpg'] },
       ]),
     })));
     const { findFreeExerciseDbEntry } = await freshModule();
@@ -81,7 +84,7 @@ describe('findFreeExerciseDbEntry', () => {
     const fetchSpy = vi.fn(async () => ({
       ok: true,
       json: async () => ([
-        { name: 'Push Up', category: 'strength', primaryMuscles: [], secondaryMuscles: [], description: '', image: 'x.jpg' },
+        { name: 'Push Up', category: 'strength', primaryMuscles: [], secondaryMuscles: [], description: '', images: ['x.jpg'] },
       ]),
     }));
     vi.stubGlobal('fetch', fetchSpy);

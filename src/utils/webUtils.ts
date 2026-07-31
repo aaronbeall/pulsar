@@ -25,27 +25,46 @@ export const getHowToQuery = (exerciseName: string) => {
 }
 
 /**
- * Search Wikimedia Commons for an image matching an exercise and return the top result's
- * URL. Free, no API key required — Commons' API is CORS-enabled for anonymous client-side
- * use via `origin=*`. `filetype:bitmap|drawing` biases results toward actual images,
- * away from audio/video files that also live in the File: namespace (gsrnamespace=6).
+ * Search Wikimedia Commons for images matching an exercise, best match first. Free, no API
+ * key required — Commons' API is CORS-enabled for anonymous client-side use via `origin=*`.
+ * `filetype:bitmap|drawing` biases results toward actual images, away from audio/video
+ * files that also live in the File: namespace (gsrnamespace=6).
+ *
+ * MediaWiki returns results keyed by pageid in its `pages` object, and JS engines iterate
+ * integer-like object keys in ascending numeric order — NOT relevance order — so results
+ * are explicitly re-sorted by the API's own `index` field rather than trusting object
+ * iteration order (only matters once `limit > 1`; harmless no-op otherwise).
+ */
+export const searchExerciseImages = async (
+  exerciseName: string,
+  limit = 1
+): Promise<string[]> => {
+  const query = `filetype:bitmap|drawing ${exerciseName} exercise`;
+  const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=${limit}&prop=imageinfo&iiprop=url&format=json&origin=*`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return [];
+    const data = await response.json();
+    const pages = data?.query?.pages;
+    if (!pages) return [];
+    return (Object.values(pages) as { index?: number; imageinfo?: { url: string }[] }[])
+      .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+      .map(page => page.imageinfo?.[0]?.url)
+      .filter((url): url is string => !!url);
+  } catch (e) {
+    return [];
+  }
+};
+
+/**
+ * Convenience wrapper for the common case of wanting just the single best-match image URL
+ * (e.g. at exercise-creation time, where speed matters more than having alternatives).
  */
 export const fetchExerciseSearchImageUrl = async (
   exerciseName: string
 ): Promise<string | null> => {
-  const query = `filetype:bitmap|drawing ${exerciseName} exercise`;
-  const url = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=1&prop=imageinfo&iiprop=url&format=json&origin=*`;
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const data = await response.json();
-    const pages = data?.query?.pages;
-    if (!pages) return null;
-    const firstPage = Object.values(pages)[0] as { imageinfo?: { url: string }[] } | undefined;
-    return firstPage?.imageinfo?.[0]?.url || null;
-  } catch (e) {
-    return null;
-  }
+  const [best] = await searchExerciseImages(exerciseName, 1);
+  return best || null;
 };
 
 /**

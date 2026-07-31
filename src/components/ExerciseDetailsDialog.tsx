@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Text, Box, VStack, Input, Textarea, Checkbox, Button, HStack, Tag, IconButton, useToast, Flex, Switch, ButtonGroup } from "@chakra-ui/react";
-import { FaChartBar, FaCalendarAlt, FaDumbbell, FaTimes, FaCheck, FaListOl, FaClock, FaSync, FaQuestionCircle } from "react-icons/fa";
+import { Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Text, Box, VStack, Input, Textarea, Checkbox, Button, HStack, Tag, IconButton, useToast, Flex, Switch, ButtonGroup, Spinner } from "@chakra-ui/react";
+import { FaChartBar, FaCalendarAlt, FaDumbbell, FaTimes, FaCheck, FaListOl, FaClock, FaSync, FaPlayCircle, FaSyncAlt } from "react-icons/fa";
 import { Exercise } from "../models/types";
 import LikeDislikeButtons from "../components/LikeDislikeButtons";
 import { openUrl, openSearchQuery } from '../utils/webUtils';
+import { resolveExerciseImage, getExerciseImageCandidates } from '../services/routineBuilderService';
 import TagInput from "./TagInput";
 import { usePulsarStore, useRoutines, useWorkouts } from '../store/pulsarStore';
 
@@ -22,11 +23,56 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
   const getExerciseStats = usePulsarStore(s => s.getExerciseStats);
   const stats = useMemo(() => getExerciseStats(exerciseId), [exerciseId, getExerciseStats]);
   const updateExercise = usePulsarStore(s => s.updateExercise);
+  const [cyclingImage, setCyclingImage] = React.useState(false);
+  const [imageCandidates, setImageCandidates] = React.useState<string[] | null>(null);
+  const [candidateIndex, setCandidateIndex] = React.useState(-1);
 
   React.useEffect(() => {
     setEdit({ ...exercise });
     setChanged(false);
+    setImageCandidates(null);
+    setCandidateIndex(-1);
   }, [exerciseId, exercise]);
+
+  // If this exercise has no image yet — likely a past lookup that failed transiently, or
+  // one created before the free-exercise-db/Wikimedia tiers existed — quietly retry once
+  // when the dialog opens, so "always have some image" doesn't require the user to
+  // manually notice and fix every stale exercise by hand.
+  React.useEffect(() => {
+    let cancelled = false;
+    if (!exercise.coverImageUrl) {
+      resolveExerciseImage(exercise.name).then(imageUrl => {
+        if (cancelled || !imageUrl) return;
+        const fixed = { ...exercise, coverImageUrl: imageUrl, iconImageUrl: imageUrl };
+        updateExercise(fixed);
+        setEdit(fixed);
+      });
+    }
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exerciseId]);
+
+  const handleCycleImage = async () => {
+    setCyclingImage(true);
+    try {
+      let candidates = imageCandidates;
+      if (!candidates) {
+        candidates = await getExerciseImageCandidates(edit.name);
+        setImageCandidates(candidates);
+      }
+      if (candidates.length === 0) {
+        toast({ title: 'No alternative images found', status: 'info', duration: 2000, isClosable: true });
+        return;
+      }
+      const nextIndex = (candidateIndex + 1) % candidates.length;
+      setCandidateIndex(nextIndex);
+      const nextImage = candidates[nextIndex];
+      setEdit(prev => ({ ...prev, coverImageUrl: nextImage, iconImageUrl: nextImage }));
+      setChanged(true);
+    } finally {
+      setCyclingImage(false);
+    }
+  };
 
   const handleChange = (field: keyof typeof edit, value: any) => {
     setEdit(prev => ({ ...prev, [field]: value }));
@@ -120,7 +166,7 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
                   />
                 ) : (
                   <Box w="100%" h="100%" display="flex" alignItems="center" justifyContent="center" bg="gray.100" _dark={{ bg: 'gray.700' }}>
-                    <FaDumbbell size={40} color="#A0AEC0" />
+                    {cyclingImage ? <Spinner size="md" color="cyan.400" /> : <FaDumbbell size={40} color="#A0AEC0" />}
                   </Box>
                 )}
                 {edit.howToUrl && (
@@ -132,8 +178,8 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
                     size="sm"
                     colorScheme="cyan"
                     variant="ghost"
-                    aria-label="How To (help)"
-                    icon={<FaQuestionCircle />}
+                    aria-label="Watch how-to video"
+                    icon={<FaPlayCircle />}
                     position="absolute"
                     top={2}
                     right={2}
@@ -141,6 +187,28 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
                     bg="rgba(255,255,255,0.7)"
                     _dark={{ bg: 'rgba(26,32,44,0.7)' }}
                     _hover={{ bg: 'rgba(56,189,248,0.8)', opacity: 1 }}
+                    opacity={0.7}
+                    boxShadow="sm"
+                    transition="opacity 0.2s"
+                  />
+                )}
+                {mode === "edit" && (
+                  <IconButton
+                    size="sm"
+                    colorScheme="purple"
+                    variant="ghost"
+                    aria-label="Try a different image"
+                    title="Try a different image"
+                    icon={cyclingImage ? <Spinner size="xs" /> : <FaSyncAlt />}
+                    isDisabled={cyclingImage}
+                    onClick={handleCycleImage}
+                    position="absolute"
+                    bottom={2}
+                    right={2}
+                    zIndex={2}
+                    bg="rgba(255,255,255,0.7)"
+                    _dark={{ bg: 'rgba(26,32,44,0.7)' }}
+                    _hover={{ bg: 'rgba(168,85,247,0.8)', opacity: 1 }}
                     opacity={0.7}
                     boxShadow="sm"
                     transition="opacity 0.2s"
