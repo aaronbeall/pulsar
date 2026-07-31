@@ -1,8 +1,19 @@
 import React from 'react';
-import { Box, Flex, Text, useColorModeValue, useToken } from '@chakra-ui/react';
+import { Box, Flex, IconButton, Text, useColorModeValue, useToken } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
-import { CheckIcon } from '@chakra-ui/icons';
-import { FaTimes, FaRegClock, FaExclamationTriangle } from 'react-icons/fa';
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { FaTimes, FaExclamationTriangle } from 'react-icons/fa';
+import {
+  addMonths,
+  eachDayOfInterval,
+  endOfMonth,
+  endOfWeek,
+  format,
+  isSameMonth,
+  startOfMonth,
+  startOfWeek,
+  subMonths,
+} from 'date-fns';
 import { Workout, Routine } from '../models/types';
 import { getStreakInfo, StreakDay, getDayOfWeek, findRoutineForDay, findExercisesForDay, findWorkoutForDay } from '../utils/workoutUtils';
 import { DAYS_OF_WEEK } from '../constants/days';
@@ -24,47 +35,56 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
   const streakTextColor = isGrayed ? 'gray.400' : 'orange.500';
   const [bgActiveColor] = useToken('colors', [useColorModeValue('orange.300', 'orange.700')]);
   const [bgInactiveColor] = useToken('colors', [useColorModeValue('gray.200', 'gray.600')]);
+  const [futureBgColor] = useToken('colors', [useColorModeValue('gray.100', 'gray.700')]);
   const bgActive = useColorModeValue('orange.300', 'orange.700');
   const bgInactive = useColorModeValue('gray.200', 'gray.600');
+  const bgFuture = useColorModeValue('gray.100', 'gray.700');
   const borderActive = useColorModeValue('orange.400', 'orange.300');
   const borderInactive = useColorModeValue('gray.300', 'gray.500');
-  const todayColor = useColorModeValue('white', 'gray.900');
+  const pendingDotBg = useColorModeValue('yellow.300', 'yellow.400');
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const navHoverBg = useColorModeValue('gray.100', 'gray.700');
 
-  // Find the Sunday of the current week
-  const today = new Date();
-  const endOfCalendar = new Date(today);
-  endOfCalendar.setHours(0, 0, 0, 0);
-  const endDay = endOfCalendar.getDay(); // 0 = Sunday
-  // The last day in the calendar is the Saturday of this week
-  const lastCalendarDay = new Date(endOfCalendar);
-  lastCalendarDay.setDate(endOfCalendar.getDate() + (6 - endDay));
-  // The first day is 27 days before the last calendar day, aligned to Sunday
-  const firstCalendarDay = new Date(lastCalendarDay);
-  firstCalendarDay.setDate(lastCalendarDay.getDate() - 27);
+  // Which month is currently displayed — defaults to the current month, independent of
+  // the rolling streak count above (the streak/flame always reflects "now", not the
+  // month being browsed).
+  const today = React.useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
+  const [viewDate, setViewDate] = React.useState(() => startOfMonth(new Date()));
+  const isCurrentMonthView = isSameMonth(viewDate, today);
+  const monthStart = startOfMonth(viewDate);
+  const monthEnd = endOfMonth(viewDate);
+  const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+  const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
 
-  // Build the calendar days array (always 28 days, aligned to weeks)
-  const calendarDays: { date: Date; streakDay: StreakDay | null }[] = [];
-  for (let i = 0; i < 28; i++) {
-    const cellDate = new Date(firstCalendarDay);
-    cellDate.setDate(firstCalendarDay.getDate() + i);
-    const streakDay = days[cellDate.toDateString()] || null;
-    calendarDays.push({ date: new Date(cellDate), streakDay });
-  }
+  const calendarDays: { date: Date; isCurrentMonth: boolean; streakDay: StreakDay | null }[] = React.useMemo(
+    () =>
+      eachDayOfInterval({ start: gridStart, end: gridEnd }).map((date) => ({
+        date,
+        isCurrentMonth: isSameMonth(date, viewDate),
+        streakDay: days[date.toDateString()] || null,
+      })),
+    [gridStart, gridEnd, viewDate, days]
+  );
 
   // Group into weeks
-  const weeks: { date: Date; streakDay: StreakDay | null }[][] = [];
-  for (let i = 0; i < 4; i++) {
-    weeks.push(calendarDays.slice(i * 7, (i + 1) * 7));
+  const weeks: typeof calendarDays[] = [];
+  for (let i = 0; i < calendarDays.length; i += 7) {
+    weeks.push(calendarDays.slice(i, i + 7));
   }
 
   // Find today's date string for highlight
-  const todayStr = new Date().toDateString();
+  const todayStr = today.toDateString();
 
   const addWorkout = usePulsarStore(s => s.addWorkout);
 
-  const handleDayClick = async (date: Date) => {
-    // Only allow for past or today
-    if (date > new Date()) return;
+  const handleDayClick = async (date: Date, isCurrentMonth: boolean) => {
+    // Only allow for days in the viewed month that are past or today
+    if (!isCurrentMonth) return;
+    if (date > today) return;
     // Use findRoutineForDay and findExercisesForDay from workoutUtils
     const dayOfWeek = getDayOfWeek(date);
     const routine = findRoutineForDay(routines, dayOfWeek);
@@ -153,13 +173,44 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
           </Flex>
         )}
       </Flex>
-      <Box display="flex" flexDirection="column" alignItems="center" bg={useColorModeValue('white', 'gray.800')} borderRadius="lg" p={3} boxShadow="md">
+      <Box display="flex" flexDirection="column" alignItems="center" bg={cardBg} borderRadius="lg" p={3} boxShadow="md">
+        {/* Month navigator */}
+        <Flex align="center" justify="space-between" w="100%" mb={2}>
+          <IconButton
+            aria-label="Previous month"
+            icon={<ChevronLeftIcon boxSize={5} />}
+            size="sm"
+            variant="ghost"
+            borderRadius="full"
+            _hover={{ bg: navHoverBg }}
+            onClick={() => setViewDate((d) => subMonths(d, 1))}
+          />
+          <Text
+            fontSize="sm"
+            fontWeight="bold"
+            cursor={isCurrentMonthView ? 'default' : 'pointer'}
+            onClick={() => !isCurrentMonthView && setViewDate(startOfMonth(new Date()))}
+            title={isCurrentMonthView ? undefined : 'Jump to current month'}
+          >
+            {format(viewDate, 'MMMM yyyy')}
+          </Text>
+          <IconButton
+            aria-label="Next month"
+            icon={<ChevronRightIcon boxSize={5} />}
+            size="sm"
+            variant="ghost"
+            borderRadius="full"
+            _hover={{ bg: navHoverBg }}
+            onClick={() => setViewDate((d) => addMonths(d, 1))}
+            isDisabled={isCurrentMonthView}
+          />
+        </Flex>
         {/* Day labels */}
         <Flex mb={1} gap={0}>
           {DAYS_OF_WEEK.map((day, i) => (
             <Box
               key={i}
-              w={7}
+              w={8}
               h={7}
               display="flex"
               alignItems="center"
@@ -176,7 +227,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
         </Flex>
         {weeks.map((week, weekIdx) => (
           <Flex key={weekIdx} mb={0.5} gap={0}>
-            {week.map(({ date, streakDay }, dayIdx) => {
+            {week.map(({ date, isCurrentMonth, streakDay }, dayIdx) => {
               const isToday = date.toDateString() === todayStr;
               const isFuture = date > today;
               const isStreak = streakDay?.inStreak;
@@ -186,12 +237,8 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
               // only true when today continues an existing streak (see getStreakInfo).
               const isTodayPendingCell = isToday && !isCompleted && !isFuture && !!streakDay && !streakDay.rest;
               // Styling for all cases
-              const bg = isFuture ? useColorModeValue('gray.100', 'gray.700') : isStreak ? bgActive : bgInactive;
-              const bgColor = isFuture
-                ? useColorModeValue('gray.100', 'gray.700')
-                : isStreak
-                ? bgActiveColor
-                : bgInactiveColor;
+              const bg = isFuture ? bgFuture : isStreak ? bgActive : bgInactive;
+              const bgColor = isFuture ? futureBgColor : isStreak ? bgActiveColor : bgInactiveColor;
               let border = isFuture ? 'none' : isStreak ? `2.5px solid ${borderActive}` : `1.5px solid ${borderInactive}`;
               if (isToday && !isFuture) border = isStreak ? `2.5px solid ${borderActive}` : `2.5px solid ${borderInactive}`;
               let borderRadius = '9999px';
@@ -214,18 +261,20 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                 if (prevIsStreak) borderLeft = 'none';
                 if (nextIsStreak) borderRight = 'none';
               }
+              const canLog = isCurrentMonth && !!findRoutineForDay(routines, getDayOfWeek(date));
               // Outer box: no margin between days
               return (
                 <Box
                   key={dayIdx}
-                  w={7}
-                  h={7}
+                  w={8}
+                  h={8}
                   display="flex"
                   alignItems="center"
                   justifyContent="center"
+                  opacity={isCurrentMonth ? 1 : 0.35}
                   title={date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  onClick={() => handleDayClick(date)}
-                  cursor={findRoutineForDay(routines, getDayOfWeek(date)) ? 'pointer' : undefined}
+                  onClick={() => handleDayClick(date, isCurrentMonth)}
+                  cursor={canLog ? 'pointer' : undefined}
                 >
                   {/* Inner pill/dot for all days, style toggled by state */}
                   {(!isCompleted && !isPending && !isTodayPendingCell && !isFuture && streakDay && !streakDay.rest) ? (
@@ -280,7 +329,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                           w={isStreak && !isFuture ? '80%' : '65%'}
                           h={isStreak && !isFuture ? '80%' : '65%'}
                           borderRadius="9999px"
-                          bg={useColorModeValue('yellow.300', 'yellow.400')}
+                          bg={pendingDotBg}
                           display="flex"
                           alignItems="center"
                           justifyContent="center"
