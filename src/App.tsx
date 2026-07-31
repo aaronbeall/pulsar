@@ -141,7 +141,7 @@ const App: React.FC = () => {
         bg={colorMode === 'light' ? 'gray.50' : 'gray.900'}
         position="relative"
         zIndex="1"
-        pb={24}
+        pb={20}
       >
         <Container maxW="container.lg" py={6}>
           <Routes>

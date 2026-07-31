@@ -4,17 +4,21 @@ import {
   Button,
   Flex,
   Heading,
+  Link,
   Select,
   Table,
   Tbody,
+  Text,
   Tr,
   Td,
   Th,
   Thead,
+  VStack,
   useColorMode,
   useToast,
 } from '@chakra-ui/react';
 import { deleteDB } from 'idb'; // Import deleteDB to delete IndexedDB
+import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
 
 interface SettingsProps {
   colorScheme: string;
@@ -100,6 +104,21 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
       <Button colorScheme="red" mt={4} onClick={handleDeleteAllData}>
         Delete All Data
       </Button>
+
+      <Heading size="sm" mt={8} mb={2} color="gray.500">
+        Photo Credits
+      </Heading>
+      <Text fontSize="xs" color="gray.500" mb={2}>
+        Home screen background photos, from Wikimedia Commons:
+      </Text>
+      <VStack align="start" spacing={1}>
+        {ALL_HOME_BACKGROUNDS.map(bg => (
+          <Text key={bg.sourceUrl} fontSize="xs" color="gray.500">
+            <Link href={bg.sourceUrl} isExternal color="cyan.500">{bg.title}</Link>
+            {' '}by {bg.author}, {bg.license}
+          </Text>
+        ))}
+      </VStack>
     </Flex>
   );
 };
