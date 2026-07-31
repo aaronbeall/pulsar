@@ -1,8 +1,8 @@
 import React from 'react';
 import {
-  Button,
   Box,
   Flex,
+  Icon,
   IconButton,
   Heading,
   useColorMode,
@@ -11,6 +11,7 @@ import {
   Container,
   useToken,
 } from '@chakra-ui/react';
+import { IconType } from 'react-icons';
 import { FaSun, FaMoon, FaHome, FaDumbbell, FaCog } from 'react-icons/fa';
 import { Routes, Route, Link, useLocation, Link as RouterLink } from 'react-router-dom';
 import Home from './views/Home';
@@ -34,6 +35,12 @@ const App: React.FC = () => {
     setColorScheme(scheme);
     localStorage.setItem('colorScheme', scheme);
   };
+
+  const navItems: { to: string; label: string; icon: IconType; isActive: (path: string) => boolean }[] = [
+    { to: '/', label: 'Home', icon: FaHome, isActive: (path) => path === '/' },
+    { to: '/workout', label: 'Workout', icon: FaDumbbell, isActive: (path) => path.startsWith('/workout') },
+    { to: '/settings', label: 'Settings', icon: FaCog, isActive: (path) => path === '/settings' },
+  ];
 
   return (
     <Flex direction="column" minHeight="100dvh">
@@ -113,57 +120,60 @@ const App: React.FC = () => {
       </Box>
 
       <Box
+        as="nav"
         bg={`${colorScheme}.500`}
         color="white"
-        pt={4}
-        pb={4}
+        pt={1.5}
+        pb="calc(env(safe-area-inset-bottom, 0px) + 6px)"
         position="fixed"
         left={0}
         right={0}
         bottom={0}
         zIndex={100}
         boxShadow="0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06)"
-        flexShrink={0}
-        width="100vw"
       >
         <Container maxW="container.lg">
-          <Flex justify="space-around" align="center">
-            <Button
-              as={Link}
-              to="/"
-              variant={location.pathname === '/' ? 'solid' : 'ghost'}
-              leftIcon={<FaHome />}
-              size="lg"
-              _hover={{ bg: 'whiteAlpha.300' }}
-              transition="all 0.2s"
-              fontWeight={location.pathname === '/' ? 'bold' : 'normal'}
-            >
-              Home
-            </Button>
-            <Button
-              as={Link}
-              to="/workout"
-              variant={location.pathname.startsWith('/workout') ? 'solid' : 'ghost'}
-              leftIcon={<FaDumbbell />}
-              size="lg"
-              _hover={{ bg: 'whiteAlpha.300' }}
-              transition="all 0.2s"
-              fontWeight={location.pathname.startsWith('/workout') ? 'bold' : 'normal'}
-            >
-              Workout
-            </Button>
-            <Button
-              as={Link}
-              to="/settings"
-              variant={location.pathname === '/settings' ? 'solid' : 'ghost'}
-              leftIcon={<FaCog />}
-              size="lg"
-              _hover={{ bg: 'whiteAlpha.300' }}
-              transition="all 0.2s"
-              fontWeight={location.pathname === '/settings' ? 'bold' : 'normal'}
-            >
-              Settings
-            </Button>
+          <Flex justify="space-around" align="stretch">
+            {navItems.map((item) => {
+              const active = item.isActive(location.pathname);
+              return (
+                <Flex
+                  key={item.to}
+                  as={Link}
+                  to={item.to}
+                  aria-current={active ? 'page' : undefined}
+                  direction="column"
+                  align="center"
+                  justify="center"
+                  flex={1}
+                  gap={0.5}
+                  py={1}
+                  borderRadius="lg"
+                  transition="background-color 0.2s"
+                  _hover={{ bg: 'whiteAlpha.200' }}
+                  _active={{ bg: 'whiteAlpha.300' }}
+                >
+                  <Flex
+                    align="center"
+                    justify="center"
+                    boxSize="36px"
+                    borderRadius="full"
+                    bg={active ? 'whiteAlpha.300' : 'transparent'}
+                    transition="background-color 0.2s"
+                  >
+                    <Icon as={item.icon} boxSize={5} opacity={active ? 1 : 0.8} />
+                  </Flex>
+                  <Text
+                    fontSize="xs"
+                    fontWeight={active ? 'bold' : 'medium'}
+                    opacity={active ? 1 : 0.75}
+                    transition="opacity 0.2s"
+                  >
+                    {item.label}
+                  </Text>
+                </Flex>
+              );
+            })}
           </Flex>
         </Container>
       </Box>
