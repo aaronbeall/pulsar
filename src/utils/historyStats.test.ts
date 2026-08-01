@@ -5,6 +5,7 @@ import {
   formatTotalDuration,
   getRoutineTimeline,
   getWorkoutHistory,
+  getHistoryTimeline,
   getRoutineName,
   getWorkoutKind,
 } from './historyStats';
@@ -148,6 +149,21 @@ describe('getWorkoutHistory', () => {
     const sorted = getWorkoutHistory(original);
     expect(sorted.map(w => w.id)).toEqual(['new', 'old']);
     expect(original.map(w => w.id)).toEqual(['old', 'new']); // input untouched
+  });
+});
+
+describe('getHistoryTimeline', () => {
+  it('merges workouts and routine-created entries into one newest-first feed', () => {
+    const routine = makeRoutine({ id: 'r1', name: 'Leg Day', createdAt: d(2026, 7, 10) });
+    const workouts = [
+      makeWorkout({ id: 'w-old', routineId: 'r1', startedAt: d(2026, 7, 1) }),
+      makeWorkout({ id: 'w-new', routineId: 'r1', startedAt: d(2026, 7, 20) }),
+    ];
+
+    const timeline = getHistoryTimeline(workouts, [routine]);
+
+    expect(timeline.map(item => item.type === 'workout' ? item.workout.id : `created-${item.routine.id}`))
+      .toEqual(['w-new', 'created-r1', 'w-old']);
   });
 });
 

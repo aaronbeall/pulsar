@@ -26,7 +26,7 @@ import {
 } from '@chakra-ui/react';
 import React, { useEffect, useState } from 'react';
 import { FaChartBar, FaEdit, FaEllipsisV, FaInfoCircle, FaPlay, FaPlayCircle, FaPowerOff, FaStar, FaTimesCircle, FaTrash, FaFileExport } from 'react-icons/fa'; // Import icons
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import { RoutineActivityDrawer } from '../components/RoutineActivityDrawer';
 import RoutineChat, { ChatMessage } from '../components/RoutineChat';
@@ -61,6 +61,18 @@ const WorkoutRoutine: React.FC = () => {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const cancelRef = React.useRef(null);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Deep-link support: ?activity=1 (e.g. from the History view) opens the Activity drawer on arrival.
+  useEffect(() => {
+    if (searchParams.get('activity')) {
+      onOpen();
+      setSearchParams((prev) => {
+        prev.delete('activity');
+        return prev;
+      }, { replace: true });
+    }
+  }, [searchParams, onOpen, setSearchParams]);
 
   useEffect(() => {
     if (routine) {

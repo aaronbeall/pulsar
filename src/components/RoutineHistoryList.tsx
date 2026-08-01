@@ -24,7 +24,7 @@ const RoutineHistoryList: React.FC<RoutineHistoryListProps> = ({ entries }) => {
         <Flex
           key={routine.id}
           as={RouterLink}
-          to={`/workout/routine/${routine.id}`}
+          to={`/workout/routine/${routine.id}?activity=1`}
           align="center"
           gap={3}
           py={3}

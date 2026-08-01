@@ -1,13 +1,14 @@
 import React from 'react';
 import { Flex, Heading, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
-import { FaClipboardList, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaTrophy } from 'react-icons/fa';
+import { FaChartBar, FaClipboardList, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaTrophy } from 'react-icons/fa';
 import { useRoutines, useWorkouts } from '../store/pulsarStore';
-import { formatTotalDuration, getHistorySummaryStats, getRoutineTimeline, getWorkoutHistory } from '../utils/historyStats';
+import { formatTotalDuration, getHistorySummaryStats, getHistoryTimeline, getRoutineTimeline } from '../utils/historyStats';
 import YearActivityCalendar from '../components/YearActivityCalendar';
 import StatCard from '../components/StatCard';
 import SectionCard from '../components/SectionCard';
 import RoutineHistoryList from '../components/RoutineHistoryList';
 import WorkoutHistoryList from '../components/WorkoutHistoryList';
+import WeeklyActivityGraph from '../components/WeeklyActivityGraph';
 
 const History: React.FC = () => {
   const routines = useRoutines();
@@ -24,9 +25,9 @@ const History: React.FC = () => {
     [routines, workouts]
   );
 
-  const workoutHistory = React.useMemo(
-    () => (workouts ? getWorkoutHistory(workouts) : []),
-    [workouts]
+  const historyTimeline = React.useMemo(
+    () => (routines && workouts ? getHistoryTimeline(workouts, routines) : []),
+    [workouts, routines]
   );
 
   if (isLoading || !summary) {
@@ -60,12 +61,16 @@ const History: React.FC = () => {
 
       <YearActivityCalendar workouts={workouts} routines={routines} />
 
+      <SectionCard icon={FaChartBar} title="Weekly Activity">
+        <WeeklyActivityGraph workouts={workouts} />
+      </SectionCard>
+
       <SectionCard icon={FaClipboardList} title="Routine History">
         <RoutineHistoryList entries={routineTimeline} />
       </SectionCard>
 
       <SectionCard icon={FaHistory} title="Workout History">
-        <WorkoutHistoryList workouts={workoutHistory} routines={routines} />
+        <WorkoutHistoryList items={historyTimeline} routines={routines} />
       </SectionCard>
     </Flex>
   );

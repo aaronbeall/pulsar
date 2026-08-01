@@ -2,21 +2,21 @@ import React from 'react';
 import { Badge, Box, Button, Circle, Flex, Icon, Text, VStack, useColorModeValue } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
 import { format, formatDistance } from 'date-fns';
-import { FaCalendarAlt, FaCheck, FaClock, FaTrophy } from 'react-icons/fa';
-import { Routine, Workout } from '../models/types';
-import { getRoutineName, getWorkoutKind, isPerfectWorkout } from '../utils/historyStats';
+import { FaCalendarAlt, FaCheck, FaClock, FaPowerOff, FaTrophy } from 'react-icons/fa';
+import { Routine } from '../models/types';
+import { HistoryTimelineItem, getRoutineName, getWorkoutKind, isPerfectWorkout } from '../utils/historyStats';
 import DayKindBadge from './DayKindBadge';
 
 const PAGE_SIZE = 10;
 const DOT_CENTER = '16px'; // Circle is 16px, row has px={2} (8px) — 8 + 8 = 16.
 
 interface WorkoutHistoryListProps {
-  workouts: Workout[]; // pre-sorted, newest first
+  items: HistoryTimelineItem[]; // pre-sorted, newest first
   routines: Routine[];
-  showRoutineName?: boolean; // hide when every workout is already known to belong to one routine (e.g. shown on that routine's own page)
+  showRoutineName?: boolean; // hide when every item is already known to belong to one routine (e.g. shown on that routine's own page)
 }
 
-const WorkoutHistoryList: React.FC<WorkoutHistoryListProps> = ({ workouts, routines, showRoutineName = true }) => {
+const WorkoutHistoryList: React.FC<WorkoutHistoryListProps> = ({ items, routines, showRoutineName = true }) => {
   const [showAll, setShowAll] = React.useState(false);
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const rowHoverBg = useColorModeValue('gray.50', 'gray.700');
@@ -24,12 +24,13 @@ const WorkoutHistoryList: React.FC<WorkoutHistoryListProps> = ({ workouts, routi
   const completedColor = useColorModeValue('green.500', 'green.400');
   const inProgressColor = useColorModeValue('cyan.500', 'cyan.400');
   const inProgressGlow = useColorModeValue('cyan.50', 'rgba(6, 182, 212, 0.15)');
+  const createdColor = useColorModeValue('gray.400', 'gray.500');
 
-  if (workouts.length === 0) {
+  if (items.length === 0) {
     return <Text fontSize="sm" color={mutedColor}>No workouts yet.</Text>;
   }
 
-  const visible = showAll ? workouts : workouts.slice(0, PAGE_SIZE);
+  const visible = showAll ? items : items.slice(0, PAGE_SIZE);
 
   return (
     <>
@@ -38,7 +39,42 @@ const WorkoutHistoryList: React.FC<WorkoutHistoryListProps> = ({ workouts, routi
           <Box position="absolute" left={DOT_CENTER} top="20px" bottom="20px" width="2px" bg={connectorColor} />
         )}
         <VStack spacing={0} align="stretch">
-          {visible.map((workout) => {
+          {visible.map((item) => {
+            if (item.type === 'routineCreated') {
+              const { routine } = item;
+              return (
+                <Flex
+                  key={`created-${routine.id}`}
+                  as={RouterLink}
+                  to={`/workout/routine/${routine.id}`}
+                  align="center"
+                  gap={4}
+                  py={3}
+                  px={2}
+                  borderRadius="lg"
+                  transition="background-color 0.2s"
+                  _hover={{ bg: rowHoverBg }}
+                >
+                  <Circle size="16px" bg={createdColor} position="relative" zIndex={1} flexShrink={0}>
+                    <Icon as={FaPowerOff} boxSize="8px" color="white" />
+                  </Circle>
+                  <Box flex={1} minW={0}>
+                    <Flex align="center" gap={2} mb={0.5} wrap="wrap">
+                      <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
+                        {routine.name}
+                      </Text>
+                      <Badge colorScheme="gray" flexShrink={0}>Created</Badge>
+                    </Flex>
+                    <Flex align="center" gap={1} fontSize="xs" color={mutedColor}>
+                      <Icon as={FaCalendarAlt} boxSize={2.5} />
+                      <Text>{format(routine.createdAt, 'MMM d, yyyy')}</Text>
+                    </Flex>
+                  </Box>
+                </Flex>
+              );
+            }
+
+            const { workout } = item;
             const kind = getWorkoutKind(workout, routines);
             const isCompleted = !!workout.completedAt;
             return (
@@ -101,7 +137,7 @@ const WorkoutHistoryList: React.FC<WorkoutHistoryListProps> = ({ workouts, routi
           })}
         </VStack>
       </Box>
-      {workouts.length > PAGE_SIZE && (
+      {items.length > PAGE_SIZE && (
         <Button
           size="sm"
           variant="ghost"
@@ -110,7 +146,7 @@ const WorkoutHistoryList: React.FC<WorkoutHistoryListProps> = ({ workouts, routi
           mt={2}
           onClick={() => setShowAll(v => !v)}
         >
-          {showAll ? 'Show less' : `Show all ${workouts.length} workouts`}
+          {showAll ? 'Show less' : `Show all ${items.length} items`}
         </Button>
       )}
     </>

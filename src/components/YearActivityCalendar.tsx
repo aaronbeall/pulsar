@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Flex, Icon, IconButton, Text, useColorModeValue, useToken } from '@chakra-ui/react';
+import { Box, Flex, Icon, IconButton, SimpleGrid, Text, useColorModeValue, useToken } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { FaTimes } from 'react-icons/fa';
 import { Routine, Workout } from '../models/types';
@@ -42,6 +42,8 @@ const YearActivityCalendar: React.FC<YearActivityCalendarProps> = ({ workouts, r
 
   // How many days are in each month of the viewed year (handles leap Februarys).
   const daysInMonth = (monthIdx: number) => new Date(year, monthIdx + 1, 0).getDate();
+  // Day-of-week (0=Sun) that the 1st of the month falls on, so dots align into weekday columns.
+  const leadingBlanks = (monthIdx: number) => new Date(year, monthIdx, 1).getDay();
 
   return (
     <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
@@ -70,17 +72,21 @@ const YearActivityCalendar: React.FC<YearActivityCalendarProps> = ({ workouts, r
         />
       </Flex>
 
-      <Flex direction="column" gap={1.5} mb={4}>
+      {/* One mini calendar per month, dots aligned into weekday columns via a 7-col grid */}
+      <SimpleGrid columns={{ base: 3, sm: 4 }} spacing={4} mb={4}>
         {MONTH_NAMES.map((label, monthIdx) => (
-          <Flex key={label} align="center" gap={2}>
-            <Text w="26px" flexShrink={0} fontSize="10px" fontWeight="bold" color={monthLabelColor}>
+          <Box key={label}>
+            <Text fontSize="10px" fontWeight="bold" color={monthLabelColor} mb={1}>
               {label}
             </Text>
-            <Flex gap="3px" wrap="wrap" flex={1}>
+            <Box display="grid" gridTemplateColumns="repeat(7, 1fr)" gap="3px" justifyItems="center">
+              {Array.from({ length: leadingBlanks(monthIdx) }, (_, i) => (
+                <Box key={`blank-${i}`} boxSize="7px" />
+              ))}
               {Array.from({ length: daysInMonth(monthIdx) }, (_, dayIdx) => {
                 const date = new Date(year, monthIdx, dayIdx + 1);
                 const day = activity[date.toDateString()];
-                if (!day) return null;
+                if (!day) return <Box key={dayIdx} boxSize="7px" />;
                 const isToday = date.toDateString() === new Date().toDateString();
                 const isMissed = !day.future && !day.rest && !day.completed;
                 const title = `${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}${
@@ -118,10 +124,10 @@ const YearActivityCalendar: React.FC<YearActivityCalendarProps> = ({ workouts, r
                   />
                 );
               })}
-            </Flex>
-          </Flex>
+            </Box>
+          </Box>
         ))}
-      </Flex>
+      </SimpleGrid>
 
       <Flex gap={4} wrap="wrap">
         <LegendItem label="Workout">

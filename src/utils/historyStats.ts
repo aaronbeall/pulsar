@@ -87,6 +87,20 @@ export function getWorkoutHistory(workouts: Workout[]): Workout[] {
   return [...workouts].sort((a, b) => b.startedAt - a.startedAt);
 }
 
+export type HistoryTimelineItem =
+  | { type: 'workout'; date: number; workout: Workout }
+  | { type: 'routineCreated'; date: number; routine: Routine };
+
+// Merges every workout with each routine's creation date into one newest-first feed, so
+// "routine created" shows up alongside workouts in the global History timeline.
+export function getHistoryTimeline(workouts: Workout[], routines: Routine[]): HistoryTimelineItem[] {
+  const items: HistoryTimelineItem[] = [
+    ...workouts.map((workout): HistoryTimelineItem => ({ type: 'workout', date: workout.startedAt, workout })),
+    ...routines.map((routine): HistoryTimelineItem => ({ type: 'routineCreated', date: routine.createdAt, routine })),
+  ];
+  return items.sort((a, b) => b.date - a.date);
+}
+
 export function getRoutineName(routineId: string, routines: Routine[]): string {
   return routines.find(r => r.id === routineId)?.name ?? 'Unknown routine';
 }
