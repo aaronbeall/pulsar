@@ -2,7 +2,7 @@ import React from 'react';
 import { Badge, Box, Button, Circle, Flex, Icon, Text, VStack, useColorModeValue } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
 import { format, formatDistance } from 'date-fns';
-import { FaCalendarAlt, FaCheck, FaClock, FaStar } from 'react-icons/fa';
+import { FaCalendarAlt, FaCheck, FaClock, FaTrophy } from 'react-icons/fa';
 import { Routine, Workout } from '../models/types';
 import { getRoutineName, getWorkoutKind, isPerfectWorkout } from '../utils/historyStats';
 import DayKindBadge from './DayKindBadge';
@@ -22,8 +22,8 @@ const WorkoutHistoryList: React.FC<WorkoutHistoryListProps> = ({ workouts, routi
   const rowHoverBg = useColorModeValue('gray.50', 'gray.700');
   const connectorColor = useColorModeValue('gray.200', 'gray.700');
   const completedColor = useColorModeValue('green.500', 'green.400');
-  const inProgressColor = useColorModeValue('blue.500', 'blue.400');
-  const inProgressGlow = useColorModeValue('blue.50', 'rgba(66, 153, 225, 0.15)');
+  const inProgressColor = useColorModeValue('cyan.500', 'cyan.400');
+  const inProgressGlow = useColorModeValue('cyan.50', 'rgba(6, 182, 212, 0.15)');
 
   if (workouts.length === 0) {
     return <Text fontSize="sm" color={mutedColor}>No workouts yet.</Text>;
@@ -72,7 +72,7 @@ const WorkoutHistoryList: React.FC<WorkoutHistoryListProps> = ({ workouts, routi
                     {kind && <DayKindBadge kind={kind} />}
                     {isPerfectWorkout(workout) && (
                       <Badge colorScheme="yellow" display="flex" alignItems="center" gap={1} flexShrink={0}>
-                        <Icon as={FaStar} boxSize={2} />
+                        <Icon as={FaTrophy} boxSize={2} />
                         Perfect
                       </Badge>
                     )}

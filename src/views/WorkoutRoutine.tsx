@@ -10,11 +10,8 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   Button,
-  Collapse,
-  Divider,
   Flex,
   Heading,
-  Icon,
   IconButton,
   Menu,
   MenuButton,
@@ -27,24 +24,19 @@ import {
   useColorModeValue,
   useDisclosure
 } from '@chakra-ui/react';
-import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import React, { useEffect, useState } from 'react';
-import { FaChartBar, FaEdit, FaEllipsisV, FaHistory, FaInfoCircle, FaPlay, FaPlayCircle, FaPowerOff, FaStar, FaTimesCircle, FaTrash, FaFileExport } from 'react-icons/fa'; // Import icons
+import { FaChartBar, FaEdit, FaEllipsisV, FaInfoCircle, FaPlay, FaPlayCircle, FaPowerOff, FaStar, FaTimesCircle, FaTrash, FaFileExport } from 'react-icons/fa'; // Import icons
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import { RoutineActivityDrawer } from '../components/RoutineActivityDrawer';
 import RoutineChat, { ChatMessage } from '../components/RoutineChat';
 import { RoutineDisplayTable } from '../components/RoutineDisplayTable';
 import { RoutineEditor } from '../components/RoutineEditor';
-import SectionCard from '../components/SectionCard';
-import StreakCalendar from '../components/StreakCalendar';
-import WorkoutHistoryList from '../components/WorkoutHistoryList';
 import SwitchRoutineDialog from '../components/SwitchRoutineDialog';
 import { ExportRoutineDialog } from '../components/ExportRoutineDialog';
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
 import type { Routine } from '../models/types';
 import { useExercises, usePulsarStore, useRoutine, useRoutines, useWorkouts } from '../store/pulsarStore';
-import { getWorkoutHistory } from '../utils/historyStats';
 
 const WorkoutRoutine: React.FC = () => {
   const { routineId } = useParams<{ routineId: string }>();
@@ -52,28 +44,14 @@ const WorkoutRoutine: React.FC = () => {
   const routines = useRoutines();
   const exercises = useExercises();
   const workouts = useWorkouts();
-  const routineWorkoutHistory = React.useMemo(
-    () => getWorkoutHistory(workouts.filter(w => w.routineId === routine?.id)),
-    [workouts, routine?.id]
-  );
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const cardBorder = useColorModeValue('gray.200', 'gray.700');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const addRoutine = usePulsarStore(s => s.addRoutine);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
   const [newResponses, setNewResponses] = useState<Routine['responses']>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { isOpen: isActivityOpen, onToggle: onToggleActivity } = useDisclosure();
-  const activityToggleRef = React.useRef<HTMLDivElement>(null);
-  const handleToggleActivity = () => {
-    const opening = !isActivityOpen;
-    onToggleActivity();
-    if (opening) {
-      // Scroll the toggle row itself to the top of the viewport, so the newly-revealed
-      // calendar/history land right underneath it rather than requiring a manual scroll.
-      setTimeout(() => {
-        activityToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }
-  };
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
@@ -185,20 +163,30 @@ const WorkoutRoutine: React.FC = () => {
       {/* AI Chat Interface */}
       <RoutineChat chatHistory={chatHistory} setChatHistory={setChatHistory} />
       <Box width="100%" maxWidth="1200px">
-        {/* Minimalistic routine status banner */}
-        {routine.active && (
+        {/* Minimalistic routine status banner — hidden while editing, RoutineEditor's SaveBar takes over as the header */}
+        {!isEditing && routine.active && (
           <Box mb={4}>
             <RoutineStatusBanner routine={routine} />
           </Box>
         )}
+        {!isEditing && (
+        <Box
+          position="relative"
+          bg={cardBg}
+          borderWidth="1px"
+          borderColor={cardBorder}
+          borderRadius="xl"
+          boxShadow="sm"
+          p={{ base: 4, sm: 5 }}
+          mb={6}
+        >
         <Flex
           direction={{ base: 'column', sm: 'row' }}
           justify="space-between"
           align={{ base: 'stretch', sm: 'center' }}
           gap={3}
-          mb={4}
         >
-          <Heading fontSize={{ base: 'xl', sm: '2xl' }} bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text" display="flex" alignItems="center" gap={2}>
+          <Heading fontSize={{ base: 'xl', sm: '2xl' }} bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text" display="flex" alignItems="center" gap={2} pr={{ base: 10, sm: 0 }}>
             {routine.name}
             {routine.favorite && (
               <Box as="span" color="yellow.400" ml={1} fontSize="1.1em" title="Favorite">
@@ -206,23 +194,53 @@ const WorkoutRoutine: React.FC = () => {
               </Box>
             )}
           </Heading>
-          <Flex gap={2} align="center" justify={{ base: 'space-between', sm: 'flex-end' }}>
-            <Text fontSize="sm" color="gray.600">
-              Active
-            </Text>
-            <Switch
-              colorScheme="cyan"
-              isChecked={routine.active}
-              onChange={toggleActiveState}
-            />
+          <Flex gap={3} align="center" justify={{ base: 'flex-start', sm: 'flex-end' }}>
+            {/* Status, not an action — set apart as a chip rather than a button */}
+            <Flex
+              gap={2}
+              align="center"
+              pl={3}
+              pr={2}
+              py={1}
+              borderRadius="full"
+              bg={routine.active ? 'green.50' : 'gray.100'}
+              borderWidth="1px"
+              borderColor={routine.active ? 'green.200' : 'gray.200'}
+              _dark={{
+                bg: routine.active ? 'rgba(72,187,120,0.12)' : 'gray.700',
+                borderColor: routine.active ? 'green.700' : 'gray.600',
+              }}
+            >
+              <Text fontSize="sm" fontWeight="medium" color={routine.active ? 'green.700' : 'gray.500'} _dark={{ color: routine.active ? 'green.300' : 'gray.400' }}>
+                Active
+              </Text>
+              <Switch
+                colorScheme="green"
+                size="sm"
+                isChecked={routine.active}
+                onChange={toggleActiveState}
+              />
+            </Flex>
+            {/* Primary action */}
             <Button
-              leftIcon={<FaEdit />} 
+              leftIcon={<FaEdit />}
               colorScheme="cyan"
-              variant="ghost"
+              variant="solid"
               size="sm"
+              fontWeight="bold"
               onClick={() => setIsEditing(isEditing ? false : true)}
             >
               Edit
+            </Button>
+            {/* Secondary action */}
+            <Button
+              leftIcon={<FaChartBar />}
+              colorScheme="cyan"
+              variant="outline"
+              size="sm"
+              onClick={onOpen}
+            >
+              Activity
             </Button>
             <Menu>
               <MenuButton
@@ -231,14 +249,11 @@ const WorkoutRoutine: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 aria-label="More options"
+                position={{ base: 'absolute', sm: 'static' }}
+                top={{ base: 4, sm: 0 }}
+                right={{ base: 4, sm: 0 }}
               />
               <MenuList shadow="lg">
-                <MenuItem
-                  icon={<FaChartBar />}
-                  onClick={onOpen}
-                >
-                  Activity
-                </MenuItem>
                 <MenuItem
                   icon={<FaFileExport />} // Use export icon
                   onClick={() => setShowExportDialog(true)}
@@ -246,8 +261,7 @@ const WorkoutRoutine: React.FC = () => {
                   Export...
                 </MenuItem>
                 <MenuItem
-                  icon={<FaStar />}
-                  color={routine.favorite ? 'yellow.500' : 'gray.400'}
+                  icon={<Box as={FaStar} color={routine.favorite ? 'yellow.500' : 'gray.400'} />}
                   onClick={async () => {
                     await updateRoutine({ ...routine, favorite: !routine.favorite });
                   }}
@@ -265,6 +279,13 @@ const WorkoutRoutine: React.FC = () => {
             </Menu>
           </Flex>
         </Flex>
+        {routine.description && (
+          <Text fontSize="sm" color={mutedColor} fontStyle="italic" mt={3}>
+            {routine.description}
+          </Text>
+        )}
+        </Box>
+        )}
         {isOpen && (
           <RoutineActivityDrawer routine={routine} workouts={workouts} isOpen={isOpen} onClose={onClose} />
         )}
@@ -283,30 +304,6 @@ const WorkoutRoutine: React.FC = () => {
                 mode="view"
               />
             )}
-            <Box mt={6}>
-              <Flex ref={activityToggleRef} align="center" gap={3}>
-                <Divider />
-                <Button
-                  onClick={handleToggleActivity}
-                  variant="ghost"
-                  colorScheme="cyan"
-                  size="sm"
-                  flexShrink={0}
-                  rightIcon={<Icon as={isActivityOpen ? ChevronUpIcon : ChevronDownIcon} />}
-                >
-                  {isActivityOpen ? 'Hide Activity' : 'View Activity'}
-                </Button>
-                <Divider />
-              </Flex>
-              <Collapse in={isActivityOpen} animateOpacity>
-                <Flex direction="column" gap={{ base: 4, sm: 5 }} pt={4}>
-                  <StreakCalendar workouts={routineWorkoutHistory} routines={[routine]} />
-                  <SectionCard icon={FaHistory} title="Workout History">
-                    <WorkoutHistoryList workouts={routineWorkoutHistory} routines={[routine]} showRoutineName={false} />
-                  </SectionCard>
-                </Flex>
-              </Collapse>
-            </Box>
           </>
         )}
         {isEditing && routine && (

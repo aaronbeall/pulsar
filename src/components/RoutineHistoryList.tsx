@@ -2,7 +2,7 @@ import React from 'react';
 import { Badge, Box, Flex, Icon, Text, VStack, useColorModeValue } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
 import { format } from 'date-fns';
-import { FaCalendarAlt, FaCheckCircle, FaChevronRight, FaDumbbell, FaPowerOff, FaStar } from 'react-icons/fa';
+import { FaCalendarAlt, FaCheckCircle, FaChevronRight, FaDumbbell, FaPowerOff, FaTrophy } from 'react-icons/fa';
 import { RoutineTimelineEntry } from '../utils/historyStats';
 
 interface RoutineHistoryListProps {
@@ -62,7 +62,7 @@ const RoutineHistoryList: React.FC<RoutineHistoryListProps> = ({ entries }) => {
               </Flex>
               {stats.totalPerfect > 0 && (
                 <Flex align="center" gap={1}>
-                  <Icon as={FaStar} boxSize={2.5} color="yellow.400" />
+                  <Icon as={FaTrophy} boxSize={2.5} color="yellow.400" />
                   <Text>{stats.totalPerfect} perfect</Text>
                 </Flex>
               )}

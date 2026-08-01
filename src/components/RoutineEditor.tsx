@@ -272,7 +272,7 @@ const SaveBar = React.memo<{
         mb={6}
         borderRadius="md"
       >
-        <Flex align="center" justify="space-between" w="100%">
+        <Flex direction={{ base: 'column', sm: 'row' }} align={{ base: 'stretch', sm: 'center' }} justify="space-between" w="100%" gap={3}>
           <Input
             value={editName}
             variant="flushed"
@@ -290,22 +290,22 @@ const SaveBar = React.memo<{
             px={3}
             py={2}
             borderRadius="md"
-            maxW="340px"
-            mr={4}
+            maxW={{ base: '100%', sm: '340px' }}
+            mr={{ base: 0, sm: 4 }}
             placeholder="Routine Name"
           />
-          <Flex gap={3}>
+          <Flex gap={3} justify={{ base: 'flex-end', sm: 'flex-start' }}>
             {editChanged ? (
-              <Button leftIcon={<FaUndo />} colorScheme="gray" size="md" fontWeight="bold" onClick={onRevert}>Revert</Button>
+              <Button leftIcon={<FaUndo />} colorScheme="gray" size={{ base: 'sm', sm: 'md' }} fontWeight="bold" onClick={onRevert}>Revert</Button>
             ) : (
-              <Button leftIcon={<FaTimes />} colorScheme="gray" size="md" fontWeight="bold" onClick={onRevert}>Cancel</Button>
+              <Button leftIcon={<FaTimes />} colorScheme="gray" size={{ base: 'sm', sm: 'md' }} fontWeight="bold" onClick={onRevert}>Cancel</Button>
             )}
             {/* Split Save/Save As button using Flex */}
             <Flex>
               <Button
-                leftIcon={<FaCheck />} 
+                leftIcon={<FaCheck />}
                 colorScheme="green"
-                size="md"
+                size={{ base: 'sm', sm: 'md' }}
                 fontWeight="bold"
                 onClick={onSave}
                 isDisabled={!editChanged}
@@ -318,7 +318,7 @@ const SaveBar = React.memo<{
                 <MenuButton
                   as={Button}
                   colorScheme="green"
-                  size="md"
+                  size={{ base: 'sm', sm: 'md' }}
                   borderLeftRadius={0}
                   borderLeftWidth={0}
                   px={3}
@@ -821,67 +821,64 @@ const DraggableExerciseEditorRow = React.memo<{
     <Draggable key={`ex-${dayIdx}-${exIdx}`} draggableId={`ex-${dayIdx}-${exIdx}`} index={exIdx}>
     {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
       <Flex
-      align="center"
+      direction="column"
+      align="stretch"
       w="100%"
-      bg={snapshot.isDragging ? 'cyan.100' : 'transparent'}
-      _dark={{ bg: snapshot.isDragging ? 'cyan.800' : 'transparent' }}
+      bg={snapshot.isDragging ? 'cyan.50' : 'white'}
+      _dark={{
+        bg: snapshot.isDragging ? 'cyan.900' : 'gray.800',
+        borderColor: snapshot.isDragging ? 'cyan.500' : 'gray.700',
+      }}
+      borderWidth="1px"
+      borderColor={snapshot.isDragging ? 'cyan.300' : 'gray.200'}
+      boxShadow={snapshot.isDragging ? 'lg' : 'xs'}
       p={2}
-      borderRadius="md"
+      borderRadius="lg"
+      transition="box-shadow 0.15s, border-color 0.15s"
       ref={provided.innerRef}
       {...provided.draggableProps}
-      {...provided.dragHandleProps}
-      style={{ ...provided.draggableProps.style, opacity: snapshot.isDragging ? 0.7 : 1 }}
+      style={{ ...provided.draggableProps.style, opacity: snapshot.isDragging ? 0.9 : 1 }}
       >
-      <Box mr={2} color="gray.400" _dark={{ color: 'gray.500' }} p={1}>
-        <FaGripVertical />
-      </Box>
-      {/* Show exercise name and gear icon beside each other */}
-      <Flex align="center" flex={1} minW={0} mr={2}>
-        <Text
-        fontWeight="semibold"
-        color="cyan.700"
-        _dark={{ color: 'cyan.300' }}
-        minW={0}
-        isTruncated={isMdOrLarger}
-        fontSize={{ base: 'sm', md: 'md' }}
-        whiteSpace={isMdOrLarger ? 'nowrap' : 'normal'}
-        wordBreak="break-word"
+      <Flex align="center" w="100%">
+        <Box
+        {...provided.dragHandleProps}
+        mr={2}
+        color="gray.400"
+        _dark={{ color: 'gray.500' }}
+        p={1}
+        borderRadius="md"
+        flexShrink={0}
+        cursor={snapshot.isDragging ? 'grabbing' : 'grab'}
+        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
         >
-        {exercise?.name || ''}
-        </Text>
-        <IconButton
-        aria-label="Edit exercise details"
-        icon={<FaEdit />}
-        size="sm"
-        colorScheme="gray"
-        variant="ghost"
-        ml={2}
-        onClick={() => onOpenExerciseDetails(ex.exerciseId)}
-        />
-      </Flex>
-      {/* Right-aligned controls */}
-      <Flex align="center" ml="auto">
-        <Flex direction={{ base: 'column', sm: 'row' }} gap={{ base: 1, sm: 2 }}>
-        <NumericStepper
-          value={ex.sets || 1}
-          onChange={(val: number) => onEditExercise(dayIdx, exIdx, { ...ex, sets: val })}
-          label="sets"
-        />
-        {ex.reps !== undefined && (
-          <NumericStepper
-          value={ex.reps}
-          onChange={(val: number) => onEditExercise(dayIdx, exIdx, { ...ex, reps: val })}
-          label="reps"
+          <FaGripVertical />
+        </Box>
+        {/* Exercise name and edit icon */}
+        <Flex align="center" flex={1} minW={0} mr={2}>
+          <Text
+          fontWeight="semibold"
+          color="cyan.700"
+          _dark={{ color: 'cyan.300' }}
+          minW={0}
+          isTruncated={isMdOrLarger}
+          fontSize={{ base: 'sm', md: 'md' }}
+          whiteSpace={isMdOrLarger ? 'nowrap' : 'normal'}
+          wordBreak="break-word"
+          >
+          {exercise?.name || ''}
+          </Text>
+          <IconButton
+          aria-label="Edit exercise details"
+          icon={<FaEdit />}
+          size="sm"
+          colorScheme="gray"
+          variant="ghost"
+          ml={2}
+          flexShrink={0}
+          onClick={() => onOpenExerciseDetails(ex.exerciseId)}
           />
-        )}
-        {ex.duration !== undefined && (
-          <NumericStepper
-          value={ex.duration}
-          onChange={(val: number) => onEditExercise(dayIdx, exIdx, { ...ex, duration: val })}
-          label="sec"
-          />
-        )}
         </Flex>
+        {/* Gear menu stays anchored next to the name, not off past the steppers */}
         <Menu>
         <MenuButton
           as={IconButton}
@@ -889,9 +886,8 @@ const DraggableExerciseEditorRow = React.memo<{
           colorScheme="gray"
           aria-label="More options"
           icon={<FaCog />} // Use a gear icon for the menu
-          ml={{ base: 0, sm: 1 }}
-          mt={{ base: 1, sm: 0 }}
           variant="ghost"
+          flexShrink={0}
         />
         <MenuList>
           <MenuItem
@@ -926,6 +922,28 @@ const DraggableExerciseEditorRow = React.memo<{
           </MenuItem>
         </MenuList>
         </Menu>
+      </Flex>
+      {/* Steppers get their own line, indented past the drag handle, and wrap instead of overflowing */}
+      <Flex align="center" gap={2} flexWrap="wrap" ml="28px" mt={2}>
+        <NumericStepper
+          value={ex.sets || 1}
+          onChange={(val: number) => onEditExercise(dayIdx, exIdx, { ...ex, sets: val })}
+          label="sets"
+        />
+        {ex.reps !== undefined && (
+          <NumericStepper
+          value={ex.reps}
+          onChange={(val: number) => onEditExercise(dayIdx, exIdx, { ...ex, reps: val })}
+          label="reps"
+          />
+        )}
+        {ex.duration !== undefined && (
+          <NumericStepper
+          value={ex.duration}
+          onChange={(val: number) => onEditExercise(dayIdx, exIdx, { ...ex, duration: val })}
+          label="sec"
+          />
+        )}
       </Flex>
       </Flex>
     )}

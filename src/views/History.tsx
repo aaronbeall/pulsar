@@ -1,6 +1,6 @@
 import React from 'react';
 import { Flex, Heading, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
-import { FaClipboardList, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaStar } from 'react-icons/fa';
+import { FaClipboardList, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaTrophy } from 'react-icons/fa';
 import { useRoutines, useWorkouts } from '../store/pulsarStore';
 import { formatTotalDuration, getHistorySummaryStats, getRoutineTimeline, getWorkoutHistory } from '../utils/historyStats';
 import YearActivityCalendar from '../components/YearActivityCalendar';
@@ -52,7 +52,7 @@ const History: React.FC = () => {
       <SimpleGrid columns={{ base: 2, sm: 3 }} spacing={{ base: 3, sm: 4 }}>
         <StatCard icon={FaFire} label="Day streak" value={summary.streak} color="orange.400" />
         <StatCard icon={FaDumbbell} label="Workouts done" value={summary.totalCompleted} color="cyan.500" />
-        <StatCard icon={FaStar} label="Perfect workouts" value={summary.perfectWorkouts} color="yellow.400" />
+        <StatCard icon={FaTrophy} label="Perfect workouts" value={summary.perfectWorkouts} color="yellow.400" />
         <StatCard icon={FaClipboardList} label="Active routines" value={summary.activeRoutineCount} color="green.400" />
         <StatCard icon={FaClock} label="Total workout time" value={formatTotalDuration(summary.totalWorkoutTimeMs)} color="purple.400" />
         <StatCard icon={FaLayerGroup} label="Exercises done" value={summary.uniqueExercisesDone} color="pink.400" />
