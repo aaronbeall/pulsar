@@ -1,6 +1,5 @@
 import React from 'react';
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { Exercise, Routine, RoutineDay, Workout } from '../models/types';
 import * as db from '../db/indexedDb';
 import { getExerciseStats as calcExerciseStats, ExerciseStats } from '../utils/workoutUtils';
@@ -30,69 +29,64 @@ interface PulsarStoreState {
   getExerciseStats: (exerciseId: string) => ExerciseStats;
 }
 
-export const usePulsarStore = create<PulsarStoreState>()(
-  persist(
-    (set, get) => ({
-      exercises: [],
-      routines: [],
-      workouts: [],
-      loading: true,
-      copiedRoutineDay: null,
-      setCopiedRoutineDay: (day) => set({ copiedRoutineDay: day }),
-      loadAll: async () => {
-        set({ loading: true });
-        const [exercises, routines, workouts] = await Promise.all([
-          db.getExercises(),
-          db.getRoutines(),
-          db.getWorkouts(),
-        ]);
-        set({ exercises, routines, workouts, loading: false });
-      },
-      addExercise: async (exercise) => {
-        await db.addExercise(exercise);
-        set({ exercises: [...get().exercises, exercise] });
-      },
-      updateExercise: async (exercise) => {
-        await db.addExercise(exercise);
-        set({ exercises: get().exercises.map(e => e.id === exercise.id ? exercise : e) });
-      },
-      removeExercise: async (id) => {
-        await db.removeExercise(id);
-        set({ exercises: get().exercises.filter(e => e.id !== id) });
-      },
-      addRoutine: async (routine) => {
-        await db.addRoutine(routine);
-        set({ routines: [...get().routines, routine] });
-      },
-      updateRoutine: async (routine) => {
-        await db.addRoutine(routine);
-        set({ routines: get().routines.map(r => r.id === routine.id ? routine : r) });
-      },
-      removeRoutine: async (id) => {
-        await db.removeRoutine(id);
-        set({ routines: get().routines.filter(r => r.id !== id) });
-      },
-      addWorkout: async (workout) => {
-        await db.addWorkout(workout);
-        set({ workouts: [...get().workouts, workout] });
-      },
-      updateWorkout: async (workout) => {
-        await db.addWorkout(workout);
-        set({ workouts: get().workouts.map(w => w.id === workout.id ? workout : w) });
-      },
-      removeWorkout: async (id) => {
-        await db.removeWorkout(id);
-        set({ workouts: get().workouts.filter(w => w.id !== id) });
-      },
-      getExerciseStats: (exerciseId) => {
-        const routines = get().routines;
-        const workouts = get().workouts;
-        return calcExerciseStats(exerciseId, routines, workouts);
-      },
-    }),
-    { name: 'pulsar-store' }
-  )
-);
+export const usePulsarStore = create<PulsarStoreState>()((set, get) => ({
+  exercises: [],
+  routines: [],
+  workouts: [],
+  loading: true,
+  copiedRoutineDay: null,
+  setCopiedRoutineDay: (day) => set({ copiedRoutineDay: day }),
+  loadAll: async () => {
+    set({ loading: true });
+    const [exercises, routines, workouts] = await Promise.all([
+      db.getExercises(),
+      db.getRoutines(),
+      db.getWorkouts(),
+    ]);
+    set({ exercises, routines, workouts, loading: false });
+  },
+  addExercise: async (exercise) => {
+    await db.addExercise(exercise);
+    set({ exercises: [...get().exercises, exercise] });
+  },
+  updateExercise: async (exercise) => {
+    await db.addExercise(exercise);
+    set({ exercises: get().exercises.map(e => e.id === exercise.id ? exercise : e) });
+  },
+  removeExercise: async (id) => {
+    await db.removeExercise(id);
+    set({ exercises: get().exercises.filter(e => e.id !== id) });
+  },
+  addRoutine: async (routine) => {
+    await db.addRoutine(routine);
+    set({ routines: [...get().routines, routine] });
+  },
+  updateRoutine: async (routine) => {
+    await db.addRoutine(routine);
+    set({ routines: get().routines.map(r => r.id === routine.id ? routine : r) });
+  },
+  removeRoutine: async (id) => {
+    await db.removeRoutine(id);
+    set({ routines: get().routines.filter(r => r.id !== id) });
+  },
+  addWorkout: async (workout) => {
+    await db.addWorkout(workout);
+    set({ workouts: [...get().workouts, workout] });
+  },
+  updateWorkout: async (workout) => {
+    await db.addWorkout(workout);
+    set({ workouts: get().workouts.map(w => w.id === workout.id ? workout : w) });
+  },
+  removeWorkout: async (id) => {
+    await db.removeWorkout(id);
+    set({ workouts: get().workouts.filter(w => w.id !== id) });
+  },
+  getExerciseStats: (exerciseId) => {
+    const routines = get().routines;
+    const workouts = get().workouts;
+    return calcExerciseStats(exerciseId, routines, workouts);
+  },
+}));
 
 // Convenience hooks
 export const useCopiedRoutineDay = () => usePulsarStore(s => s.copiedRoutineDay);

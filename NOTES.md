@@ -150,19 +150,29 @@ an X for today's not-yet-done cell instead of a neutral pending state, and the
 "routine updated" banner being too visually subtle to notice. See `TODO.md` Issues section
 for the checked-off items and the git history around 2026-07-30 for the actual diffs.
 
-## Persistence: two storage layers doing overlapping jobs
+## Persistence: two storage layers doing overlapping jobs — FIXED 2026-07-31
 
-`pulsarStore.ts` wraps the whole Zustand state in `persist()` (defaults to `localStorage`,
-key `pulsar-store`) **in addition to** the manual IndexedDB read/write in `db/indexedDb.ts`
-that `loadAll()`/`addX`/`updateX` already do. Practically:
-- On boot, Zustand's `persist` middleware rehydrates `exercises`/`routines`/`workouts`
-  from `localStorage` first (stale snapshot), then `usePulsarStoreInit` fires `loadAll()`
-  and overwrites it from IndexedDB shortly after — a possible source of the "double
-  actions" / flicker issues, and definitely dead weight (localStorage has a ~5MB cap that
-  routine/workout history with images will eventually approach).
-- Recommend: pass `partialize` to `persist()` to only keep UI prefs (e.g. `copiedRoutineDay`
-  isn't even worth persisting across reloads) and drop `exercises`/`routines`/`workouts`
-  from the localStorage snapshot entirely, since IndexedDB is already the source of truth.
+`pulsarStore.ts` used to wrap the whole Zustand state in `persist()` (`localStorage`, key
+`pulsar-store`) **in addition to** the manual IndexedDB read/write in `db/indexedDb.ts`
+that `loadAll()`/`addX`/`updateX` already do. Practically, this meant:
+- On boot, Zustand's `persist` middleware rehydrated `exercises`/`routines`/`workouts`
+  from `localStorage` first (stale snapshot), then `usePulsarStoreInit` fired `loadAll()`
+  and overwrote it from IndexedDB shortly after — a possible source of the "double
+  actions" / flicker issues, and dead weight (localStorage has a ~5MB cap that
+  routine/workout history with images would eventually approach).
+- Every mutation (`addRoutine`, `updateWorkout`, etc.) wrote to IndexedDB *and* triggered
+  a redundant full-state write to `localStorage`, for no benefit — nothing in
+  `PulsarStoreState` actually needed to survive a reload outside of IndexedDB;
+  `copiedRoutineDay` is clipboard-like and resetting it on refresh is normal, expected
+  behavior, not a regression.
+
+Fixed by removing `persist()` entirely rather than narrowing it with `partialize` — there
+was nothing in this store's shape that justified keeping the middleware at all. Verified:
+with the `pulsar-store` `localStorage` key manually deleted, the app loads identically
+from IndexedDB alone, and the key is never recreated (no code path writes it anymore). If
+a genuine cross-reload UI preference needs this store later, re-add `persist()` with an
+explicit `partialize` scoped to just that field — don't default back to persisting
+everything.
 
 ## PWA was never actually installable — FIXED 2026-07-30
 
@@ -262,7 +272,7 @@ type/shape change, not a backward-compatible one.
    Even a cheap real LLM call (with a proxy) beats the current random-picker, which will
    read as broken/fake the moment a user notices the routine ignores their goals.
 2. ~~Fix the WorkoutSession double-create race~~ — done 2026-07-30, see above.
-3. **Drop redundant localStorage persistence** — small, removes a class of stale-state bugs.
+3. ~~Drop redundant localStorage persistence~~ — done 2026-07-31, see above.
 4. ~~First Vitest coverage on `workoutUtils.ts`~~ — done 2026-07-30, see above. Next
    natural extension: `routineBuilderService.ts`'s pure functions (`normalizeExerciseName`,
    `findExistingExercise`, `searchExerciseSuggestions`), then component-level tests once
