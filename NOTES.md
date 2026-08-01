@@ -8,8 +8,10 @@ feature intent). This file tracks *how it's built* and *what to watch out for*. 
 
 - React 18 + TypeScript + Vite PWA, Chakra UI v2, Zustand store, IndexedDB (`idb`) for
   persistence, deployed as a static site to GitHub Pages via Actions.
-- ~9,100 lines across 51 files. 158 commits, April 2025 → Jan 2026 (long-running solo
-  side project, bursts of activity — e.g. a big cluster on 2025-10-22).
+- ~12,000 lines across 72 files (as of 2026-07-31). 188 commits, April 2025 → present
+  (long-running solo side project, bursts of activity — e.g. a big cluster on 2025-10-22,
+  and again 2026-07-30/31 covering the PWA fix, streak/wake-lock bugs, and the History/
+  stats-view + alert-unification + chat-history work noted below).
 - Vitest added 2026-07-30 (`npm test` / `npm run test:watch`, config in `vitest.config.ts`,
   Node environment — no jsdom, since only pure utils are covered so far). Basic coverage
   on `src/utils/workoutUtils.ts` (`getStreakInfo`, `getExerciseStats`, `getRoutineStats`,
@@ -44,10 +46,12 @@ confirms there is **no LLM integration at all** yet, despite the UI already impl
 - `RoutineChat.tsx` (`handleSend`) doesn't call any API — it echoes the user's message
   back after a `setTimeout` with the string `` `AI: I received your message: "${userMessage}"` ``.
 - `routineBuilderService.ts: generateRoutine` collects real user input (goals, equipment,
-  time, `additionalInfo` via `prompts.ts`) but then **ignores it entirely** — it just
-  shuffles `exerciseTemplates` and picks 5 at random, wrapped in an artificial
-  `await delay(2000)` to simulate "thinking." The routine name is a Mad-Libs generator
-  (`funnyWords` array + `generateRandomRoutineName`).
+  howMuch, `additionalInfo` via `constants/prompts.ts`'s `workoutPrompts`) and stores it as
+  the routine's initial `chatHistory` (see "Routine chat history unified" below) but then
+  **ignores it entirely** for the actual routine content — it just shuffles
+  `exerciseTemplates` and picks 5 at random, wrapped in an artificial `await delay(2000)`
+  to simulate "thinking." The routine name is a Mad-Libs generator (`funnyWords` array +
+  `generateRandomRoutineName`).
 - The only real external API call in the app is exercise cover image search
   (`webUtils.ts: fetchExerciseSearchImageUrl`) — that one's real, cached in `localStorage`,
   and has a Workbox runtime-caching rule. It ran on Google Custom Search until 2026-07-30
@@ -186,6 +190,71 @@ static `public/site.webmanifest` (the plugin generates its own from config). Ver
 real `vite build` at both root and `BASE=/pulsar/`, plus `vite preview` + `curl` checks
 confirming `manifest.webmanifest` (served as `application/manifest+json`), `sw.js`, and
 all icons resolve with correct paths and content-types.
+
+## History page became a real stats view — 2026-07-31
+
+TODO's "Stats view," "Expanded streak calendar," and "Graphs and charts" are now covered by
+`views/History.tsx`:
+- `YearActivityCalendar.tsx` — went through two redesigns before landing: first a
+  continuous GitHub-style week-column grid, then reverted per feedback to a 12-month grid
+  of mini calendars (`SimpleGrid` of month boxes, each a 7-column day grid aligned to
+  weekday via leading blank cells) — closer to a traditional "year at a glance" view than
+  a contribution graph, and avoids the horizontal-scroll requirement the grid version had.
+- `WeeklyActivityGraph.tsx` — extracted from `RoutineActivityDrawer.tsx`'s previously
+  inline `ActivityGraph` (started/completed/perfect stacked bar chart by weekday) so both
+  the per-routine Activity drawer and the global History page render the identical chart,
+  just scoped to different `workouts` arrays. SVG bars are sized to fill the viewBox width
+  evenly (symmetric side padding) rather than a fixed pixel width with dead space.
+- `getHistoryTimeline` (`historyStats.ts`) — merges every workout with each routine's
+  `createdAt` into one newest-first feed, so routine-creation events now show up inline in
+  the Workout History list (gray "Created" badge) instead of only being visible via the
+  Routine History section's date ranges.
+
+## Home and Workout landing now share one set of status-alert components — 2026-07-31
+
+`Home.tsx` had its own `TodayCard.tsx` duplicating the same status logic (emoji rotation,
+button icon/text by `WorkoutStatus`) already implemented across `TimeToWorkoutAlert.tsx`,
+`RestDayAlert.tsx`, `FinishedWorkoutAlert.tsx`, and `NoActiveRoutinesAlert.tsx` on the
+Workout landing page — but the two had drifted: `TodayCard` had status-differentiated
+titles and a `StatusBadge` checkmark that the Workout-page alerts lacked, and `TodayCard`
+couldn't distinguish "zero active routines" from a real rest day (it showed a misleading
+"Rest Day — recovery is part of the plan" when there was no plan at all). Merged the
+better bits into the shared components (`TimeToWorkoutAlert` now varies its title by
+status; `FinishedWorkoutAlert` now shows the checkmark badge) and deleted `TodayCard.tsx`
+— `Home.tsx` now renders the same four alert components as `WorkoutLanding.tsx`, keyed off
+`activeRoutines` computed the same way in both places.
+
+Related bug in `WorkoutLanding.tsx` fixed the same day: `activeRoutines` was computed with
+the favorites filter baked in (`routines.filter(r => r.active && (!showFavoritesOnly ||
+r.favorite))`), and that same filtered array fed the status alert and the week `Timeline`
+— so toggling "Show Favorites" could flip today's status to "Rest Day" or hide days from
+the week schedule if the actual scheduled routine wasn't marked favorite. Fixed by never
+favorite-filtering `activeRoutines`; the toggle now only scopes the separate Inactive
+Routines list.
+
+## Routine chat history unified — 2026-07-31
+
+`Routine.prompts` (the setup-wizard's structured goals/equipment/howMuch/additionalInfo
+answers) and `Routine.responses` (an array of `{date, prompt, response, dismissed}` AI
+replies, seeded once at creation and never appended to since `RoutineChat.tsx` is fully
+local/ephemeral state — see above) were two separate, awkwardly-shaped fields doing what's
+conceptually one thing: a chat transcript. Replaced both with a single
+`chatHistory: RoutineChatMessage[]` (`{id, role: 'user'|'ai', message, date, dismissed?}`)
+on `Routine`. No migration path for existing local IndexedDB data — this is a straight
+type/shape change, not a backward-compatible one.
+- `routineBuilderService.ts`'s new `buildWizardChatHistory` turns the wizard's answers
+  directly into the initial ai-question/user-answer stream at creation time, instead of
+  `WorkoutRoutine.tsx` reconstructing it from two fields on every mount.
+- The wizard itself (`WorkoutSetup.tsx`) no longer needs named prompt keys at all — since
+  it's just a linear 4-step flow feeding one array, `responses` is now a plain positional
+  `string[]` matched to `workoutPrompts` by index. `WizardPromptKey`/`RoutinePromptKey` and
+  the `key` field on each `workoutPrompts` entry were removed entirely.
+- The "How long can you work out?" prompt was reworded to "How much can you work out?"
+  with examples spanning days-only, time-only, and both ("3 days a week, 30 min daily, 45
+  min 3x a week, or as much as I need") — the old wording implied duration-only.
+- `RoutineChat.tsx` now uses the shared `RoutineChatMessage` type instead of its own local
+  `ChatMessage` interface, generating `id`/`date` on send — still fully local/mocked
+  (`AI: I received your message: "..."` echo), not wired to persist back to the routine.
 
 ## Suggested priority order (independent of TODO.md's own grouping)
 

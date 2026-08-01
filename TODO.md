@@ -18,7 +18,7 @@
   - [x] Skip/Finish
   - [x] Image/how-to link
 - [x] Streak calendar
-  - [ ] Expanded streak calendar with details, stats
+  - [x] Expanded streak calendar with details, stats (History view: 12-month activity grid, weekly activity histogram, summary stat cards — 2026-07-31)
 - [x] Archive/delete routine
 - [x] Switch routine
 - [ ] Handle multiple routines
@@ -27,9 +27,9 @@
   - [ ] Routines should have activity (start, end) for use with streak calendar
 - [ ] Import/export data
   - [ ] Export/Import database
-  - [x] Export Routine
+  - [x] Export Routine (also reachable from routine cards on the Workout landing page, not just the routine detail view — 2026-07-31)
   - [ ] Import Routine
-- [ ] Stats view
+- [x] Stats view (History page: summary stat cards, year activity grid, weekly activity graph, unified routine+workout timeline — 2026-07-31)
 
 ## MMP
 - [ ] Progress sharing
@@ -37,7 +37,7 @@
 - [ ] Achievements
 - [ ] Rate this app
 - [ ] Support/Report a Bug
-- [ ] ToS/Privacy Notice
+- [x] ToS/Privacy Notice (About & Legal page + main menu item — Privacy, Terms, and Credits tabs — 2026-07-31)
 - [ ] Monetization (Buy Me a Coffee, premium, ads)
 - [ ] AI-free routine library (generated with LLM) with semantic search
 - [ ] Onboarding/Help
@@ -58,12 +58,12 @@
 - [ ] Optional days (not required for streaks)
 - [ ] Optional exercises (not required for completion)
 - [ ] Leaderboards
-- [ ] Graphs and charts
+- [x] Graphs and charts (History view: 12-month activity dot-grid + weekly started/completed/perfect bar chart, reused from the per-routine Activity panel — 2026-07-31)
 - [ ] Track active vs. rest time within a workout session, not just overall start/end (currently `Workout.startedAt`/`completedAt` and `TimeElapsed.tsx` only measure wall-clock duration)
 - [ ] Weight tracking
 - [ ] Diet tracking
 - [x] Print/Export PDF support
-- [ ] Timeline
+- [x] Timeline (History view's Workout History now merges workouts and routine-creation events into one chronological feed — `getHistoryTimeline` — 2026-07-31)
 - [ ] Exercise library
 - [ ] Warn when deleting a routine that has workouts
 - [ ] Ad hoc workouts (not routine based)
@@ -87,3 +87,8 @@
 - [x] Some actions like switching sometimes cause double actions
 - [x] Restarting workout edited routine alert isn't very noticeable
 - [x] Clicking day to start workout creates it but redirects back to workout
+- [x] "Show Favorites" on the Workout landing page incorrectly filtered the active-routine status alert and week Timeline, not just the routine list below (fixed 2026-07-31: active routines are never favorite-filtered now; only the Inactive Routines list is, with its own toggle)
+- [x] "Add to favorites" menu item looked disabled/greyed-out on routine cards and the routine detail view — root cause was applying the muted color to the whole menu item instead of just the star icon (fixed 2026-07-31)
+- [x] "Share routine" menu item on routine cards did nothing (no handler wired up at all) — replaced with a working "Export..." reusing the existing `ExportRoutineDialog` (fixed 2026-07-31)
+- [x] Home page showed a generic "Rest Day" when there were zero active routines instead of prompting the user to activate or create one, unlike the Workout landing page (fixed 2026-07-31 by having Home reuse the same status-alert components as Workout, replacing the separate `TodayCard`)
+- [x] Routine editor's exercise rows could overflow horizontally on mobile when an exercise had sets+reps+duration steppers all on one line (fixed 2026-07-31: steppers wrap onto their own row, gear menu moved next to the exercise name)

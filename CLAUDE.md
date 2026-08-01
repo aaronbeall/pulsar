@@ -23,9 +23,11 @@ at best. All design and layout work going forward must be mobile-first-friendly:
 
 - **The "AI" features are currently mocked, not a small gap.** `RoutineChat.tsx` echoes
   the user's message back on a timer; `routineBuilderService.ts: generateRoutine` collects
-  real goals/equipment/time input and then ignores it, picking random exercise templates
-  instead. Don't assume any AI call is real without checking — and don't quietly "finish"
-  the mock without flagging it, since replacing it is a deliberate, staged effort (see
+  real goals/equipment/howMuch/additionalInfo input (see `constants/prompts.ts`) and stores
+  it as the routine's initial `chatHistory` (unified 2026-07-31 — see `NOTES.md`), but then
+  ignores it entirely when picking exercises, choosing random templates instead. Don't
+  assume any AI call is real without checking — and don't quietly "finish" the mock without
+  flagging it, since replacing it is a deliberate, staged effort (see
   `PLAN-ai-subscription.md`), not a drop-in fix.
 - **Never put a real API key behind a `VITE_`-prefixed env var again.** The existing
   Google CSE key is already public in the client bundle (acceptable for a free-tier image
