@@ -7,11 +7,11 @@ const WEEK_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 
 interface WeeklyActivityGraphProps {
   workouts: Workout[]; // already scoped to whatever this graph should represent (one routine, or all)
-  title?: string;
+  title?: string; // omit when an ancestor (e.g. SectionCard) already renders a heading
 }
 
 // Stacked bar chart of started/completed/perfect workouts by day of week.
-const WeeklyActivityGraph: React.FC<WeeklyActivityGraphProps> = ({ workouts, title = 'Weekly Activity' }) => {
+const WeeklyActivityGraph: React.FC<WeeklyActivityGraphProps> = ({ workouts, title }) => {
   const data = WEEK_DAYS.map(day => {
     const dayWorkouts = workouts.filter(w => {
       const d = new Date(w.startedAt);
@@ -22,18 +22,21 @@ const WeeklyActivityGraph: React.FC<WeeklyActivityGraphProps> = ({ workouts, tit
     const perfect = dayWorkouts.filter(isPerfectWorkout).length;
     return { day, started, completed, perfect };
   });
-  // SVG bar chart dimensions
+  // SVG bar chart dimensions — bars are sized/spaced to fill the full viewBox width evenly
+  // (symmetric side padding) so the chart both uses the available width and stays centered.
   const width = 320;
   const height = 100;
-  const barWidth = 28;
+  const sidePadding = 8;
+  const barGap = 10;
+  const barWidth = (width - sidePadding * 2 - barGap * (data.length - 1)) / data.length;
   const maxY = Math.max(1, ...data.map(d => d.started));
   return (
     <Box>
-      <Text fontWeight="bold" fontSize="md" mb={2}>{title}</Text>
-      <Box as="svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`}
-        style={{ display: 'block', maxWidth: '100%' }}>
+      {title && <Text fontWeight="bold" fontSize="md" mb={2}>{title}</Text>}
+      <Box as="svg" width="100%" height={height} viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
         {data.map((d, i) => {
-          const x = i * (barWidth + 8) + 16;
+          const x = sidePadding + i * (barWidth + barGap);
           // True stacking: started (bottom), completed (middle), perfect (top)
           const startedOnly = d.started - d.completed;
           const completedOnly = d.completed - d.perfect;

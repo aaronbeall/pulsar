@@ -88,7 +88,7 @@ export const RoutineActivityDrawer: React.FC<{ routine: Routine, workouts: Worko
         <DrawerBody>
           <RoutineStatsBox routine={routine} workouts={workouts} />
           <Box mb={4}>
-            <WeeklyActivityGraph workouts={workouts.filter(w => w.routineId === routine.id)} />
+            <WeeklyActivityGraph title="Weekly Activity" workouts={workouts.filter(w => w.routineId === routine.id)} />
           </Box>
           <Divider my={4} />
           <Box position="relative" pl={0} pr={2} py={2}>
