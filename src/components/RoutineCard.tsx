@@ -43,7 +43,7 @@ import {
   FaLayerGroup,
   FaTimesCircle,
 } from 'react-icons/fa';
-import { usePulsarStore } from '../store/pulsarStore';
+import { useExercises, usePulsarStore } from '../store/pulsarStore';
 import SwitchRoutineDialog from './SwitchRoutineDialog';
 import { ExportRoutineDialog } from './ExportRoutineDialog';
 
@@ -61,6 +61,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
   const deleteCancelRef = React.useRef<HTMLButtonElement>(null);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
+  const exercises = useExercises();
   const toast = useToast();
   const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
   const [showExportDialog, setShowExportDialog] = React.useState(false);
@@ -75,6 +76,18 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
     (sum, day) => sum + day.exercises.length,
     0
   );
+
+  // Pick the first scheduled exercise with a resolved cover photo as a relevant, no-fetch
+  // background image — same tinted-background treatment as the routine template cards.
+  const backgroundImageUrl = React.useMemo(() => {
+    for (const day of routine.dailySchedule) {
+      for (const ex of day.exercises) {
+        const exercise = exercises.find(e => e.id === ex.exerciseId);
+        if (exercise?.coverImageUrl) return exercise.coverImageUrl;
+      }
+    }
+    return null;
+  }, [routine, exercises]);
 
   const handleDelete = async () => {
     await removeRoutine(routine.id);
@@ -106,6 +119,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
         filter: 'brightness(1.03)',
       }}
       overflow="visible"
+      position="relative"
       onClick={e => {
         // Only navigate if the click target is not a button or inside a button (but allow the card itself)
         if (
@@ -124,7 +138,28 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
         }
       }}
     >
-      <CardHeader pb={2}>
+      {backgroundImageUrl && (
+        <Box
+          position="absolute"
+          inset={0}
+          zIndex={0}
+          borderRadius="xl"
+          overflow="hidden"
+          pointerEvents="none"
+        >
+          <Box
+            position="absolute"
+            inset={0}
+            backgroundImage={`linear-gradient(120deg, rgba(0,20,25,0.55), rgba(0,20,25,0.55), var(--chakra-colors-blackAlpha-800) 80%), url(${backgroundImageUrl})`}
+            backgroundSize="cover"
+            backgroundPosition="center"
+            backgroundRepeat="no-repeat"
+            opacity={0.28}
+            style={{ mixBlendMode: 'luminosity' }}
+          />
+        </Box>
+      )}
+      <CardHeader pb={2} position="relative" zIndex={1}>
         <VStack align="stretch" spacing={3}>
           <Flex justify="space-between" align="flex-start">
             <VStack align="start" spacing={1}>
@@ -256,7 +291,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
         </VStack>
       </CardHeader>
 
-      <CardBody>
+      <CardBody position="relative" zIndex={1}>
         <VStack align="stretch" spacing={4}>
           <Text
             fontSize="sm"
