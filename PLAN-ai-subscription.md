@@ -1,5 +1,10 @@
 # Plan: Optional Login + Subscription-Gated AI (stub)
 
+> This is Phases 2-4 of the bigger roadmap in `PLAN-ai-features.md` (2026-07-31), which
+> ships a BYOK version of the same AI features first, with zero infra, behind an
+> `AIProvider` interface this plan's hosted path slots into later without UI changes. Read
+> that doc first for the full sequencing; this one covers the auth/billing/proxy details.
+
 Goal: add optional login and a paid tier that unlocks real AI routine generation/chat,
 without requiring an account for the core app, without any upfront cost, and with a
 cost ceiling that can't blow up if abused. Local IndexedDB stays the source of truth for

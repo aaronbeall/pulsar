@@ -2,8 +2,10 @@
 
 Personalized workout tracker PWA. React 18 + TypeScript + Vite, Chakra UI v2, Zustand,
 IndexedDB (`idb`), deployed static to GitHub Pages. See `NOTES.md` for a full
-architecture/findings write-up and `PLAN-ai-subscription.md` for the planned auth/AI/
-billing direction — read both before proposing changes in those areas.
+architecture/findings write-up, `PLAN-ai-features.md` for the full BYOK → hosted AI
+roadmap (start here), and `PLAN-ai-subscription.md` for the auth/billing/proxy details
+that roadmap's later phases depend on — read all three before proposing changes in those
+areas.
 
 **This is a mobile-first, practically mobile-only app.** It's a PWA meant to be installed
 on a phone and used one-handed mid-workout — the desktop/wide-viewport case is secondary
@@ -56,5 +58,7 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   proxy), the static frontend should move to Cloudflare Pages rather than keeping GitHub
   Pages alongside a separate API origin — see `PLAN-ai-subscription.md` for why.
 - Login/subscription must stay **optional** — the app should remain fully useful with
-  zero account, local-only data, and template-based (non-AI) routines. AI is the only
-  thing that should ever require login + an active subscription.
+  zero account, local-only data, and template-based (non-AI) routines. Real AI requires
+  *either* a personal API key (free, bring-your-own-key) *or* login + an active
+  subscription (hosted, budget-capped) — never required just to use the app. See
+  `PLAN-ai-features.md` for the full BYOK → hosted roadmap and why both paths exist.
