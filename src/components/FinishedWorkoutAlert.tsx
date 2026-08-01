@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Routine, Workout } from '../models/types';
 import { findRoutineForToday, findWorkoutForToday } from '../utils/workoutUtils';
 import { FaTrophy, FaRedo, FaChartBar } from 'react-icons/fa';
+import StatusBadge from './StatusBadge';
 
 const confetti = keyframes`
   0%, 100% { transform: translateY(0); }
@@ -56,20 +57,23 @@ const FinishedWorkoutAlert: React.FC<FinishedWorkoutAlertProps> = ({ routines, w
             You crushed your workout today. Keep up the amazing work and enjoy your progress!
           </AlertDescription>
           <Flex gap={3}>
-            <Button
-              size="lg"
-              colorScheme="yellow"
-              variant="solid"
-              leftIcon={<Icon as={FaChartBar} />}
-              onClick={() => {
-                const startedWorkout = findWorkoutForToday(workouts, routines);
-                if (startedWorkout) {
-                  navigate(`/workout/session/${startedWorkout.id}`);
-                }
-              }}
-            >
-              View Workout
-            </Button>
+            <Box position="relative">
+              <Button
+                size="lg"
+                colorScheme="yellow"
+                variant="solid"
+                leftIcon={<Icon as={FaChartBar} />}
+                onClick={() => {
+                  const startedWorkout = findWorkoutForToday(workouts, routines);
+                  if (startedWorkout) {
+                    navigate(`/workout/session/${startedWorkout.id}`);
+                  }
+                }}
+              >
+                View Workout
+              </Button>
+              <StatusBadge status="completed" />
+            </Box>
           </Flex>
         </Flex>
       </Alert>

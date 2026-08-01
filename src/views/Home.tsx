@@ -4,10 +4,13 @@ import { format } from 'date-fns';
 import { FaDumbbell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { useExercises, useRoutines, useWorkouts } from '../store/pulsarStore';
-import TodayCard from '../components/TodayCard';
 import { findExercisesForToday, findRoutineForToday, getWorkoutStatusForToday, hasRoutineForToday } from '../utils/workoutUtils';
 import StreakCalendar from '../components/StreakCalendar';
 import InstallAppAlert from '../components/InstallAppAlert';
+import TimeToWorkoutAlert from '../components/TimeToWorkoutAlert';
+import RestDayAlert from '../components/RestDayAlert';
+import FinishedWorkoutAlert from '../components/FinishedWorkoutAlert';
+import NoActiveRoutinesAlert from '../components/NoActiveRoutinesAlert';
 import { pickTodaysHomeBackground } from '../assets/homeBackgrounds';
 
 const getGreeting = (hour: number): string => {
@@ -31,6 +34,8 @@ const Home: React.FC = () => {
     'linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.32) 100%)',
     'linear-gradient(135deg, rgba(30,30,40,0.45) 0%, rgba(0,0,0,0.32) 100%)'
   );
+
+  const activeRoutines = React.useMemo(() => routines.filter(r => r.active), [routines]);
 
   const todayStatus = routines.length > 0 && hasRoutineForToday(routines)
     ? getWorkoutStatusForToday(workouts, routines)
@@ -150,7 +155,20 @@ const Home: React.FC = () => {
                 {format(now, 'EEEE, MMMM d')}
               </Heading>
             </Box>
-            <TodayCard status={todayStatus} routines={routines} workouts={workouts} />
+            {activeRoutines.length === 0 ? (
+              <NoActiveRoutinesAlert
+                onCreate={() => navigate('/workout/setup')}
+                onStartRoutine={() => navigate('/workout')}
+              />
+            ) : hasRoutineForToday(activeRoutines) ? (
+              getWorkoutStatusForToday(workouts, activeRoutines) === 'completed' ? (
+                <FinishedWorkoutAlert routines={activeRoutines} workouts={workouts} />
+              ) : (
+                <TimeToWorkoutAlert routines={activeRoutines} workouts={workouts} />
+              )
+            ) : (
+              <RestDayAlert />
+            )}
             {workouts.length > 0 && <StreakCalendar workouts={workouts} routines={routines} />}
           </Box>
         )}

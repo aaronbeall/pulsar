@@ -22,12 +22,13 @@ import {
   useToken,
 } from '@chakra-ui/react';
 import { IconType } from 'react-icons';
-import { FaBars, FaSun, FaMoon, FaHome, FaDumbbell, FaCog, FaHistory, FaDownload } from 'react-icons/fa';
+import { FaBars, FaSun, FaMoon, FaHome, FaDumbbell, FaCog, FaHistory, FaDownload, FaInfoCircle } from 'react-icons/fa';
 import { Routes, Route, Link, useLocation, useNavigate, Link as RouterLink } from 'react-router-dom';
 import Home from './views/Home';
 import Workout from './views/Workout';
 import Settings from './views/Settings';
 import History from './views/History';
+import About from './views/About';
 import { usePulsarStoreInit } from './store/pulsarStore';
 import { useInstallPromptInit, useInstallPromptStore } from './store/installPromptStore';
 import logoSvg from './assets/logo.svg';
@@ -152,6 +153,7 @@ const App: React.FC = () => {
               path="/settings"
               element={<Settings colorScheme={colorScheme} onColorSchemeChange={handleColorSchemeChange} />}
             />
+            <Route path="/about" element={<About />} />
           </Routes>
         </Container>
       </Box>
@@ -271,6 +273,21 @@ const App: React.FC = () => {
             >
               <Icon as={FaCog} boxSize={4} color="gray.500" />
               <Text fontSize="sm" fontWeight="medium">Settings</Text>
+            </Flex>
+
+            <Flex
+              as="button"
+              w="100%"
+              align="center"
+              gap={3}
+              px={4}
+              py={3}
+              transition="background-color 0.2s"
+              _hover={{ bg: menuItemHoverBg }}
+              onClick={() => { navigate('/about'); onClose(); }}
+            >
+              <Icon as={FaInfoCircle} boxSize={4} color="gray.500" />
+              <Text fontSize="sm" fontWeight="medium">About</Text>
             </Flex>
 
             {showInstallItem && (

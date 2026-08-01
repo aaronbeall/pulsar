@@ -53,6 +53,10 @@ const TimeToWorkoutAlert: React.FC<TimeToWorkoutAlertProps> = ({ routines, worko
     }
   };
 
+  // Only rendered for 'not started'/'in progress' (the caller routes 'completed' to
+  // FinishedWorkoutAlert instead), but title still reflects which of the two it is.
+  const title = status === 'in progress' ? 'Keep the momentum going' : 'Time to crush your workout! 💪';
+
   return (
     <SlideFade in={true} offsetY="20px">
       <Alert
@@ -85,7 +89,7 @@ const TimeToWorkoutAlert: React.FC<TimeToWorkoutAlertProps> = ({ routines, worko
             fontWeight="extrabold"
             mb={2}
           >
-            Time to crush your workout! 💪
+            {title}
           </AlertTitle>
           <AlertDescription
             fontSize={{ base: 'sm', md: 'lg' }}
