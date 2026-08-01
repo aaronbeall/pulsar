@@ -9,7 +9,6 @@ import {
   SlideFade,
   useColorModeValue,
   Icon,
-  Divider,
   Spinner,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
@@ -75,17 +74,17 @@ export const WorkoutLanding: React.FC = () => {
 
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
-  // Use useMemo for active/inactive routines
-  const activeRoutines = React.useMemo(() =>
-    routines.filter(r => r.active && (!showFavoritesOnly || r.favorite)),
-    [routines, showFavoritesOnly]
-  );
-  const inactiveRoutines = React.useMemo(() =>
-    routines.filter(r => !r.active && (!showFavoritesOnly || r.favorite)),
-    [routines, showFavoritesOnly]
+  // Active routines drive "today"'s status alert and the week schedule below, so they must
+  // never be favorite-filtered — that filter only scopes which past/inactive routines are
+  // listed, not what's actually active/scheduled.
+  const activeRoutines = React.useMemo(() => routines.filter(r => r.active), [routines]);
+  const inactiveRoutines = React.useMemo(() => routines.filter(r => !r.active), [routines]);
+  const filteredInactiveRoutines = React.useMemo(
+    () => inactiveRoutines.filter(r => !showFavoritesOnly || r.favorite),
+    [inactiveRoutines, showFavoritesOnly]
   );
 
-  const hasFavorites = React.useMemo(() => routines.some(r => r.favorite), [routines]);
+  const hasFavorites = React.useMemo(() => inactiveRoutines.some(r => r.favorite), [inactiveRoutines]);
 
   React.useEffect(() => {
     if (!isLoading && routines.length === 0) {
@@ -123,82 +122,87 @@ export const WorkoutLanding: React.FC = () => {
             <RestDayAlert />
           )}
 
+          {/* Daily schedule for the week */}
           <Timeline activeRoutines={activeRoutines} workouts={workouts} />
 
-          <Box bg={bgColor} borderRadius="xl" p={{ base: 4, sm: 6 }} boxShadow="sm" borderWidth="1px" borderColor={borderColor}>
-            <Flex
-              direction={{ base: 'column', sm: 'row' }}
-              justify="space-between"
-              align={{ base: 'stretch', sm: 'center' }}
-              gap={3}
-              mb={6}
-            >
-              <Heading size="lg" bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
-                My Workout
-              </Heading>
-              {hasFavorites && (
-                <Button
-                  leftIcon={<FaStar />}
-                  colorScheme={showFavoritesOnly ? 'yellow' : undefined}
-                  variant={showFavoritesOnly ? 'solid' : 'ghost'}
-                  size="sm"
-                  alignSelf={{ base: 'flex-start', sm: 'auto' }}
-                  onClick={() => setShowFavoritesOnly(fav => !fav)}
-                  aria-pressed={showFavoritesOnly}
-                  sx={!showFavoritesOnly ? {
-                    color: useColorModeValue('#B89C3A', '#FFD600'),
-                    border: '1.5px solid',
-                    borderColor: useColorModeValue('#F5E7B2', '#FFD60055'),
-                    background: useColorModeValue('#FFFBEA', 'rgba(255,214,0,0.07)'),
-                    boxShadow: 'none',
-                    opacity: 0.92,
-                    fontWeight: 500,
-                    _hover: {
-                      color: '#FFD600',
-                      borderColor: '#FFD600',
-                      background: useColorModeValue('#FFF9E1', '#FFD60022'),
-                      opacity: 1,
-                    },
-                  } : {}}
-                >
-                  {showFavoritesOnly ? 'Show All' : 'Show Favorites'}
-                </Button>
-              )}
-            </Flex>
+          {/* Active routines — the most prominent section on this page; never favorite-filtered */}
+          {activeRoutines.length > 0 && (
+            <VStack spacing={4} align="stretch">
+              {activeRoutines.map((routine) => (
+                <SlideFade in={true} offsetY="20px" key={routine.id}>
+                  <RoutineCard routine={routine} />
+                </SlideFade>
+              ))}
+            </VStack>
+          )}
 
-            {activeRoutines.length > 0 && (
-              <Box mb={8}>
+          {/* Create a new routine */}
+          <AddRoutineCard onClick={() => navigate('/workout/setup')} />
+
+          {/* Past / inactive routines — the favorites filter is scoped to just this list */}
+          {inactiveRoutines.length > 0 && (
+            <Box
+              id="inactive-routines-section"
+              bg={bgColor}
+              borderRadius="xl"
+              p={{ base: 4, sm: 6 }}
+              boxShadow="sm"
+              borderWidth="1px"
+              borderColor={borderColor}
+            >
+              <Flex
+                direction={{ base: 'column', sm: 'row' }}
+                justify="space-between"
+                align={{ base: 'stretch', sm: 'center' }}
+                gap={3}
+                mb={6}
+              >
+                <Heading size="md" color="gray.500">
+                  Inactive Routines
+                </Heading>
+                {hasFavorites && (
+                  <Button
+                    leftIcon={<FaStar />}
+                    colorScheme={showFavoritesOnly ? 'yellow' : undefined}
+                    variant={showFavoritesOnly ? 'solid' : 'ghost'}
+                    size="sm"
+                    alignSelf={{ base: 'flex-start', sm: 'auto' }}
+                    onClick={() => setShowFavoritesOnly(fav => !fav)}
+                    aria-pressed={showFavoritesOnly}
+                    sx={!showFavoritesOnly ? {
+                      color: useColorModeValue('#B89C3A', '#FFD600'),
+                      border: '1.5px solid',
+                      borderColor: useColorModeValue('#F5E7B2', '#FFD60055'),
+                      background: useColorModeValue('#FFFBEA', 'rgba(255,214,0,0.07)'),
+                      boxShadow: 'none',
+                      opacity: 0.92,
+                      fontWeight: 500,
+                      _hover: {
+                        color: '#FFD600',
+                        borderColor: '#FFD600',
+                        background: useColorModeValue('#FFF9E1', '#FFD60022'),
+                        opacity: 1,
+                      },
+                    } : {}}
+                  >
+                    {showFavoritesOnly ? 'Show All' : 'Show Favorites'}
+                  </Button>
+                )}
+              </Flex>
+
+              {filteredInactiveRoutines.length > 0 ? (
                 <VStack spacing={4} align="stretch">
-                  {activeRoutines.map((routine) => (
+                  {filteredInactiveRoutines.map((routine) => (
                     <SlideFade in={true} offsetY="20px" key={routine.id}>
                       <RoutineCard routine={routine} />
                     </SlideFade>
                   ))}
                 </VStack>
-              </Box>
-            )}
-
-            {/* Add Routine Placeholder Card */}
-            <AddRoutineCard onClick={() => navigate('/workout/setup')} />
-
-            {inactiveRoutines.length > 0 && (
-              <>
-                <Divider my={6} />
-                <Box id="inactive-routines-section">
-                  <Heading size="md" mb={4} color="gray.500">
-                    Inactive Routines
-                  </Heading>
-                  <VStack spacing={4} align="stretch">
-                    {inactiveRoutines.map((routine) => (
-                      <SlideFade in={true} offsetY="20px" key={routine.id}>
-                        <RoutineCard routine={routine} />
-                      </SlideFade>
-                    ))}
-                  </VStack>
-                </Box>
-              </>
-            )}
-          </Box>
+              ) : (
+                <Text fontSize="sm" color="gray.500">No favorite inactive routines.</Text>
+              )}
+            </Box>
+          )}
         </VStack>
       </SlideFade>
     </Box>

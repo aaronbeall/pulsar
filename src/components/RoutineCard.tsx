@@ -37,7 +37,7 @@ import {
   FaStar,
   FaExchangeAlt,
   FaTrash,
-  FaShare,
+  FaFileExport,
   FaArrowRight,
   FaChartLine,
   FaLayerGroup,
@@ -45,6 +45,7 @@ import {
 } from 'react-icons/fa';
 import { usePulsarStore } from '../store/pulsarStore';
 import SwitchRoutineDialog from './SwitchRoutineDialog';
+import { ExportRoutineDialog } from './ExportRoutineDialog';
 
 interface RoutineCardProps {
   routine: Routine;
@@ -62,13 +63,12 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const toast = useToast();
   const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
+  const [showExportDialog, setShowExportDialog] = React.useState(false);
   const [favoriteLoading, setFavoriteLoading] = React.useState(false);
 
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const iconColor = useColorModeValue('gray.600', 'gray.400');
-  const activeTagColor = useColorModeValue('cyan.50', 'cyan.900');
-  const activeTagTextColor = useColorModeValue('cyan.800', 'cyan.100');
   const statsColor = useColorModeValue('gray.600', 'gray.400');
 
   const totalExercises = routine.dailySchedule.reduce(
@@ -162,17 +162,6 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                   <FaArrowRight />
                 </Box>
               </Heading>
-              {routine.active && (
-                <Tag
-                  size="sm"
-                  bg={activeTagColor}
-                  color={activeTagTextColor}
-                  fontWeight="bold"
-                  borderRadius="full"
-                >
-                  Active
-                </Tag>
-              )}
             </VStack>
 
             <Menu>
@@ -207,8 +196,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                   </MenuItem>
                 )}
                 <MenuItem
-                  icon={<FaStar />}
-                  color={routine.favorite ? 'yellow.500' : 'gray.400'}
+                  icon={<Box as={FaStar} color={routine.favorite ? 'yellow.500' : 'gray.400'} />}
                   _hover={{ bg: 'yellow.50' }}
                   _dark={{ _hover: { bg: 'yellow.900' } }}
                   onClick={async () => {
@@ -230,11 +218,12 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                   {routine.favorite ? 'Remove from favorites' : 'Add to favorites'}
                 </MenuItem>
                 <MenuItem
-                  icon={<FaShare />}
+                  icon={<FaFileExport />}
                   _hover={{ bg: 'gray.50' }}
                   _dark={{ _hover: { bg: 'gray.700' } }}
+                  onClick={() => setShowExportDialog(true)}
                 >
-                  Share routine
+                  Export...
                 </MenuItem>
                 <MenuItem
                   icon={<FaTrash />}
@@ -343,6 +332,13 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
           onClose={() => setShowSwitchConfirm(false)}
           routine={routine}
         />
+        {showExportDialog && (
+          <ExportRoutineDialog
+            isOpen={showExportDialog}
+            onClose={() => setShowExportDialog(false)}
+            routine={routine}
+          />
+        )}
       </CardBody>
     </Card>
   );

@@ -13,7 +13,7 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FaCog, FaExclamationTriangle, FaImages, FaPalette } from 'react-icons/fa';
+import { FaExclamationTriangle, FaImages, FaPalette } from 'react-icons/fa';
 import { deleteDB } from 'idb'; // Import deleteDB to delete IndexedDB
 import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
 
@@ -55,10 +55,14 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
 
   return (
     <Flex direction="column" gap={{ base: 4, sm: 5 }} maxW="560px" mx="auto">
-      <Flex align="center" gap={2} mb={1}>
-        <Icon as={FaCog} boxSize={5} color="cyan.500" />
-        <Heading fontSize={{ base: 'xl', sm: '2xl' }}>Settings</Heading>
-      </Flex>
+      <Heading
+        fontSize={{ base: 'xl', sm: '2xl' }}
+        bgGradient="linear(to-r, cyan.400, blue.500)"
+        bgClip="text"
+        mb={1}
+      >
+        Settings
+      </Heading>
 
       <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
         <Flex align="center" gap={2} mb={4}>
