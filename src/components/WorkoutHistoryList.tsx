@@ -13,9 +13,10 @@ const DOT_CENTER = '16px'; // Circle is 16px, row has px={2} (8px) — 8 + 8 = 1
 interface WorkoutHistoryListProps {
   workouts: Workout[]; // pre-sorted, newest first
   routines: Routine[];
+  showRoutineName?: boolean; // hide when every workout is already known to belong to one routine (e.g. shown on that routine's own page)
 }
 
-const WorkoutHistoryList: React.FC<WorkoutHistoryListProps> = ({ workouts, routines }) => {
+const WorkoutHistoryList: React.FC<WorkoutHistoryListProps> = ({ workouts, routines, showRoutineName = true }) => {
   const [showAll, setShowAll] = React.useState(false);
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const rowHoverBg = useColorModeValue('gray.50', 'gray.700');
@@ -76,9 +77,11 @@ const WorkoutHistoryList: React.FC<WorkoutHistoryListProps> = ({ workouts, routi
                       </Badge>
                     )}
                   </Flex>
-                  <Text fontSize="10px" color={mutedColor} fontWeight="medium" mb={1} noOfLines={1}>
-                    {getRoutineName(workout.routineId, routines)}
-                  </Text>
+                  {showRoutineName && (
+                    <Text fontSize="10px" color={mutedColor} fontWeight="medium" mb={1} noOfLines={1}>
+                      {getRoutineName(workout.routineId, routines)}
+                    </Text>
+                  )}
                   <Flex align="center" gap={1} fontSize="xs" color={mutedColor}>
                     <Icon as={FaCalendarAlt} boxSize={2.5} />
                     <Text>{format(workout.startedAt, 'MMM d, yyyy')}</Text>

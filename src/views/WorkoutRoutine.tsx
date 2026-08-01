@@ -10,8 +10,11 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   Button,
+  Collapse,
+  Divider,
   Flex,
   Heading,
+  Icon,
   IconButton,
   Menu,
   MenuButton,
@@ -24,19 +27,24 @@ import {
   useColorModeValue,
   useDisclosure
 } from '@chakra-ui/react';
+import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import React, { useEffect, useState } from 'react';
-import { FaChartBar, FaEdit, FaEllipsisV, FaInfoCircle, FaPlay, FaPlayCircle, FaPowerOff, FaStar, FaTimesCircle, FaTrash, FaFileExport } from 'react-icons/fa'; // Import icons
+import { FaChartBar, FaEdit, FaEllipsisV, FaHistory, FaInfoCircle, FaPlay, FaPlayCircle, FaPowerOff, FaStar, FaTimesCircle, FaTrash, FaFileExport } from 'react-icons/fa'; // Import icons
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import { RoutineActivityDrawer } from '../components/RoutineActivityDrawer';
 import RoutineChat, { ChatMessage } from '../components/RoutineChat';
 import { RoutineDisplayTable } from '../components/RoutineDisplayTable';
 import { RoutineEditor } from '../components/RoutineEditor';
+import SectionCard from '../components/SectionCard';
+import StreakCalendar from '../components/StreakCalendar';
+import WorkoutHistoryList from '../components/WorkoutHistoryList';
 import SwitchRoutineDialog from '../components/SwitchRoutineDialog';
 import { ExportRoutineDialog } from '../components/ExportRoutineDialog';
 import { workoutPrompts } from '../constants/prompts'; // Import prompts
 import type { Routine } from '../models/types';
 import { useExercises, usePulsarStore, useRoutine, useRoutines, useWorkouts } from '../store/pulsarStore';
+import { getWorkoutHistory } from '../utils/historyStats';
 
 const WorkoutRoutine: React.FC = () => {
   const { routineId } = useParams<{ routineId: string }>();
@@ -44,11 +52,28 @@ const WorkoutRoutine: React.FC = () => {
   const routines = useRoutines();
   const exercises = useExercises();
   const workouts = useWorkouts();
+  const routineWorkoutHistory = React.useMemo(
+    () => getWorkoutHistory(workouts.filter(w => w.routineId === routine?.id)),
+    [workouts, routine?.id]
+  );
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const addRoutine = usePulsarStore(s => s.addRoutine);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
   const [newResponses, setNewResponses] = useState<Routine['responses']>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isActivityOpen, onToggle: onToggleActivity } = useDisclosure();
+  const activityToggleRef = React.useRef<HTMLDivElement>(null);
+  const handleToggleActivity = () => {
+    const opening = !isActivityOpen;
+    onToggleActivity();
+    if (opening) {
+      // Scroll the toggle row itself to the top of the viewport, so the newly-revealed
+      // calendar/history land right underneath it rather than requiring a manual scroll.
+      setTimeout(() => {
+        activityToggleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  };
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
@@ -258,6 +283,30 @@ const WorkoutRoutine: React.FC = () => {
                 mode="view"
               />
             )}
+            <Box mt={6}>
+              <Flex ref={activityToggleRef} align="center" gap={3}>
+                <Divider />
+                <Button
+                  onClick={handleToggleActivity}
+                  variant="ghost"
+                  colorScheme="cyan"
+                  size="sm"
+                  flexShrink={0}
+                  rightIcon={<Icon as={isActivityOpen ? ChevronUpIcon : ChevronDownIcon} />}
+                >
+                  {isActivityOpen ? 'Hide Activity' : 'View Activity'}
+                </Button>
+                <Divider />
+              </Flex>
+              <Collapse in={isActivityOpen} animateOpacity>
+                <Flex direction="column" gap={{ base: 4, sm: 5 }} pt={4}>
+                  <StreakCalendar workouts={routineWorkoutHistory} routines={[routine]} />
+                  <SectionCard icon={FaHistory} title="Workout History">
+                    <WorkoutHistoryList workouts={routineWorkoutHistory} routines={[routine]} showRoutineName={false} />
+                  </SectionCard>
+                </Flex>
+              </Collapse>
+            </Box>
           </>
         )}
         {isEditing && routine && (
