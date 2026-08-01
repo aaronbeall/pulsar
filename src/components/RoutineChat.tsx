@@ -1,15 +1,12 @@
 import React, { useRef, useState } from 'react';
 import { Box, VStack, Text, Flex, Button, Collapse, IconButton, Input } from '@chakra-ui/react';
 import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp } from 'react-icons/fa';
-
-export interface ChatMessage {
-  role: 'user' | 'ai';
-  message: string;
-}
+import { v4 as uuidv4 } from 'uuid';
+import { RoutineChatMessage } from '../models/types';
 
 interface RoutineChatProps {
-  chatHistory: ChatMessage[];
-  setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  chatHistory: RoutineChatMessage[];
+  setChatHistory: React.Dispatch<React.SetStateAction<RoutineChatMessage[]>>;
 }
 
 const RoutineChat: React.FC<RoutineChatProps> = ({ chatHistory, setChatHistory }) => {
@@ -28,11 +25,11 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ chatHistory, setChatHistory }
   const handleSend = async () => {
     if (!chatInput.trim()) return;
     const userMessage = chatInput.trim();
-    setChatHistory((prev) => [...prev, { role: 'user', message: userMessage }]);
+    setChatHistory((prev) => [...prev, { id: uuidv4(), role: 'user', message: userMessage, date: Date.now() }]);
     setChatInput('');
     // Simulate AI response (replace with real AI call if available)
     setTimeout(() => {
-      setChatHistory((prev) => [...prev, { role: 'ai', message: `AI: I received your message: "${userMessage}"` }]);
+      setChatHistory((prev) => [...prev, { id: uuidv4(), role: 'ai', message: `AI: I received your message: "${userMessage}"`, date: Date.now() }]);
     }, 600);
   };
 

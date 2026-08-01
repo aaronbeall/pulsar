@@ -22,6 +22,16 @@ export interface RoutineDay {
     exercises: ScheduledExercise[];
   }
 
+// A single turn in a routine's AI chat — covers both the initial setup-wizard Q&A (seeded
+// once at creation) and any later back-and-forth, in one flexible, appendable stream.
+export interface RoutineChatMessage {
+  id: string;
+  role: 'user' | 'ai';
+  message: string;
+  date: number;
+  dismissed?: boolean; // 'ai' messages not yet acknowledged (e.g. a "new update" indicator)
+}
+
 export interface Routine {
   id: string; // Unique identifier
   name: string;
@@ -29,18 +39,7 @@ export interface Routine {
   active: boolean;
   createdAt: number;
   dailySchedule: Array<RoutineDay>;
-  prompts: {
-    goals: string; // User's workout goals
-    equipment: string; // Equipment the user will use
-    time: string; // Time available for workouts
-    additionalInfo: string; // Additional information provided by the user
-  };
-  responses: Array<{
-    date: number;
-    prompt: string;
-    response: string;
-    dismissed: boolean;
-  }>;
+  chatHistory: RoutineChatMessage[];
   liked?: boolean;
   disliked?: boolean;
   favorite?: boolean;
@@ -52,8 +51,6 @@ export interface ScheduledExercise {
   reps?: number;
   duration?: number;  // In seconds
 }
-
-export type RoutinePromptKey = keyof Routine["prompts"];
 
 export interface Workout {
   id: string; // Unique identifier

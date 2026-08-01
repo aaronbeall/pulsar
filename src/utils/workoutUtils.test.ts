@@ -27,8 +27,7 @@ function makeRoutine(overrides: Partial<Routine> = {}): Routine {
     active: true,
     createdAt: Date.now(),
     dailySchedule: [],
-    prompts: { goals: '', equipment: '', time: '', additionalInfo: '' },
-    responses: [],
+    chatHistory: [],
     ...overrides,
   };
 }

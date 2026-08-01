@@ -4,18 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import { usePulsarStore, useExercises } from '../store/pulsarStore';
 import { generateRoutine, createRoutineFromTemplate } from '../services/routineBuilderService';
 import { workoutPrompts } from '../constants/prompts'; // Import reusable prompts
-import { RoutinePromptKey, Routine } from '../models/types';
+import { Routine } from '../models/types';
 import { RoutineTemplate } from '../services/routineTemplates';
 import type { NavigateFunction } from 'react-router-dom';
 import { FaArrowRight, FaMagic, FaBook } from 'react-icons/fa';
 import { RoutineTemplateChooser } from '../components/RoutineTemplateChooser';
 
-const initialPromptState = { goals: '', equipment: '', time: '', additionalInfo: '' };
+// Positional, matching workoutPrompts by index — no need for named keys.
+const emptyResponses = () => Array(workoutPrompts.length).fill('');
 
 export const WorkoutSetup: React.FC = () => {
   // Hoist all hooks to the top
   const [step, setStep] = useState<number>(1);
-  const [responses, setResponses] = useState<Record<RoutinePromptKey, string>>(initialPromptState);
+  const [responses, setResponses] = useState<string[]>(emptyResponses);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showTemplateChooser, setShowTemplateChooser] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -32,8 +33,8 @@ export const WorkoutSetup: React.FC = () => {
   const chooseBtnOpacity = useColorModeValue(0.85, 0.95);
   const chooseBtnHoverBg = useColorModeValue('gray.100', 'cyan.900');
 
-  const handleInputChange = (key: RoutinePromptKey, value: string) => {
-    setResponses((prev) => ({ ...prev, [key]: value }));
+  const handleInputChange = (index: number, value: string) => {
+    setResponses((prev) => prev.map((r, i) => (i === index ? value : r)));
   };
 
   const addRoutineAndNavigate = async (
@@ -97,13 +98,13 @@ export const WorkoutSetup: React.FC = () => {
   if (showTemplateChooser) {
     return (
       <RoutineTemplateChooser
-        userInput={Object.values(responses).join(' ')}
+        userInput={responses.join(' ')}
         onSelect={handleTemplateSelect}
         onBack={() => setShowTemplateChooser(false)}
         onStartOver={() => {
           setShowTemplateChooser(false);
           setStep(1);
-          setResponses(initialPromptState);
+          setResponses(emptyResponses());
         }}
       />
     );
@@ -117,8 +118,8 @@ export const WorkoutSetup: React.FC = () => {
         </Heading>
         <Input
           ref={inputRef}
-          value={responses[workoutPrompts[step - 1].key] || ''}
-          onChange={(e) => handleInputChange(workoutPrompts[step - 1].key, e.target.value)}
+          value={responses[step - 1] || ''}
+          onChange={(e) => handleInputChange(step - 1, e.target.value)}
           onKeyDown={handleKeyDown}
           mb={2}
           width="100%"

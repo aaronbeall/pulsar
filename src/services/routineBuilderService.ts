@@ -2,13 +2,14 @@
 // This service now expects exercises to be passed in from the store, and add operations to use the store's addExercise.
 // Direct DB calls (getExercises, addExercise) have been removed from this file.
 
-import { Routine, Exercise, DayOfWeek } from '../models/types';
+import { Routine, RoutineChatMessage, Exercise, DayOfWeek } from '../models/types';
 import { v4 as uuidv4 } from 'uuid';
 import { getSearchUrl, getHowToQuery, getExerciseSearchImageUrl, searchExerciseImages } from '../utils/webUtils';
 import { exerciseTemplates, ExerciseTemplate } from './exerciseTemplates';
 import { routineTemplates, RoutineTemplate } from './routineTemplates';
 import { dailyWorkoutTemplates } from './dailyWorkoutTemplates';
 import { findFreeExerciseDbEntry, getFreeExerciseDbImageUrls, isTimedCategory } from './freeExerciseDb';
+import { workoutPrompts } from '../constants/prompts';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -247,10 +248,34 @@ export const generateRandomRoutineName = () => {
 };
 
 /**
+ * Turns the setup wizard's answers into the routine's initial chat stream: an ai/user turn
+ * per answered prompt, followed by a closing ai confirmation message.
+ */
+function buildWizardChatHistory(responses: string[]): RoutineChatMessage[] {
+  const now = Date.now();
+  let t = 0;
+  const chatHistory: RoutineChatMessage[] = [];
+  workoutPrompts.forEach((prompt, i) => {
+    const answer = responses[i];
+    if (!answer) return;
+    chatHistory.push({ id: uuidv4(), role: 'ai', message: prompt.question, date: now + t++ });
+    chatHistory.push({ id: uuidv4(), role: 'user', message: answer, date: now + t++ });
+  });
+  chatHistory.push({
+    id: uuidv4(),
+    role: 'ai',
+    message: 'Here is your custom routine based on your preferences.',
+    date: now + t++,
+    dismissed: false,
+  });
+  return chatHistory;
+}
+
+/**
  * Generate a routine and exercises. Expects addExercise to be passed in from the store.
  */
 export const generateRoutine = async (
-  responses: { [key: string]: string },
+  responses: string[],
   exercises: Exercise[],
   addExercise: (ex: Exercise) => Promise<void>
 ): Promise<{ routine: Routine, exercises: Exercise[] }> => {
@@ -310,20 +335,9 @@ export const generateRoutine = async (
         ],
       },
     ],
-    prompts: {
-      goals: responses.goals || '',
-      equipment: responses.equipment || '',
-      time: responses.time || '',
-      additionalInfo: responses.additionalInfo || '',
-    },
-    responses: [
-      {
-        date: Date.now(),
-        prompt: 'Make my routine!',
-        response: 'Here is your custom routine based on your preferences.',
-        dismissed: false,
-      }
-    ],
+    // The wizard's Q&A becomes the initial chat stream: each answered prompt as an ai
+    // question + user answer turn, followed by the "routine ready" confirmation.
+    chatHistory: buildWizardChatHistory(responses),
     liked: false,
     disliked: false,
     favorite: false,
@@ -404,13 +418,7 @@ export async function createRoutineFromTemplate(
     active: true,
     createdAt: Date.now(),
     dailySchedule,
-    prompts: {
-      goals: '',
-      equipment: '',
-      time: '',
-      additionalInfo: '',
-    },
-    responses: [],
+    chatHistory: [], // no setup wizard for template-based routines
     liked: false,
     disliked: false,
     favorite: false,

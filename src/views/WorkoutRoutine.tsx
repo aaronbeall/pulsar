@@ -29,13 +29,12 @@ import { FaChartBar, FaEdit, FaEllipsisV, FaInfoCircle, FaPlay, FaPlayCircle, Fa
 import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import { RoutineActivityDrawer } from '../components/RoutineActivityDrawer';
-import RoutineChat, { ChatMessage } from '../components/RoutineChat';
+import RoutineChat from '../components/RoutineChat';
 import { RoutineDisplayTable } from '../components/RoutineDisplayTable';
 import { RoutineEditor } from '../components/RoutineEditor';
 import SwitchRoutineDialog from '../components/SwitchRoutineDialog';
 import { ExportRoutineDialog } from '../components/ExportRoutineDialog';
-import { workoutPrompts } from '../constants/prompts'; // Import prompts
-import type { Routine } from '../models/types';
+import type { Routine, RoutineChatMessage } from '../models/types';
 import { useExercises, usePulsarStore, useRoutine, useRoutines, useWorkouts } from '../store/pulsarStore';
 
 const WorkoutRoutine: React.FC = () => {
@@ -50,9 +49,9 @@ const WorkoutRoutine: React.FC = () => {
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const addRoutine = usePulsarStore(s => s.addRoutine);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
-  const [newResponses, setNewResponses] = useState<Routine['responses']>([]);
+  const [newResponses, setNewResponses] = useState<RoutineChatMessage[]>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [chatHistory, setChatHistory] = useState<RoutineChatMessage[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
   const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
@@ -76,34 +75,16 @@ const WorkoutRoutine: React.FC = () => {
 
   useEffect(() => {
     if (routine) {
-      setNewResponses(routine.responses.filter((response) => !response.dismissed));
-      // Build chat history as a conversation: AI prompt, then user response, for each prompt
-      const introChat: ChatMessage[] = [];
-      workoutPrompts.forEach((prompt) => {
-        const userVal = routine.prompts[prompt.key];
-        if (userVal) {
-          introChat.push({ role: 'ai', message: prompt.question });
-          introChat.push({ role: 'user', message: userVal });
-        }
-      });
-      setChatHistory([
-        ...introChat,
-        ...routine.responses.map(r => ({ role: 'ai' as const, message: r.response }))
-      ]);
+      setChatHistory(routine.chatHistory);
+      setNewResponses(routine.chatHistory.filter(m => m.role === 'ai' && !m.dismissed));
     }
   }, [routine]);
 
-  const dismissResponse = async (index: number) => {
+  const dismissResponse = async (id: string) => {
     if (!routine) return;
-    const updatedResponses = [...routine.responses];
-    const dismissedResponse = newResponses[index];
-    const responseIndex = updatedResponses.findIndex((r) => r.date === dismissedResponse.date);
-    if (responseIndex !== -1) {
-      updatedResponses[responseIndex].dismissed = true;
-    }
-    const updatedRoutine = { ...routine, responses: updatedResponses };
-    updateRoutine(updatedRoutine);
-    setNewResponses((prev) => prev.filter((_, i) => i !== index));
+    const updatedChatHistory = routine.chatHistory.map(m => m.id === id ? { ...m, dismissed: true } : m);
+    await updateRoutine({ ...routine, chatHistory: updatedChatHistory });
+    setNewResponses((prev) => prev.filter(m => m.id !== id));
   };
 
   // Remove old activeRoutines usage in toggleActiveState
