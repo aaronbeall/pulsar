@@ -3,7 +3,7 @@ import { Box, Button, Container, Flex, Heading, Text, useColorModeValue, Highlig
 import { format } from 'date-fns';
 import { FaDumbbell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { useExercises, useRoutines, useWorkouts } from '../store/pulsarStore';
+import { useExercises, usePulsarLoading, useRoutines, useWorkouts } from '../store/pulsarStore';
 import { findExercisesForToday, findRoutineForToday, getWorkoutStatusForToday, hasRoutineForToday } from '../utils/workoutUtils';
 import StreakCalendar from '../components/StreakCalendar';
 import InstallAppAlert from '../components/InstallAppAlert';
@@ -24,7 +24,9 @@ const Home: React.FC = () => {
   const routines = useRoutines();
   const workouts = useWorkouts();
   const exercises = useExercises();
-  const isLoading = routines === undefined || workouts === undefined;
+  // routines/workouts default to [] (never undefined) even before loadAll() resolves, so
+  // the store's own `loading` flag is the only reliable signal here.
+  const isLoading = usePulsarLoading();
   const navigate = useNavigate();
   const now = new Date();
   const glassBg = useColorModeValue('whiteAlpha.700', 'blackAlpha.400');

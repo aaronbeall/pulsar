@@ -30,6 +30,22 @@ export interface RoutineChatMessage {
   message: string;
   date: number;
   dismissed?: boolean; // 'ai' messages not yet acknowledged (e.g. a "new update" indicator)
+  pendingChangeId?: string; // links an 'ai' message to a RoutineChange it's proposing
+}
+
+// A change to a routine's schedule/description proposed by the AI in chat, reviewed by the
+// user before it's applied. Per-day ops (not a full-schedule replace) so the diff UI can
+// show exactly which days changed instead of an opaque "routine updated."
+export interface RoutineChange {
+  id: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  patch: {
+    dailySchedule?: Array<
+      | { op: 'setDay'; day: DayOfWeek; kind: string; exercises: ScheduledExercise[] }
+      | { op: 'clearDay'; day: DayOfWeek } // turn into a rest day
+    >;
+    description?: string;
+  };
 }
 
 export interface Routine {
@@ -40,6 +56,7 @@ export interface Routine {
   createdAt: number;
   dailySchedule: Array<RoutineDay>;
   chatHistory: RoutineChatMessage[];
+  changes?: RoutineChange[]; // all AI-proposed changes, any status — pending ones await a decision
   liked?: boolean;
   disliked?: boolean;
   favorite?: boolean;

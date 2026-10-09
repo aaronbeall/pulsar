@@ -5,6 +5,7 @@ import {
   Flex,
   Heading,
   Icon,
+  Input,
   Link,
   Select,
   Text,
@@ -13,9 +14,11 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FaExclamationTriangle, FaImages, FaPalette } from 'react-icons/fa';
+import { FaExclamationTriangle, FaExternalLinkAlt, FaImages, FaPalette, FaRobot } from 'react-icons/fa';
 import { deleteDB } from 'idb'; // Import deleteDB to delete IndexedDB
 import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
+import { useOpenAiApiKey } from '../store/aiSettingsStore';
+import { testApiKey } from '../services/ai';
 
 interface SettingsProps {
   colorScheme: string;
@@ -25,11 +28,29 @@ interface SettingsProps {
 const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange }) => {
   const { colorMode, setColorMode } = useColorMode();
   const toast = useToast();
+  const [apiKey, setApiKey] = useOpenAiApiKey();
+  const [testingKey, setTestingKey] = React.useState(false);
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const dangerBg = useColorModeValue('red.50', 'rgba(254, 178, 178, 0.06)');
   const dangerBorder = useColorModeValue('red.200', 'red.700');
+
+  const handleTestKey = async () => {
+    if (!apiKey) return;
+    setTestingKey(true);
+    const ok = await testApiKey(apiKey);
+    setTestingKey(false);
+    toast({
+      title: ok ? 'API key looks good' : 'Key test failed',
+      description: ok
+        ? 'AI-generated routines and chat-suggested edits are enabled.'
+        : 'That key was rejected by OpenAI — double check it in Settings.',
+      status: ok ? 'success' : 'error',
+      duration: 3000,
+      isClosable: true,
+    });
+  };
 
   const handleClearSettings = () => {
     localStorage.clear();
@@ -102,6 +123,41 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
               <option value="dark">Dark</option>
             </Select>
           </Flex>
+        </VStack>
+      </Box>
+
+      <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
+        <Flex align="center" gap={2} mb={3}>
+          <Icon as={FaRobot} color="cyan.500" />
+          <Heading size="sm">AI</Heading>
+        </Flex>
+        <Text fontSize="xs" color={mutedColor} mb={3}>
+          Add your own OpenAI API key to enable AI-generated routines and chat-suggested
+          edits. The key is stored only in this browser and used only to call OpenAI
+          directly — never sent anywhere else.
+        </Text>
+        <VStack align="stretch" spacing={2}>
+          <Input
+            type="password"
+            placeholder="sk-..."
+            value={apiKey || ''}
+            onChange={(e) => setApiKey(e.target.value || null)}
+            size="sm"
+            borderRadius="md"
+          />
+          <Flex gap={3} align="center" wrap="wrap">
+            <Button size="sm" onClick={handleTestKey} isDisabled={!apiKey} isLoading={testingKey}>
+              Test key
+            </Button>
+            <Link href="https://platform.openai.com/api-keys" isExternal color="cyan.500" fontSize="xs" display="inline-flex" alignItems="center" gap={1}>
+              Get an API key <Icon as={FaExternalLinkAlt} boxSize={2.5} />
+            </Link>
+          </Flex>
+          <Text fontSize="xs" color={apiKey ? 'green.500' : mutedColor} fontWeight="medium">
+            {apiKey
+              ? 'AI generation active.'
+              : 'Add a key above to enable AI-personalized routines — otherwise Pulsar picks from templates.'}
+          </Text>
         </VStack>
       </Box>
 

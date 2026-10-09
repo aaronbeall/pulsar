@@ -13,7 +13,7 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { Routine, Workout } from '../models/types';
-import { useRoutines, useWorkouts } from '../store/pulsarStore';
+import { usePulsarLoading, useRoutines, useWorkouts } from '../store/pulsarStore';
 import { FaPlus, FaDumbbell, FaStar } from 'react-icons/fa';
 import Timeline from '../components/Timeline';
 import { hasRoutineForToday, getWorkoutStatusForToday } from '../utils/workoutUtils';
@@ -70,7 +70,10 @@ export const WorkoutLanding: React.FC = () => {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  const isLoading = routines === undefined || workouts === undefined;
+  // routines/workouts default to [] (never undefined) even before loadAll() resolves, so
+  // the store's own `loading` flag is the only reliable signal — an emptiness check here
+  // would misfire on every fresh load and redirect straight to /setup before data arrives.
+  const isLoading = usePulsarLoading();
 
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 

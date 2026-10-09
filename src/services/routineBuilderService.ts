@@ -2,7 +2,7 @@
 // This service now expects exercises to be passed in from the store, and add operations to use the store's addExercise.
 // Direct DB calls (getExercises, addExercise) have been removed from this file.
 
-import { Routine, RoutineChatMessage, Exercise, DayOfWeek } from '../models/types';
+import { Routine, RoutineChatMessage, Exercise, DayOfWeek, ScheduledExercise } from '../models/types';
 import { v4 as uuidv4 } from 'uuid';
 import { getSearchUrl, getHowToQuery, getExerciseSearchImageUrl, searchExerciseImages } from '../utils/webUtils';
 import { exerciseTemplates, ExerciseTemplate } from './exerciseTemplates';
@@ -10,6 +10,7 @@ import { routineTemplates, RoutineTemplate } from './routineTemplates';
 import { dailyWorkoutTemplates } from './dailyWorkoutTemplates';
 import { findFreeExerciseDbEntry, getFreeExerciseDbImageUrls, isTimedCategory } from './freeExerciseDb';
 import { workoutPrompts } from '../constants/prompts';
+import { getActiveAIProvider, AIProvider } from './ai';
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -114,6 +115,37 @@ export async function getAddedExercise(name: string, exercises: Exercise[], addE
   const newExercise = await createNewExercise(template);
   await addExercise(newExercise);
   return newExercise;
+}
+
+/**
+ * Resolve a batch of AI-provided { name, sets, reps?, duration? } entries into real
+ * ScheduledExercise records (with exerciseId), reusing the same name resolution/creation
+ * pipeline template-based routines already use (getAddedExercise). Tracks newly-created
+ * exercises locally as it goes so repeated names within one batch don't create duplicates
+ * before the store has re-rendered with them.
+ */
+export async function resolveAIExercises(
+  rawExercises: Array<{ name: string; sets: number; reps?: number; duration?: number }>,
+  exercises: Exercise[],
+  addExercise: (ex: Exercise) => Promise<void>
+): Promise<{ scheduled: ScheduledExercise[]; newExercises: Exercise[] }> {
+  const known = [...exercises];
+  const newExercises: Exercise[] = [];
+  const scheduled: ScheduledExercise[] = [];
+  for (const raw of rawExercises) {
+    const exercise = await getAddedExercise(raw.name, known, addExercise);
+    if (!known.some(e => e.id === exercise.id)) {
+      known.push(exercise);
+      newExercises.push(exercise);
+    }
+    scheduled.push({
+      exerciseId: exercise.id,
+      sets: raw.sets,
+      reps: raw.reps,
+      duration: raw.duration,
+    });
+  }
+  return { scheduled, newExercises };
 }
 
 /**
@@ -249,9 +281,10 @@ export const generateRandomRoutineName = () => {
 
 /**
  * Turns the setup wizard's answers into the routine's initial chat stream: an ai/user turn
- * per answered prompt, followed by a closing ai confirmation message.
+ * per answered prompt, followed by a closing ai message — the AI's own commentary when real
+ * AI generation ran, otherwise a canned confirmation.
  */
-function buildWizardChatHistory(responses: string[]): RoutineChatMessage[] {
+function buildWizardChatHistory(responses: string[], closingMessage?: string): RoutineChatMessage[] {
   const now = Date.now();
   let t = 0;
   const chatHistory: RoutineChatMessage[] = [];
@@ -264,21 +297,81 @@ function buildWizardChatHistory(responses: string[]): RoutineChatMessage[] {
   chatHistory.push({
     id: uuidv4(),
     role: 'ai',
-    message: 'Here is your custom routine based on your preferences.',
+    message: closingMessage || 'Here is your custom routine based on your preferences.',
     date: now + t++,
     dismissed: false,
   });
   return chatHistory;
 }
 
+/** Positional wizard answers -> { question, answer } pairs for the AI prompt, skipping
+ * unanswered prompts (same filtering buildWizardChatHistory does). */
+function zipWizardAnswers(responses: string[]): Array<{ question: string; answer: string }> {
+  return workoutPrompts
+    .map((prompt, i) => ({ question: prompt.question, answer: responses[i] }))
+    .filter((qa): qa is { question: string; answer: string } => !!qa.answer);
+}
+
+/**
+ * Build a routine from a real AI-generated plan. Exercise names come back from the model,
+ * not exerciseIds — resolved via resolveAIExercises (same pipeline template routines use)
+ * before being stored.
+ */
+async function generateRoutineWithAI(
+  provider: AIProvider,
+  responses: string[],
+  exercises: Exercise[],
+  addExercise: (ex: Exercise) => Promise<void>
+): Promise<{ routine: Routine, exercises: Exercise[] }> {
+  const plan = await provider.generateRoutine(zipWizardAnswers(responses));
+
+  let known = [...exercises];
+  const allNewExercises: Exercise[] = [];
+  const dailySchedule = [];
+  for (const day of plan.schedule) {
+    const { scheduled, newExercises } = await resolveAIExercises(day.exercises, known, addExercise);
+    known = [...known, ...newExercises];
+    allNewExercises.push(...newExercises);
+    dailySchedule.push({ day: day.day, kind: day.kind || '', exercises: scheduled });
+  }
+
+  const routine: Routine = {
+    id: uuidv4(),
+    name: plan.name || generateRandomRoutineName(),
+    description: plan.description || 'A routine tailored to your preferences.',
+    active: true,
+    createdAt: Date.now(),
+    dailySchedule,
+    // The wizard's Q&A becomes the initial chat stream, closed out with the AI's own
+    // commentary instead of a canned line.
+    chatHistory: buildWizardChatHistory(responses, plan.commentary),
+    liked: false,
+    disliked: false,
+    favorite: false,
+  };
+  return { routine, exercises: allNewExercises };
+}
+
 /**
  * Generate a routine and exercises. Expects addExercise to be passed in from the store.
+ * Uses real AI when a provider is active (see services/ai); falls back to the random
+ * template-picker below when there's no provider or the AI call fails for any reason, so
+ * routine creation never hard-fails on an AI hiccup.
  */
 export const generateRoutine = async (
   responses: string[],
   exercises: Exercise[],
   addExercise: (ex: Exercise) => Promise<void>
 ): Promise<{ routine: Routine, exercises: Exercise[] }> => {
+  const provider = getActiveAIProvider();
+  if (provider) {
+    try {
+      return await generateRoutineWithAI(provider, responses, exercises, addExercise);
+    } catch (e) {
+      console.error('AI routine generation failed, falling back to the template picker:', e);
+    }
+  }
+
   await delay(2000);
   const routineId = uuidv4();
   const routineName = generateRandomRoutineName();

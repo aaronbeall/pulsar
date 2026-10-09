@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Button, Flex, Heading, Input, Text, Spinner, Skeleton, VStack, useColorModeValue } from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { usePulsarStore, useExercises } from '../store/pulsarStore';
 import { generateRoutine, createRoutineFromTemplate } from '../services/routineBuilderService';
 import { workoutPrompts } from '../constants/prompts'; // Import reusable prompts
@@ -9,6 +9,7 @@ import { RoutineTemplate } from '../services/routineTemplates';
 import type { NavigateFunction } from 'react-router-dom';
 import { FaArrowRight, FaMagic, FaBook } from 'react-icons/fa';
 import { RoutineTemplateChooser } from '../components/RoutineTemplateChooser';
+import { hasActiveAIProvider } from '../services/ai';
 
 // Positional, matching workoutPrompts by index — no need for named keys.
 const emptyResponses = () => Array(workoutPrompts.length).fill('');
@@ -138,6 +139,15 @@ export const WorkoutSetup: React.FC = () => {
           <Button colorScheme="cyan" size="lg" w="100%" onClick={handleNext} leftIcon={<FaMagic />} mb={2}>
             Make my routine!
           </Button>
+          {!hasActiveAIProvider() && (
+            <Text fontSize="xs" color={orTextColor} mb={2}>
+              Using template-based generation —{' '}
+              <Text as={RouterLink} to="/settings" textDecoration="underline">
+                add an OpenAI key in Settings
+              </Text>{' '}
+              for AI-personalized routines.
+            </Text>
+          )}
           <Text fontSize="sm" color={orTextColor} my={1} fontWeight="normal" letterSpacing="wider">
             or
           </Text>

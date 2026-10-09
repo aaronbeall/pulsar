@@ -37,31 +37,25 @@ feature intent). This file tracks *how it's built* and *what to watch out for*. 
 - Routine/workout/exercise CRUD is consistently routed through the Zustand store
   (`pulsarStore.ts`) rather than components touching IndexedDB directly — good separation.
 
-## Key insight: the "AI" features are entirely mocked
+## AI features: real (BYOK) as of 2026-08-01, mocked before that
 
-This is the most important finding for planning purposes. The TODO lists "AI generation,"
-"AI key prompt setting," and "AI chat suggestions" as unstarted MVP work, and the code
-confirms there is **no LLM integration at all** yet, despite the UI already implying one:
+Historical note for context — until 2026-08-01 there was **no LLM integration at all**:
+`RoutineChat.tsx` echoed the user's message back on a timer, and
+`routineBuilderService.ts: generateRoutine` collected real user input but ignored it,
+picking random `exerciseTemplates` instead. That's now Phase 1 of `PLAN-ai-features.md`,
+implemented — see "Phase 1 AI (BYOK) shipped" below for what changed and how it works.
+**The mock still exists as the automatic fallback** whenever no personal API key is set
+(`services/ai: getActiveAIProvider()` returns `null`), so an unconfigured install still
+behaves exactly like before — this is intentional, not a regression, per `CLAUDE.md`'s
+"remain fully useful with zero account" rule.
 
-- `RoutineChat.tsx` (`handleSend`) doesn't call any API — it echoes the user's message
-  back after a `setTimeout` with the string `` `AI: I received your message: "${userMessage}"` ``.
-- `routineBuilderService.ts: generateRoutine` collects real user input (goals, equipment,
-  howMuch, `additionalInfo` via `constants/prompts.ts`'s `workoutPrompts`) and stores it as
-  the routine's initial `chatHistory` (see "Routine chat history unified" below) but then
-  **ignores it entirely** for the actual routine content — it just shuffles
-  `exerciseTemplates` and picks 5 at random, wrapped in an artificial `await delay(2000)`
-  to simulate "thinking." The routine name is a Mad-Libs generator (`funnyWords` array +
-  `generateRandomRoutineName`).
-- The only real external API call in the app is exercise cover image search
-  (`webUtils.ts: fetchExerciseSearchImageUrl`) — that one's real, cached in `localStorage`,
-  and has a Workbox runtime-caching rule. It ran on Google Custom Search until 2026-07-30
-  (see below — replaced with Wikimedia Commons, no API key required).
+- The other real external API call in the app is exercise cover image search
+  (`webUtils.ts: fetchExerciseSearchImageUrl`) — cached in `localStorage`, Workbox
+  runtime-caching rule. It ran on Google Custom Search until 2026-07-30 (see below —
+  replaced with Wikimedia Commons, no API key required).
 
-**Implication:** "AI generation" isn't a small remaining task, it's the actual core
-feature and hasn't started. Everything else in MVP is polish around a routine-management
-app that currently has no personalization engine. Worth deciding early whether this is
-built as a real LLM call (needs a backend/proxy — see security note below) or scoped down
-for v1.
+~~**Implication:** "AI generation" isn't a small remaining task...~~ — resolved 2026-08-01,
+see "Phase 1 AI (BYOK) shipped" below.
 
 ## Exercise resolution: now a 4-tier system — Google CSE retired 2026-07-30
 
@@ -263,14 +257,68 @@ type/shape change, not a backward-compatible one.
   with examples spanning days-only, time-only, and both ("3 days a week, 30 min daily, 45
   min 3x a week, or as much as I need") — the old wording implied duration-only.
 - `RoutineChat.tsx` now uses the shared `RoutineChatMessage` type instead of its own local
-  `ChatMessage` interface, generating `id`/`date` on send — still fully local/mocked
-  (`AI: I received your message: "..."` echo), not wired to persist back to the routine.
+  `ChatMessage` interface, generating `id`/`date` on send. At the time this was still fully
+  local/mocked and not persisted — both fixed the next day, see below.
+
+## Phase 1 AI (BYOK) shipped — 2026-08-01
+
+`PLAN-ai-features.md`'s Phase 1 is implemented: real OpenAI calls for both routine
+generation and chat-suggested edits, gated behind a personal API key the user pastes into
+Settings (`views/Settings.tsx`'s new "AI" card) — no login, no backend. Falls back to the
+pre-existing mock (random-picker / echo) whenever no key is set or any AI call fails, so
+the app behaves exactly as before if unconfigured.
+
+- **`services/ai/`** (new dir) — `types.ts` (`AIProvider`, `AIRoutineResponse`,
+  `AIChangeResponse`, `AIError`), `byokProvider.ts` (direct `fetch` to OpenAI,
+  `gpt-4o-mini`, `response_format: json_object`, two system prompts — one for initial
+  generation, one for change suggestions), `index.ts` (`getActiveAIProvider()` — the one
+  function everything else calls; Phase 4's `hostedProvider` will slot in here later
+  behind the same interface, per the plan).
+- **`store/aiSettingsStore.ts`** (new) — the API key, `localStorage`-only, deliberately its
+  own tiny store rather than added to `pulsarStore.ts` (which had its own redundant
+  `persist()` removed the day before — see above).
+- The model only ever sees/produces **exercise names**, never internal `exerciseId`s —
+  `routineBuilderService.ts: resolveAIExercises` (new, exported) resolves names to real
+  `Exercise` records via the exact same `getAddedExercise` pipeline template routines
+  already used, reused by both the initial-generation path and by `RoutineChat.tsx` when
+  resolving a change patch's proposed exercises.
+- **`models/types.ts`**: new `RoutineChange` (`{id, status, patch}`, per-day `setDay`/
+  `clearDay` ops — not a full-schedule replace, so the diff UI shows exactly which days
+  changed), `RoutineChatMessage.pendingChangeId` linking a chat message to the change it
+  proposes, `Routine.changes?: RoutineChange[]`.
+- **`components/RoutineChangeCard.tsx`** (new) — inline per-day diff + Accept/Reject,
+  rendered under any chat message with a `pendingChangeId`. Accept applies the patch via
+  the same `updateRoutine` call manual edits already use — `RoutineEditor.tsx` needed
+  **zero changes**, exactly as the plan predicted.
+- **Fixed the same day: `RoutineChat.tsx` chat history was never actually persisted**
+  (despite `chatHistory` living on `Routine` since 2026-07-31) — sending a message only
+  ever updated local component state, so a refresh silently discarded the live
+  conversation. `RoutineChat` now takes `routine: Routine` as its prop (not
+  `chatHistory`/`setChatHistory`) and calls `updateRoutine` on every send, so both the
+  wizard-seeded history and every later exchange now survive reloads. `WorkoutRoutine.tsx`
+  simplified accordingly — no more local `chatHistory` state/syncing effect.
+
+### Regression found and fixed the same day: `isLoading` checks that were always `false`
+
+`Home.tsx`, `History.tsx`, and `WorkoutLanding.tsx` all computed
+`isLoading = routines === undefined || workouts === undefined` — but `pulsarStore.ts`'s
+`routines`/`workouts` are typed as arrays and initialized to `[]`, **never** `undefined`,
+so this was always `false`, regardless of whether `loadAll()` had actually finished. It
+went unnoticed because `persist()`'s stale `localStorage` rehydration (removed 2026-07-31)
+almost always provided a non-empty `routines` array synchronously before first paint,
+masking the bug for any returning user. Without it, a hard reload now genuinely starts
+with `routines = []` until IndexedDB's async load resolves — and `WorkoutLanding.tsx`'s
+"no routines → redirect to /setup" effect fired immediately on that empty transient state,
+bouncing straight to the setup wizard on every fresh load regardless of existing data.
+Fixed by using the store's actual `loading` boolean (`usePulsarLoading()`) in all three
+views instead of the broken `undefined` check. A good example of a fix (removing
+`persist()`) correctly exposing a pre-existing, previously-invisible bug rather than
+causing a new one — worth remembering next time "it worked before this change" comes up.
 
 ## Suggested priority order (independent of TODO.md's own grouping)
 
-1. **Decide the AI story** — this blocks the app's core value prop, not just a checkbox.
-   Even a cheap real LLM call (with a proxy) beats the current random-picker, which will
-   read as broken/fake the moment a user notices the routine ignores their goals.
+1. ~~Decide the AI story~~ — Phase 1 (BYOK) shipped 2026-08-01, see above. Phases 2-4
+   (auth, billing, hosted/subscription-gated AI) remain, per `PLAN-ai-features.md`.
 2. ~~Fix the WorkoutSession double-create race~~ — done 2026-07-30, see above.
 3. ~~Drop redundant localStorage persistence~~ — done 2026-07-31, see above.
 4. ~~First Vitest coverage on `workoutUtils.ts`~~ — done 2026-07-30, see above. Next

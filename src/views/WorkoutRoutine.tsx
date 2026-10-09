@@ -34,7 +34,7 @@ import { RoutineDisplayTable } from '../components/RoutineDisplayTable';
 import { RoutineEditor } from '../components/RoutineEditor';
 import SwitchRoutineDialog from '../components/SwitchRoutineDialog';
 import { ExportRoutineDialog } from '../components/ExportRoutineDialog';
-import type { Routine, RoutineChatMessage } from '../models/types';
+import type { Routine } from '../models/types';
 import { useExercises, usePulsarStore, useRoutine, useRoutines, useWorkouts } from '../store/pulsarStore';
 
 const WorkoutRoutine: React.FC = () => {
@@ -49,9 +49,7 @@ const WorkoutRoutine: React.FC = () => {
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const addRoutine = usePulsarStore(s => s.addRoutine);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
-  const [newResponses, setNewResponses] = useState<RoutineChatMessage[]>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [chatHistory, setChatHistory] = useState<RoutineChatMessage[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
   const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
@@ -73,18 +71,10 @@ const WorkoutRoutine: React.FC = () => {
     }
   }, [searchParams, onOpen, setSearchParams]);
 
-  useEffect(() => {
-    if (routine) {
-      setChatHistory(routine.chatHistory);
-      setNewResponses(routine.chatHistory.filter(m => m.role === 'ai' && !m.dismissed));
-    }
-  }, [routine]);
-
   const dismissResponse = async (id: string) => {
     if (!routine) return;
     const updatedChatHistory = routine.chatHistory.map(m => m.id === id ? { ...m, dismissed: true } : m);
     await updateRoutine({ ...routine, chatHistory: updatedChatHistory });
-    setNewResponses((prev) => prev.filter(m => m.id !== id));
   };
 
   // Remove old activeRoutines usage in toggleActiveState
@@ -154,7 +144,7 @@ const WorkoutRoutine: React.FC = () => {
         </BreadcrumbItem>
       </Breadcrumb>
       {/* AI Chat Interface */}
-      <RoutineChat chatHistory={chatHistory} setChatHistory={setChatHistory} />
+      <RoutineChat routine={routine} />
       <Box width="100%" maxWidth="1200px">
         {/* Minimalistic routine status banner — hidden while editing, RoutineEditor's SaveBar takes over as the header */}
         {!isEditing && routine.active && (
