@@ -37,7 +37,9 @@ import { FaCheck, FaCheckCircle, FaCog, FaDumbbell, FaEdit, FaExchangeAlt, FaGri
 import ExerciseDetailsDialog from './ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import NumericStepper from './NumericStepper';
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
-import type { DayOfWeek, Exercise, Routine, RoutineDay, ScheduledExercise, WorkoutExercise } from '../models/types';
+import type { DayOfWeek, Exercise, Routine, RoutineChangeItemKey, RoutineChangeOp, RoutineDay, ScheduledExercise, WorkoutExercise } from '../models/types';
+import { applyDayOp, getChangeItemKeys, getDayOp, PendingProposals } from '../utils/routineChangeUtils';
+import { DayProposalPanel, DescriptionProposalPanel } from './RoutineChangeDiff';
 import DayKindBadge from './DayKindBadge';
 import DayKindEditor from './DayKindBadgeEditor';
 import { Autocomplete } from './Autocomplete';
@@ -61,21 +63,62 @@ export const RoutineEditor: React.FC<{
   onSave: (routine: Routine) => void;
   onSaveAs: (routine: Routine) => void;
   onRevert: () => void;
-}> = ({ initialRoutine, onSave, onSaveAs, onRevert }) => {
+  /** AI suggestions still waiting for review, shown inline against the draft. */
+  proposals?: PendingProposals;
+  onDecide?: (changeId: string, keys: RoutineChangeItemKey[], status: 'accepted' | 'rejected') => void;
+}> = ({ initialRoutine, onSave, onSaveAs, onRevert, proposals, onDecide }) => {
   const [editRoutine, setEditRoutine] = useState<Routine>(() => ({
     ...initialRoutine,
     dailySchedule: ensureAllDays(initialRoutine.dailySchedule),
   }));
   const [editChanged, setEditChanged] = useState(false);
 
+  // Start a fresh draft only when a different routine is opened. Other updates to the stored
+  // routine while editing (chat messages, AI suggestions and decisions) must not wipe out
+  // unsaved edits.
   useEffect(() => {
-    // Ensure all days are present when routine changes
     const next = produce(initialRoutine, draft => {
       draft.dailySchedule = ensureAllDays(draft.dailySchedule);
     });
     setEditRoutine(next);
     setEditChanged(false);
-  }, [initialRoutine]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialRoutine.id]);
+
+  // AI suggestions accepted while editing (inline here, in the chat summary, or in the review
+  // view) are applied to the stored routine right away; mirror them into the draft too, so
+  // what's on screen matches and a later Save doesn't undo them.
+  const appliedDecisions = React.useRef<Set<string> | null>(null);
+  useEffect(() => {
+    const acceptedNow: Array<{ id: string; key: RoutineChangeItemKey; op?: RoutineChangeOp; description?: string }> = [];
+    for (const change of initialRoutine.changes || []) {
+      for (const key of getChangeItemKeys(change)) {
+        if (change.decisions?.[key]?.status !== 'accepted') continue;
+        acceptedNow.push({
+          id: `${change.id}:${key}`,
+          key,
+          op: key === 'description' ? undefined : getDayOp(change, key),
+          description: key === 'description' ? change.patch.description : undefined,
+        });
+      }
+    }
+    if (!appliedDecisions.current) {
+      // Everything accepted before editing started is already in the draft.
+      appliedDecisions.current = new Set(acceptedNow.map(a => a.id));
+      return;
+    }
+    const fresh = acceptedNow.filter(a => !appliedDecisions.current!.has(a.id));
+    if (fresh.length === 0) return;
+    fresh.forEach(a => appliedDecisions.current!.add(a.id));
+    setEditRoutine(current => produce(current, draft => {
+      let schedule = draft.dailySchedule.filter(d => d.exercises.length > 0) as RoutineDay[];
+      for (const a of fresh) {
+        if (a.op) schedule = applyDayOp(schedule, a.op);
+        if (a.description !== undefined) draft.description = a.description;
+      }
+      draft.dailySchedule = ensureAllDays(schedule);
+    }));
+  }, [initialRoutine.changes]);
 
   // react-beautiful-dnd handlers
   const handleExerciseDragEnd = useCallback((result: DropResult) => {
@@ -214,6 +257,16 @@ export const RoutineEditor: React.FC<{
         editChanged={editChanged}
       />
       
+      {proposals?.description && onDecide && (
+        <Box mb={3}>
+          <DescriptionProposalPanel
+            current={editRoutine.description}
+            proposed={proposals.description.text}
+            onAccept={() => onDecide(proposals.description!.change.id, ['description'], 'accepted')}
+            onReject={() => onDecide(proposals.description!.change.id, ['description'], 'rejected')}
+          />
+        </Box>
+      )}
       {/* Editable description textarea under the name/save/cancel bar */}
       <Textarea
         value={editRoutine.description || ''}
@@ -239,6 +292,8 @@ export const RoutineEditor: React.FC<{
         onEditExercise={handleEditExercise}
         onAddExercise={handleAddExercise}
         onDragExercise={handleExerciseDragEnd}
+        proposals={proposals}
+        onDecide={onDecide}
       />
     </Box>
   );
@@ -376,7 +431,9 @@ const ExerciseScheduleEditor = React.memo<{
   onEditExercise: (dayIdx: number, exIdx: number, ex: ScheduledExercise | null) => void;
   onAddExercise: (dayIdx: number, exercise: Exercise | ScheduledExercise) => void;
   onDragExercise: OnDragEndResponder;
-}>(({ dailySchedule, onChangeDay, onEditDayKind, onEditExercise, onAddExercise, onDragExercise }) => {
+  proposals?: PendingProposals;
+  onDecide?: (changeId: string, keys: RoutineChangeItemKey[], status: 'accepted' | 'rejected') => void;
+}>(({ dailySchedule, onChangeDay, onEditDayKind, onEditExercise, onAddExercise, onDragExercise, proposals, onDecide }) => {
 
   // Add state and handler for exercise details dialog
   const [exerciseDetailsId, setExerciseDetailsId] = useState<string | null>(null);
@@ -399,6 +456,8 @@ const ExerciseScheduleEditor = React.memo<{
             onAddExercise={onAddExercise}
             onOpenExerciseDetails={setExerciseDetailsId}
             isMdOrLarger={isMdOrLarger}
+            proposal={proposals?.days[schedule.day]}
+            onDecide={onDecide}
           />
         ))}
       </VStack>
@@ -424,7 +483,9 @@ const ExerciseDayEditor = React.memo<{
   onAddExercise: (dayIdx: number, exercise: Exercise | ScheduledExercise) => void;
   onOpenExerciseDetails: (exerciseId: string) => void;
   isMdOrLarger?: boolean;
-}>(({ schedule, dailySchedule, dayIdx, onChangeDay, onEditDayKind, onEditExercise, onOpenExerciseDetails, onAddExercise, isMdOrLarger }) => {
+  proposal?: PendingProposals['days'][DayOfWeek];
+  onDecide?: (changeId: string, keys: RoutineChangeItemKey[], status: 'accepted' | 'rejected') => void;
+}>(({ schedule, dailySchedule, dayIdx, onChangeDay, onEditDayKind, onEditExercise, onOpenExerciseDetails, onAddExercise, isMdOrLarger, proposal, onDecide }) => {
   // Add state and handler for editing kind
   const [editKind, setEditKind] = useState(false);
   const [editKindValue, setEditKindValue] = useState('');
@@ -534,6 +595,7 @@ const ExerciseDayEditor = React.memo<{
   return (
     <Box
       key={schedule.day}
+      id={`routine-day-${schedule.day}`}
       width="100%"
       borderWidth="1px"
       borderRadius="md"
@@ -762,6 +824,16 @@ const ExerciseDayEditor = React.memo<{
         </Modal>
         
       </Flex>
+      {proposal && onDecide && (
+        <Box mb={3}>
+          <DayProposalPanel
+            current={schedule}
+            op={proposal.op}
+            onAccept={() => onDecide(proposal.change.id, [schedule.day], 'accepted')}
+            onReject={() => onDecide(proposal.change.id, [schedule.day], 'rejected')}
+          />
+        </Box>
+      )}
       <Droppable droppableId={`day-${dayIdx}`}>
         {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => (
           <VStack
