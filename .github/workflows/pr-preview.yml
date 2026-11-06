@@ -12,9 +12,13 @@ permissions:
   contents: write
   pull-requests: write
 
+# One group per PR, not one shared with the main deploy: GitHub keeps only one pending run
+# per concurrency group and cancels the rest, so a shared group can silently drop another
+# PR's deploy or cleanup. Pushes to gh-pages that race are retried instead (the deploy
+# action retries on its own; the cleanup step below rebases and retries).
 concurrency:
-  group: gh-pages-branch
-  cancel-in-progress: false
+  group: pr-preview-${{ github.event.number }}
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -31,7 +35,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          BASE: /${{ github.event.repository.name }}/pr-${{ env.PR }}/
+          BASE: ${{ vars.PAGES_BASE || format('/{0}/', github.event.repository.name) }}pr-${{ env.PR }}/
           VITE_PREVIEW_PR: ${{ env.PR }}
       - uses: JamesIves/github-pages-deploy-action@v4
         with:
@@ -64,7 +68,12 @@ jobs:
             git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
             git rm -rq "pr-$PR"
             git commit -m "Remove preview for PR #$PR"
-            git push origin gh-pages
+            for i in 1 2 3 4 5; do
+              git push origin gh-pages && exit 0
+              sleep $((i * 3))
+              git pull --rebase origin gh-pages
+            done
+            exit 1
           fi
       - uses: marocchino/sticky-pull-request-comment@v2
         with:

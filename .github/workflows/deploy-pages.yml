@@ -13,8 +13,9 @@ permissions:
   contents: write
 
 concurrency:
-  # Shared with pr-preview.yml so pushes to gh-pages never race each other.
-  group: gh-pages-branch
+  # A newer main deploy supersedes a pending one. PR previews use their own groups and
+  # retry their pushes if they race with this one.
+  group: pages-main
   cancel-in-progress: false
 
 jobs:
@@ -29,7 +30,9 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          BASE: /pulsar/
+          # /<repo>/ for a github.io project site. Set the PAGES_BASE repo variable (e.g. "/")
+          # if the site moves to a custom domain or another path.
+          BASE: ${{ vars.PAGES_BASE || format('/{0}/', github.event.repository.name) }}
       - run: |
           touch dist/.nojekyll
           node scripts/make-pages-404.mjs
