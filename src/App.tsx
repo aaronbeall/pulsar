@@ -160,6 +160,7 @@ const App: React.FC = () => {
 
       <Box
         as="nav"
+        aria-label="Main navigation"
         bg={`${colorScheme}.500`}
         color="white"
         pt={1.5}
