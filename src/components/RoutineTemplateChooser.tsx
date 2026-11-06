@@ -7,7 +7,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { generateRandomRoutineName } from '../services/routineBuilderService';
 import { rankTemplates, scoreTemplate, tokenize } from '../services/templateSearch';
 import { getExerciseSearchImageUrl } from '../utils/webUtils';
-import { hasActiveAIProvider } from '../services/ai';
 
 function getRandomNickname(template: RoutineTemplate) {
   if (!template.nicknames || template.nicknames.length === 0) return '';
@@ -367,9 +366,7 @@ export const RoutineTemplateChooser: React.FC<RoutineTemplateChooserProps> = ({ 
                   </Flex>
                 )}
                 <Text fontSize="sm" color="gray.500" _dark={{ color: 'gray.400' }} mb={4}>
-                  {hasActiveAIProvider()
-                    ? 'After creating your routine, you can fully customize it: swap out template days, add or remove exercises, or ask the AI chat to suggest changes. Make it your own and adjust as you go!'
-                    : 'After creating your routine, you can fully customize it: swap out template days and add or remove exercises. Make it your own and adjust as you go!'}
+                  After creating your routine, you can fully customize it: swap out template days, add or remove exercises, or ask Pulsar AI in the routine's chat to suggest changes. Make it your own and adjust as you go!
                 </Text>
                 <Flex gap={2} mt={2}>
                   <Button

@@ -1,11 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { Box, VStack, Text, Flex, Button, Collapse, IconButton, Input, Spinner, useDisclosure, useToast } from '@chakra-ui/react';
-import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp, FaMagic } from 'react-icons/fa';
-import AIOnboardingDialog from './AIOnboardingDialog';
+import { Box, VStack, Text, Flex, Button, Collapse, IconButton, Input, Spinner, useToast } from '@chakra-ui/react';
+import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { useAIGate } from '../hooks/useAIGate';
 import { v4 as uuidv4 } from 'uuid';
 import { Routine, RoutineChange, RoutineChatMessage } from '../models/types';
 import { useExercises, usePulsarStore } from '../store/pulsarStore';
-import { AIError, getActiveAIProvider, useHasActiveAIProvider } from '../services/ai';
+import { AIError, getActiveAIProvider } from '../services/ai';
 import { applyRoutineChange } from '../utils/routineChangeUtils';
 import { resolveAIExercises } from '../services/routineBuilderService';
 import RoutineChangeCard from './RoutineChangeCard';
@@ -23,8 +23,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const hasAI = useHasActiveAIProvider();
-  const aiOnboarding = useDisclosure();
+  const aiGate = useAIGate();
 
   const chatHistory = routine.chatHistory;
   const changes = routine.changes || [];
@@ -40,9 +39,14 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine }) => {
   // after the user's own message was saved.
   const getLatestRoutine = () => usePulsarStore.getState().routines.find(r => r.id === routine.id) ?? routine;
 
-  const handleSend = async () => {
+  const handleSend = () => {
     const text = chatInput.trim();
     if (!text || isSending) return;
+    // Without AI access this prompts for it, then sends the same message once unlocked.
+    aiGate.requireAI(() => sendMessage(text), { reason: 'Chatting with your routine uses Pulsar AI.' });
+  };
+
+  const sendMessage = async (text: string) => {
     const provider = getActiveAIProvider();
     if (!provider) return;
 
@@ -157,7 +161,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine }) => {
           overflowY="auto"
           ref={chatContainerRef}
         >
-          {chatHistory.length === 0 && hasAI && (
+          {chatHistory.length === 0 && (
             <Text color="gray.500" fontSize="sm">Ask anything about this routine, or ask for changes, like "make Wednesday a rest day" or "no jumping, my knees hurt".</Text>
           )}
           {chatHistory.map((msg) => {
@@ -200,39 +204,28 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine }) => {
             </Flex>
           )}
         </VStack>
-        {hasAI ? (
         <Flex ml="1px" mb="1px" mt={3} gap={2}>
-            <Input
-              value={chatInput}
-              onChange={e => setChatInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
-              placeholder="Suggest changes or ask a question..."
-              borderRadius={16}
-              fontSize="1em"
-              bg="gray.50"
-              _dark={{ bg: 'gray.700', color: 'gray.100', borderColor: 'gray.600' }}
-              _focus={{ bg: 'white', _dark: { bg: 'gray.800' } }}
-              color="gray.800"
-              borderColor="gray.200"
-              flex={1}
-              transition="background 0.2s, color 0.2s"
-              isDisabled={isSending}
-            />
-            <Button colorScheme="cyan" onClick={handleSend} borderRadius="full" px={3} minW={10} aria-label="Send" isLoading={isSending}>
-              <FaPaperPlane />
-            </Button>
-          </Flex>
-        ) : (
-          <Flex mt={3} p={3} gap={3} direction="column" borderRadius="md" bg="white" _dark={{ bg: 'gray.800' }} borderWidth="1px">
-            <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.300' }}>
-              Turn on AI to ask questions about this routine and get suggested changes here.
-            </Text>
-            <Button colorScheme="cyan" size="md" leftIcon={<FaMagic />} onClick={aiOnboarding.onOpen} alignSelf="flex-start">
-              Turn on AI
-            </Button>
-            <AIOnboardingDialog isOpen={aiOnboarding.isOpen} onClose={aiOnboarding.onClose} />
-          </Flex>
-        )}
+          <Input
+            value={chatInput}
+            onChange={e => setChatInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSend(); } }}
+            placeholder="Suggest changes or ask a question..."
+            borderRadius={16}
+            fontSize="1em"
+            bg="gray.50"
+            _dark={{ bg: 'gray.700', color: 'gray.100', borderColor: 'gray.600' }}
+            _focus={{ bg: 'white', _dark: { bg: 'gray.800' } }}
+            color="gray.800"
+            borderColor="gray.200"
+            flex={1}
+            transition="background 0.2s, color 0.2s"
+            isDisabled={isSending}
+          />
+          <Button colorScheme="cyan" onClick={handleSend} borderRadius="full" px={3} minW={10} aria-label="Send" isLoading={isSending}>
+            <FaPaperPlane />
+          </Button>
+        </Flex>
+        {aiGate.gate}
       </Collapse>
     </Box>
   );

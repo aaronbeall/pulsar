@@ -12,11 +12,10 @@ import {
   VStack,
   useColorMode,
   useColorModeValue,
-  useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { FaExclamationTriangle, FaImages, FaMagic, FaPalette, FaRobot } from 'react-icons/fa';
-import AIOnboardingDialog from '../components/AIOnboardingDialog';
+import { FaExclamationTriangle, FaImages, FaKey, FaPalette, FaRobot } from 'react-icons/fa';
+import { useAIGate } from '../hooks/useAIGate';
 import { deleteDB } from 'idb'; // Import deleteDB to delete IndexedDB
 import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
 import { DEFAULT_OPENAI_MODEL, useOpenAiApiKey, useOpenAiModel } from '../store/aiSettingsStore';
@@ -33,7 +32,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
   const [apiKey, setApiKey] = useOpenAiApiKey();
   const [testingKey, setTestingKey] = React.useState(false);
   const [model, setModel] = useOpenAiModel();
-  const aiOnboarding = useDisclosure();
+  const aiGate = useAIGate();
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
@@ -138,17 +137,17 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
         {apiKey ? (
           <VStack align="stretch" spacing={3}>
             <Text fontSize="sm" color="green.500" fontWeight="medium">
-              AI is on, using your own OpenAI key (ending {apiKey.slice(-4)}).
+              Using your own OpenAI key (ending {apiKey.slice(-4)}).
             </Text>
             <Flex gap={2} wrap="wrap">
               <Button size="sm" onClick={handleTestKey} isLoading={testingKey}>
                 Test key
               </Button>
-              <Button size="sm" variant="outline" onClick={aiOnboarding.onOpen}>
+              <Button size="sm" variant="outline" onClick={() => aiGate.openKeySetup()}>
                 Change key
               </Button>
               <Button size="sm" variant="ghost" colorScheme="red" onClick={() => setApiKey(null)}>
-                Turn off AI
+                Remove key
               </Button>
             </Flex>
             <Flex align="center" gap={2}>
@@ -168,15 +167,16 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
         ) : (
           <VStack align="stretch" spacing={3}>
             <Text fontSize="sm" color={mutedColor}>
-              AI is off. Turn it on to have AI build routines from your answers and suggest
-              changes in each routine's chat. Without it, new routines are matched from templates.
+              Pulsar AI builds routines from your answers and suggests changes in each routine's
+              chat. When you first use it, you'll be asked for your own OpenAI key. You can also
+              add it now.
             </Text>
-            <Button colorScheme="cyan" leftIcon={<FaMagic />} onClick={aiOnboarding.onOpen} alignSelf="flex-start">
-              Turn on AI
+            <Button variant="outline" colorScheme="cyan" leftIcon={<FaKey />} onClick={() => aiGate.openKeySetup()} alignSelf="flex-start">
+              Add OpenAI key
             </Button>
           </VStack>
         )}
-        <AIOnboardingDialog isOpen={aiOnboarding.isOpen} onClose={aiOnboarding.onClose} />
+        {aiGate.gate}
       </Box>
 
       <Box bg={dangerBg} borderWidth="1px" borderColor={dangerBorder} borderRadius="xl" p={{ base: 4, sm: 5 }}>

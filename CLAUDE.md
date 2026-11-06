@@ -26,9 +26,11 @@ at best. All design and layout work going forward must be mobile-first-friendly:
 - **AI is bring-your-own-key only.** With a personal OpenAI key (Settings), routine
   generation and routine chat call OpenAI directly from the browser through the
   `services/ai` `AIProvider` interface. Without a key there is no AI and no mock: the
-  wizard keyword-matches templates (`services/templateSearch.ts`) and the chat asks for a
-  key. Turning AI on always goes through `components/AIOnboardingDialog.tsx`, which is
-  also where premium subscriptions will be offered. Don't reintroduce a fake "AI" fallback. Hosted AI behind login/subscription is a
+  user is asked for AI access at the moment they use an AI feature (never an explicit
+  "turn on AI" step): wrap AI actions in `hooks/useAIGate.tsx`'s `requireAI`, which shows
+  `components/AIAccessDialog.tsx` and then continues the action. That gate is also where
+  premium subscriptions will be offered. The no-AI alternative for routine creation is the
+  keyword template search (`services/templateSearch.ts`). Don't reintroduce a fake "AI" fallback. Hosted AI behind login/subscription is a
   later phase (see `PLAN-ai-subscription.md`).
 - **Never put a real API key behind a `VITE_`-prefixed env var again.** The existing
   Google CSE key is already public in the client bundle (acceptable for a free-tier image

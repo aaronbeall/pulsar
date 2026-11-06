@@ -367,13 +367,18 @@ app does template matching and nothing else.
   surfacing as a toast. Not yet run against the real OpenAI API.
 - Old routines without `chatHistory` were intentionally not migrated (Aaron: existing local
   data can be reset).
-- **AI onboarding dialog** (`components/AIOnboardingDialog.tsx`, added the same day at
-  Aaron's request): the one place AI gets turned on. Every AI entry point opens it instead
-  of linking to a raw key field: the wizard's "Turn on AI for a custom routine", the routine
-  chat's "Turn on AI", and Settings' "Turn on AI" / "Change key". It explains what AI does,
-  offers "Use your own OpenAI key" (steps to get one, then the key is verified against
-  `GET /v1/models` before it is saved), and shows a disabled "Pulsar Premium — coming soon"
-  option. That second card is where the subscription path (`PLAN-ai-subscription.md`) plugs
-  in later. Settings no longer has an editable raw key field; with a key set it shows the
-  last 4 characters, Test key, Change key, Turn off AI, and the model override.
+- **AI access gate** (`components/AIAccessDialog.tsx` + `hooks/useAIGate.tsx`; reworked the
+  same day per Aaron's feedback, replacing an earlier explicit "turn on AI" dialog). AI is
+  never something you switch on: AI features always look available, and using one without
+  access opens a paywall-style gate at that moment, the same way a subscription prompt will
+  later. `requireAI(action, { reason, alternative })` runs the action immediately when AI is
+  available; otherwise it shows the gate and runs the same action once a verified key is
+  saved, so the user never repeats what they started. Wired into the wizard's "Make my
+  routine!" (alternative: "Match a template instead", the keyword template search) and the
+  routine chat's send (the message is sent after unlocking). The gate shows a disabled
+  "Pulsar Premium, coming soon" option above "Use your own OpenAI key"; the subscription
+  check will slot into `useAIGate` beside the key check. Settings only manages the key (Add,
+  Test, Change, Remove, model override). Gotcha found while testing: the gate often opens
+  from an Enter keypress, so it sets `initialFocusRef` to the key field; otherwise focus
+  lands on the close button and the same Enter dismisses the dialog.
 
