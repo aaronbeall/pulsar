@@ -1,17 +1,25 @@
----
-permalink: /404.html
----
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script>
+  (function () {
+    var m = location.pathname.match(/^(.*?\/pr-\d+\/)/);
+    if (m && location.pathname !== m[1]) location.replace(m[1]);
+  })();
+</script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#6200ee" />
-    <link rel="icon" type="image/svg+xml" href="/pulsar//favicon.svg" />
+    <meta name="theme-color" content="#06b6d4" />
+    <link rel="icon" type="image/svg+xml" href="/pulsar/favicon.svg" />
+    <link rel="apple-touch-icon" href="/pulsar/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Pulsar" />
     <title>Pulsar | Personalized Workouts Simplified</title>
-    <script type="module" crossorigin src="/pulsar/assets/index-cEWyZFY9.js"></script>
+    <script type="module" crossorigin src="/pulsar/assets/index-CvlkFtqc.js"></script>
     <link rel="stylesheet" crossorigin href="/pulsar/assets/index-CCJbI9aB.css">
-  </head>
+  <link rel="manifest" href="/pulsar/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/pulsar/registerSW.js"></script></head>
   <body>
     <div id="root"></div>
   </body>
