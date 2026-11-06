@@ -374,8 +374,12 @@ app does template matching and nothing else.
   later. `requireAI(action, { reason, alternative })` runs the action immediately when AI is
   available; otherwise it shows the gate and runs the same action once a verified key is
   saved, so the user never repeats what they started. Wired into the wizard's "Make my
-  routine!" (alternative: "Match a template instead", the keyword template search) and the
-  routine chat's send (the message is sent after unlocking). The gate shows a disabled
+  routine!" (alternative: "Create from a template instead", the keyword template search) and the
+  routine chat's send (the message is sent after unlocking; alternative: "Edit the routine
+  myself", which opens the editor). Principle from Aaron, for every AI surface: present the
+  AI path as the primary action as if AI were on, prompt only when an AI action starts, and
+  offer the non-AI way forward in the prompt instead of a bare "Not now" (the close button
+  covers dismissing). The About page's privacy section now says what is sent to OpenAI. The gate shows a disabled
   "Pulsar Premium, coming soon" option above "Use your own OpenAI key"; the subscription
   check will slot into `useAIGate` beside the key check. Settings only manages the key (Add,
   Test, Change, Remove, model override). Gotcha found while testing: the gate often opens

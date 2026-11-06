@@ -65,7 +65,7 @@ export const WorkoutSetup: React.FC = () => {
     } else {
       aiGate.requireAI(generateWithAI, {
         reason: 'Building a routine from your answers uses Pulsar AI.',
-        alternative: { label: 'Match a template instead', onClick: () => setShowTemplateChooser(true) },
+        alternative: { label: 'Create from a template instead', onClick: () => setShowTemplateChooser(true) },
       });
     }
   };

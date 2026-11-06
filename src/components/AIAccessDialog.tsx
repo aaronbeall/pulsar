@@ -36,7 +36,8 @@ interface AIAccessDialogProps {
   /** Called once AI access is in place (a verified key was saved). The caller continues the action. */
   onUnlocked: () => void;
   onClose: () => void;
-  /** Optional non-AI way to finish the same task, e.g. "Match a template instead". */
+  /** The non-AI way to move forward with the same task, e.g. "Create from a template". Offered
+   *  instead of a bare "Not now": the close button already covers dismissing. */
   alternative?: AIAccessAlternative;
 }
 
@@ -151,13 +152,9 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, onUnloc
           >
             Continue
           </Button>
-          {alternative ? (
+          {alternative && (
             <Button variant="ghost" size="lg" onClick={alternative.onClick}>
               {alternative.label}
-            </Button>
-          ) : (
-            <Button variant="ghost" size="lg" onClick={onClose}>
-              Not now
             </Button>
           )}
         </ModalFooter>

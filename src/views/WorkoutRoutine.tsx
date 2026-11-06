@@ -144,7 +144,7 @@ const WorkoutRoutine: React.FC = () => {
         </BreadcrumbItem>
       </Breadcrumb>
       {/* AI Chat Interface */}
-      <RoutineChat routine={routine} />
+      <RoutineChat routine={routine} onEditManually={() => setIsEditing(true)} />
       <Box width="100%" maxWidth="1200px">
         {/* Minimalistic routine status banner — hidden while editing, RoutineEditor's SaveBar takes over as the header */}
         {!isEditing && routine.active && (

@@ -12,9 +12,11 @@ import RoutineChangeCard from './RoutineChangeCard';
 
 interface RoutineChatProps {
   routine: Routine;
+  /** The non-AI way to change the routine, offered when AI access is needed. */
+  onEditManually?: () => void;
 }
 
-const RoutineChat: React.FC<RoutineChatProps> = ({ routine }) => {
+const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) => {
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const addExercise = usePulsarStore(s => s.addExercise);
   const exercises = useExercises();
@@ -43,7 +45,10 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine }) => {
     const text = chatInput.trim();
     if (!text || isSending) return;
     // Without AI access this prompts for it, then sends the same message once unlocked.
-    aiGate.requireAI(() => sendMessage(text), { reason: 'Chatting with your routine uses Pulsar AI.' });
+    aiGate.requireAI(() => sendMessage(text), {
+      reason: 'Chatting with your routine uses Pulsar AI.',
+      alternative: onEditManually && { label: 'Edit the routine myself', onClick: onEditManually },
+    });
   };
 
   const sendMessage = async (text: string) => {
