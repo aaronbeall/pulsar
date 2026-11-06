@@ -1,0 +1,73 @@
+name: PR preview
+
+# Builds each same-repo pull request into gh-pages/pr-<n>/ and posts a sticky comment with
+# the link, e.g. https://aaronbeall.github.io/pulsar/pr-12/. Removes the folder when the PR
+# closes. Fork PRs are skipped since their token can't push.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: gh-pages-branch
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      PR: ${{ github.event.number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          BASE: /${{ github.event.repository.name }}/pr-${{ env.PR }}/
+          VITE_PREVIEW_PR: ${{ env.PR }}
+      - uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: dist
+          target-folder: pr-${{ env.PR }}
+          clean: true
+          commit-message: "Deploy preview for PR #${{ env.PR }} (${{ github.event.pull_request.head.sha }})"
+      - uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-preview
+          message: |
+            📱 **Preview:** https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-${{ env.PR }}/
+
+            Built from ${{ github.event.pull_request.head.sha }}. GitHub Pages can take a minute or two to publish after this comment updates. The preview keeps its own workout data, separate from the live app.
+
+  cleanup:
+    if: github.event.action == 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      PR: ${{ github.event.number }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+      - name: Remove preview folder
+        run: |
+          if [ -d "pr-$PR" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+            git rm -rq "pr-$PR"
+            git commit -m "Remove preview for PR #$PR"
+            git push origin gh-pages
+          fi
+      - uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-preview
+          message: |
+            Preview removed because this PR was closed.
