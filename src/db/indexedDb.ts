@@ -94,3 +94,22 @@ export const removeWorkout = async (id: string) => {
   const db = await getDB();
   await db.delete('workouts', id);
 };
+
+/**
+ * Replace everything in the database with the given data, in one transaction: either the
+ * whole restore lands or none of it does, so a bad import can't leave a half-wiped DB.
+ */
+export const replaceAllData = async (data: { exercises: Exercise[]; routines: Routine[]; workouts: Workout[] }) => {
+  const db = await getDB();
+  const tx = db.transaction(['exercises', 'routines', 'workouts'], 'readwrite');
+  const exercises = tx.objectStore('exercises');
+  const routines = tx.objectStore('routines');
+  const workouts = tx.objectStore('workouts');
+  await Promise.all([exercises.clear(), routines.clear(), workouts.clear()]);
+  await Promise.all([
+    ...data.exercises.map(e => exercises.put(e)),
+    ...data.routines.map(r => routines.put(r)),
+    ...data.workouts.map(w => workouts.put(w)),
+  ]);
+  await tx.done;
+};

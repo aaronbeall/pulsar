@@ -72,5 +72,8 @@ export interface WorkoutExercise extends ScheduledExercise {
   completedAt?: number;
   skipped?: boolean; // Counts as completed but not or partially performed
   completedSets?: number; // Track completed sets
-  completedDuration?: number; // Track completed duration for timed exercises
+  completedDuration?: number; // Track completed duration for timed exercises (seconds, summed over sets)
+  // Wall-clock time (ms) the in-progress set started; unset between sets. Persisted so a
+  // running timer survives the screen locking, the app being backgrounded, or a reload.
+  currentSetStartedAt?: number;
 }

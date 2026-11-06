@@ -103,8 +103,8 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
                       fontWeight={isCurrentExercise ? "semibold" : "normal"}
                       transition="all 0.2s"
                     >
-                      {exercise.duration ? 
-                        `${(exercise.completedDuration || 0)}/${exercise.duration}s` : 
+                      {exercise.duration ?
+                        (exercise.sets > 1 ? `${completedSets}/${exercise.sets} × ${exercise.duration}s` : `${exercise.duration}s`) :
                         exercise.sets > 1 ? `${completedSets}/${exercise.sets} × ${exercise.reps}` : 
                         `${exercise.reps} reps`}
                     </Text>

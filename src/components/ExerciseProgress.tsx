@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   Button, 
@@ -20,6 +20,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaCheckCircle, FaPlay, FaCheck, FaStopwatch, FaPlayCircle, FaInfoCircle } from 'react-icons/fa';
 import ExerciseDetailsDialog from './ExerciseDetailsDialog';
 import { Exercise, WorkoutExercise } from '../models/types';
+import { formatSeconds, getSetTimer, setEndsAt } from '../utils/setProgress';
+import {
+  ScheduledCue,
+  cancelCue,
+  cueHasPlayed,
+  playSetEndCueNow,
+  scheduleSetEndCue,
+  unlockAudio,
+  vibrateSetEnd,
+} from '../utils/setEndCue';
 
 const breathe = keyframes`
   0% { transform: scale(1); }
@@ -87,80 +97,111 @@ interface ExerciseProgressProps {
   exercise: WorkoutExercise;
   currentSet: number;
   exerciseDetail: Exercise | undefined;
-  onComplete: () => void;
-  onNext: () => void;
+  /** Start the next set (records `currentSetStartedAt`). */
+  onStartSet: () => void;
+  /** Record the current set as done; for timed sets, how many seconds were done. */
+  onCompleteSet: (durationDoneSec?: number) => void;
 }
 
 const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
   exercise,
   currentSet,
   exerciseDetail,
-  onComplete,
-  onNext
+  onStartSet,
+  onCompleteSet,
 }) => {
-  const [isActive, setIsActive] = useState(false);
-  const [timeElapsed, setTimeElapsed] = useState(exercise.completedDuration || 0);
-  const [isRestPeriod, setIsRestPeriod] = useState(false);
-  const [restTimeElapsed, setRestTimeElapsed] = useState(0);
+  // All timing is derived from wall-clock timestamps (see utils/setProgress.ts): the
+  // interval below only triggers re-renders, so a throttled or frozen timer (screen
+  // locked, app in background) can delay the display but never make it wrong.
+  const setStartedAt = exercise.currentSetStartedAt;
+  const isActive = !!setStartedAt;
+  const [restStartedAt, setRestStartedAt] = useState<number | null>(null);
+  const isRestPeriod = !isActive && restStartedAt !== null;
+  const [now, setNow] = useState(() => Date.now());
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  
+  const cueRef = useRef<ScheduledCue | null>(null);
+  const completedForRef = useRef<number | null>(null);
+
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.100', 'gray.700');
   const activeColor = useColorModeValue('cyan.500', 'cyan.400');
   const restBgColor = useColorModeValue('orange.50', 'orange.900');
   const restTextColor = useColorModeValue('orange.600', 'orange.200');
-  
+
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
-    if (isActive && !isRestPeriod) {
-      interval = setInterval(() => {
-        setTimeElapsed(prev => {
-          const next = prev + 1;
-          if (exercise.duration && next >= exercise.duration) {
-            setIsActive(false);
-            setIsRestPeriod(true);
-            return exercise.duration;
-          }
-          return next;
-        });
-      }, 1000);
-    } else if (isRestPeriod) {
-      interval = setInterval(() => {
-        setRestTimeElapsed(prev => prev + 1);
-      }, 1000);
+    if (!isActive && !isRestPeriod) return;
+    const tick = () => setNow(Date.now());
+    tick();
+    const interval = setInterval(tick, 250);
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', tick);
+    };
+  }, [isActive, isRestPeriod]);
+
+  // Pre-schedule the end-of-set beeps on the audio clock. Re-schedule on return to the
+  // foreground, in case the audio clock was paused while the app was hidden.
+  useEffect(() => {
+    const duration = exercise.duration;
+    if (!setStartedAt || !duration) return;
+    const endAt = setEndsAt(setStartedAt, duration);
+    const schedule = () => {
+      cancelCue(cueRef.current);
+      cueRef.current = Date.now() < endAt ? scheduleSetEndCue(endAt) : null;
+    };
+    schedule();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible' && Date.now() < endAt) schedule();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      // Set ended early or left the screen: silence pending beeps. A cue that already
+      // started playing at the natural end is left to finish.
+      if (!cueHasPlayed(cueRef.current)) cancelCue(cueRef.current);
+      cueRef.current = null;
+    };
+  }, [setStartedAt, exercise.duration]);
+
+  const timer = setStartedAt ? getSetTimer(setStartedAt, exercise.duration, now) : null;
+  const timeElapsed = timer?.elapsedSec ?? 0;
+
+  // A timed set that has run its course completes itself, with a beep + buzz. This also
+  // catches up a set that ended while the phone was locked, the moment the app is back.
+  useEffect(() => {
+    if (!setStartedAt || !exercise.duration || !timer?.isDone) return;
+    if (completedForRef.current === setStartedAt) return;
+    completedForRef.current = setStartedAt;
+    if (!cueHasPlayed(cueRef.current)) {
+      cancelCue(cueRef.current);
+      playSetEndCueNow();
     }
-    
-    return () => clearInterval(interval);
-  }, [isActive, isRestPeriod, exercise.duration]);
+    cueRef.current = null;
+    vibrateSetEnd();
+    setRestStartedAt(setEndsAt(setStartedAt, exercise.duration));
+    onCompleteSet(exercise.duration);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setStartedAt, timer?.isDone]);
 
   const handleStart = () => {
-    setIsActive(true);
-    if (!exercise.startedAt) {
-      onNext(); // This will mark the exercise as started
-    }
+    unlockAudio(); // must happen inside the tap for iOS to allow the end beep
+    setRestStartedAt(null);
+    setNow(Date.now());
+    onStartSet();
   };
 
   const handleComplete = () => {
-    setIsActive(false);
-    setIsRestPeriod(true);
-    setRestTimeElapsed(0);
-    onComplete();
+    if (setStartedAt) completedForRef.current = setStartedAt;
+    setRestStartedAt(Date.now());
+    onCompleteSet(exercise.duration ? timeElapsed : undefined);
   };
 
-  const handleNext = () => {
-    setIsRestPeriod(false);
-    setRestTimeElapsed(0);
-    setIsActive(true);
-    setTimeElapsed(0);
-    onNext();
-  };
+  const handleNext = handleStart;
+  const restTimeElapsed = restStartedAt ? Math.max(0, Math.floor((now - restStartedAt) / 1000)) : 0;
 
-  const progress = exercise.duration 
-    ? (timeElapsed / exercise.duration) * 100
-    : 0;
+  const progress = timer?.progress ?? 0;
 
-  const isLastSet = currentSet === exercise.sets - 1;
   const isCompleted = exercise.completedAt !== undefined;
 
   const fontSize = useBreakpointValue({ base: "4xl", md: "5xl" });
@@ -302,7 +343,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
                 color={restTextColor}
                 animation={`${breathe} 2s ease-in-out infinite`}
               >
-                Rest Time: {restTimeElapsed}s
+                Rest Time: {formatSeconds(restTimeElapsed)}
               </Text>
               <Button 
                 colorScheme="cyan"
@@ -311,7 +352,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
                 onClick={handleNext}
                 leftIcon={<FaPlay />}
               >
-                {isLastSet ? "Start Next Exercise" : "Start Next Set"}
+                Start Set {currentSet + 1}
               </Button>
             </VStack>
           </MotionBox>
@@ -331,7 +372,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
                   <VStack spacing={2} align="center">
                     {exercise.duration ? (
                       <Text fontSize={fontSize} fontWeight="bold">
-                        {`${exercise.duration - timeElapsed}s`}
+                        {formatSeconds(timer?.remainingSec ?? exercise.duration)}
                       </Text>
                     ) : (
                       <>
@@ -349,7 +390,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
                             color="gray.500"
                             fontWeight="medium"
                           >
-                            {timeElapsed}s
+                            {formatSeconds(timeElapsed)}
                           </Text>
                         )}
                       </>
@@ -377,7 +418,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
                 onClick={handleComplete}
                 leftIcon={<FaCheckCircle />}
               >
-                Complete {exercise.reps} Reps
+                {exercise.duration ? 'End Set Early' : `Complete ${exercise.reps} Reps`}
               </Button>
             )}
           </VStack>
