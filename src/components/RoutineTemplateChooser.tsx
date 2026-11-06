@@ -5,46 +5,9 @@ import { dailyWorkoutTemplates } from '../services/dailyWorkoutTemplates';
 import { RoutineTemplate, routineTemplates } from '../services/routineTemplates';
 import { AnimatePresence, motion } from 'framer-motion';
 import { generateRandomRoutineName } from '../services/routineBuilderService';
+import { rankTemplates, scoreTemplate, tokenize } from '../services/templateSearch';
 import { getExerciseSearchImageUrl } from '../utils/webUtils';
-
-const templateTextCache = new WeakMap<RoutineTemplate, string>();
-
-// Utility to duplicate a value n times in an array
-function dup<T>(val: T, n: number): T[] {
-  return Array(n).fill(val).flat();
-}
-
-// Update getAllTemplateText to include description and keywords
-function getAllTemplateText(template: RoutineTemplate) {
-  if (templateTextCache.has(template)) {
-    return templateTextCache.get(template)!;
-  }
-  // Collect all relevant text from the template to use for matching and scoring with relevance
-  const base = [
-    ...dup(template.name, 4),
-    template.description || '',
-    ...(template.keywords ? dup(template.keywords, 4) : []),
-    ...Object.values(template.days).filter(Boolean),
-    `${Object.keys(template.days).length}-day`,
-    ...(template.nicknames || [])
-  ];
-  // Add all text from each referenced daily workout template
-  const dayTemplatesText = Object.values(template.days)
-    .filter(Boolean)
-    .map(dayName => {
-      const dayTmpl = dailyWorkoutTemplates.find(dt => dt.day.toLowerCase() === String(dayName).toLowerCase());
-      if (!dayTmpl) return '';
-      // Include day name, all exercise names, and nicknames
-      return [
-        dayTmpl.day,
-        ...dayTmpl.exercises.map(e => e.name),
-        ...(dayTmpl.nicknames || [])
-      ].join(' ');
-    });
-  const text = [...base, ...dayTemplatesText].join(' ').toLowerCase();
-  templateTextCache.set(template, text);
-  return text;
-}
+import { hasActiveAIProvider } from '../services/ai';
 
 function getRandomNickname(template: RoutineTemplate) {
   if (!template.nicknames || template.nicknames.length === 0) return '';
@@ -63,30 +26,6 @@ function getAllExercises(template: RoutineTemplate) {
   return Array.from(new Set(exerciseNames));
 }
 
-function escapeRegExp(str: string) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function scoreTemplate(template: RoutineTemplate, words: string[]) {
-  const text = getAllTemplateText(template).toLowerCase();
-  let score = 0;
-  words.forEach(word => {
-    if (!word) return;
-    const safeWord = escapeRegExp(word.toLowerCase());
-    const matches = text.match(new RegExp(safeWord, 'gi'));
-    if (matches) score += matches.length;
-  });
-  return score;
-}
-
-function rankTemplates(templates: RoutineTemplate[], userWords: string[]) {
-  return templates.map(t => ({
-    template: t,
-    score: scoreTemplate(t, userWords)
-  }))
-  .sort((a, b) => b.score - a.score || a.template.name.localeCompare(b.template.name));
-}
-
 // Add prop type for RoutineTemplateChooser
 interface RoutineTemplateChooserProps {
   userInput: string;
@@ -99,20 +38,11 @@ export const RoutineTemplateChooser: React.FC<RoutineTemplateChooserProps> = ({ 
   const [search, setSearch] = useState('');
   const [rejected, setRejected] = useState<string[]>([]); // Only local state, no localStorage
 
-  const userWords = useMemo(() =>
-    userInput
-      .trim()
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean)
-      .map(w => w.endsWith('s') && w.length > 1 ? w.slice(0, -1) : w)
-  , [userInput]);
-
-  const ranked = useMemo(() => rankTemplates(routineTemplates, userWords), [userWords]);
+  const ranked = useMemo(() => rankTemplates(routineTemplates, userInput), [userInput]);
   const filtered = useMemo(() => {
     const base = ranked.filter(({ template }) => !rejected.includes(template.name));
     if (!search.trim()) return base;
-    const searchWords = search.trim().toLowerCase().split(/\s+/);
+    const searchWords = tokenize(search);
     return base
       .map(({ template, score }) => {
         const searchScore = scoreTemplate(template, searchWords);
@@ -290,7 +220,7 @@ export const RoutineTemplateChooser: React.FC<RoutineTemplateChooserProps> = ({ 
                 <Box position="absolute" top={2} right={3}>
                   <Tag size="sm" colorScheme="gray" fontWeight={700} fontSize="xs" px={2} py={0.5} borderRadius="md" display="flex" alignItems="center" gap={1}>
                     <FaMedal style={{ marginRight: 2, fontSize: '1em', color: '#ECC94B' }} />
-                    {score}
+                    {Math.round(score)}
                   </Tag>
                 </Box>
                 <Box as="section" mt={2} mb={2}>
@@ -437,7 +367,9 @@ export const RoutineTemplateChooser: React.FC<RoutineTemplateChooserProps> = ({ 
                   </Flex>
                 )}
                 <Text fontSize="sm" color="gray.500" _dark={{ color: 'gray.400' }} mb={4}>
-                  After creating your routine, you can fully customize it: swap out template days, add or remove exercises, and even use AI to suggest changes or generate new workouts. Make it your own and adjust as you go!
+                  {hasActiveAIProvider()
+                    ? 'After creating your routine, you can fully customize it: swap out template days, add or remove exercises, or ask the AI chat to suggest changes. Make it your own and adjust as you go!'
+                    : 'After creating your routine, you can fully customize it: swap out template days and add or remove exercises. Make it your own and adjust as you go!'}
                 </Text>
                 <Flex gap={2} mt={2}>
                   <Button

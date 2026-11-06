@@ -1,13 +1,24 @@
 import { Routine } from '../../models/types';
-import { getOpenAiApiKey } from '../../store/aiSettingsStore';
-import { AIChangeResponse, AIError, AIProvider, AIRoutineResponse, WizardAnswer } from './types';
+import { getOpenAiApiKey, getOpenAiModel } from '../../store/aiSettingsStore';
+import { exerciseTemplates } from '../exerciseTemplates';
+import { normalizeChangeResponse, normalizeRoutineResponse } from './normalize';
+import { AIChangeResponse, AIError, AIProvider, AIRoutineResponse, ChatTurn, ScheduleForPrompt, WizardAnswer } from './types';
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-const MODEL = 'gpt-4o-mini'; // cheap, supports JSON mode
+const MAX_HISTORY_TURNS = 12;
+
+// Names from the curated catalog: the model is nudged toward these so most exercises
+// resolve to entries with good metadata (timed vs reps, images) instead of ad hoc stubs.
+const KNOWN_EXERCISE_NAMES = exerciseTemplates.map(t => t.name).join(', ');
+
+const EXERCISE_RULES = `Exercise rules:
+- Every exercise is { "name": string, "sets": number, "reps": number } for rep-based moves, or { "name": string, "sets": number, "duration": number } (seconds) for timed moves like planks, holds, stretches and cardio intervals. Never both reps and duration.
+- Strictly respect the user's equipment, injuries, dislikes and available time. If they only have certain equipment, use only that equipment or bodyweight.
+- Prefer these exercise names when one fits (spelled exactly like this): ${KNOWN_EXERCISE_NAMES}. Use other common, well-known names only when none of these fit.`;
 
 const ROUTINE_SYSTEM_PROMPT = `You are a fitness coach designing a weekly workout routine for a user based on their answers to a short intake questionnaire.
 
-Respond with ONLY a JSON object (no markdown, no commentary outside the JSON) matching exactly this shape:
+Respond with ONLY a JSON object matching exactly this shape:
 {
   "name": string,              // short, fun routine name
   "description": string,       // one sentence description of the routine
@@ -15,38 +26,58 @@ Respond with ONLY a JSON object (no markdown, no commentary outside the JSON) ma
   "schedule": [
     {
       "day": "Sunday" | "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday",
-      "kind": string,          // short category label, e.g. "Strength", "Cardio", "Flexibility"
-      "exercises": [
-        { "name": string, "sets": number, "reps": number }
-      ]
-      // Use "duration" (seconds) instead of "reps" for timed exercises — never both on one exercise.
+      "kind": string,          // short category label, e.g. "Upper Body", "Cardio", "Mobility"
+      "exercises": [ ... ]
     }
   ]
 }
-Only include days that actually have a workout — omit rest days from "schedule" entirely.
-Use common, well-known exercise names a fitness app would recognize.`;
+Only include days that have a workout; omit rest days entirely. Match the number of workout days and the session length to what the user said they can do.
 
-const CHANGE_SYSTEM_PROMPT = `You are a fitness coach helping a user modify their existing workout routine through chat.
+${EXERCISE_RULES}`;
 
-Respond with ONLY a JSON object (no markdown, no commentary outside the JSON) matching exactly this shape:
+const CHANGE_SYSTEM_PROMPT = `You are a fitness coach helping a user adjust their existing weekly workout routine through chat.
+
+Respond with ONLY a JSON object matching exactly this shape:
 {
   "commentary": string,        // friendly reply explaining what you're changing, or answering their question
   "patch": {
     "dailySchedule": [
-      { "op": "setDay", "day": "Monday", "kind": string, "exercises": [{ "name": string, "sets": number, "reps": number }] }
+      { "op": "setDay", "day": "Monday", "kind": string, "exercises": [ ... ] },
+      { "op": "clearDay", "day": "Friday" }
     ],
-    "description": string      // optional — only if you're also updating the routine's description
+    "description": string      // optional — only if the routine's description should change
   }
 }
-"dailySchedule" ops may also be { "op": "clearDay", "day": "Monday" } to turn a day into a rest day.
-Use "duration" (seconds) instead of "reps" for timed exercises — never both on one exercise.
-Only include days in "dailySchedule" that are actually changing — leave everything else out.
-If the user is just asking a question or chatting and not requesting an actual change, return
-"patch": {} (empty object) and just answer in "commentary".`;
+- "setDay" replaces that day's whole workout (list every exercise the day should have, including unchanged ones). "clearDay" turns a day into a rest day.
+- Only include days that are actually changing.
+- If the user is asking a question or chatting rather than requesting a change, return "patch": {} and just answer in "commentary".
 
-async function callOpenAI(systemPrompt: string, userPrompt: string): Promise<any> {
+${EXERCISE_RULES}`;
+
+interface OpenAIMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+// gpt-5 and o-series models are reasoning models: they accept reasoning_effort, and a low
+// setting keeps a routine generation to a few seconds. Older models reject the parameter.
+function isReasoningModel(model: string) {
+  return /^(gpt-5|o\d)/.test(model);
+}
+
+async function readOpenAIError(res: Response): Promise<{ message?: string; code?: string }> {
+  try {
+    const body = await res.json();
+    return { message: body?.error?.message, code: body?.error?.code };
+  } catch {
+    return {};
+  }
+}
+
+async function callOpenAI(messages: OpenAIMessage[]): Promise<unknown> {
   const apiKey = getOpenAiApiKey();
-  if (!apiKey) throw new AIError('invalid_key', 'No OpenAI API key set.');
+  if (!apiKey) throw new AIError('no_key', 'Add your OpenAI API key in Settings to use AI.');
+  const model = getOpenAiModel();
 
   let res: Response;
   try {
@@ -57,12 +88,10 @@ async function callOpenAI(systemPrompt: string, userPrompt: string): Promise<any
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: MODEL,
+        model,
         response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
+        messages,
+        ...(isReasoningModel(model) ? { reasoning_effort: 'low' } : {}),
       }),
     });
   } catch {
@@ -70,14 +99,21 @@ async function callOpenAI(systemPrompt: string, userPrompt: string): Promise<any
   }
 
   if (!res.ok) {
-    if (res.status === 401) throw new AIError('invalid_key', 'That OpenAI API key was rejected. Check it in Settings.');
-    if (res.status === 429) throw new AIError('rate_limited', 'OpenAI rate-limited this request. Try again shortly.');
-    throw new AIError('network', `OpenAI request failed (${res.status}).`);
+    const err = await readOpenAIError(res);
+    if (res.status === 401) throw new AIError('invalid_key', 'OpenAI rejected your API key. Check it in Settings.');
+    if (res.status === 429 && err.code === 'insufficient_quota') {
+      throw new AIError('quota', 'Your OpenAI account is out of credit. Add billing on platform.openai.com.');
+    }
+    if (res.status === 429) throw new AIError('rate_limited', 'OpenAI is rate-limiting requests. Wait a moment and try again.');
+    if (res.status === 404 || err.code === 'model_not_found') {
+      throw new AIError('model', `Your key can't use the model "${model}". Change the model in Settings.`);
+    }
+    throw new AIError('network', `OpenAI request failed (${res.status})${err.message ? `: ${err.message}` : '.'}`);
   }
 
-  const data = await res.json();
+  const data = await res.json().catch(() => null);
   const content = data?.choices?.[0]?.message?.content;
-  if (!content) throw new AIError('empty_response', 'OpenAI returned an empty response.');
+  if (!content) throw new AIError('empty_response', 'OpenAI returned an empty response. Try again.');
 
   try {
     return JSON.parse(content);
@@ -86,11 +122,11 @@ async function callOpenAI(systemPrompt: string, userPrompt: string): Promise<any
   }
 }
 
-/** Cheap, no-completion-cost way to validate a key before saving it in Settings. */
+/** Cheap, no-completion-cost way to validate a key before relying on it. */
 export async function testApiKey(apiKey: string): Promise<boolean> {
   try {
     const res = await fetch('https://api.openai.com/v1/models', {
-      headers: { Authorization: `Bearer ${apiKey}` },
+      headers: { Authorization: `Bearer ${apiKey.trim()}` },
     });
     return res.ok;
   } catch {
@@ -98,20 +134,39 @@ export async function testApiKey(apiKey: string): Promise<boolean> {
   }
 }
 
+export function buildChangeMessages(
+  routine: Routine,
+  scheduleForPrompt: ScheduleForPrompt,
+  history: ChatTurn[],
+  userMessage: string
+): OpenAIMessage[] {
+  const context = [
+    `The user's current routine is "${routine.name}".`,
+    routine.description ? `Description: ${routine.description}` : '',
+    `Current schedule (days not listed are rest days): ${JSON.stringify(scheduleForPrompt)}`,
+  ].filter(Boolean).join('\n');
+  return [
+    { role: 'system', content: `${CHANGE_SYSTEM_PROMPT}\n\n${context}` },
+    ...history.slice(-MAX_HISTORY_TURNS).map((turn): OpenAIMessage => ({
+      role: turn.role === 'ai' ? 'assistant' : 'user',
+      content: turn.message,
+    })),
+    { role: 'user', content: userMessage },
+  ];
+}
+
 export const byokProvider: AIProvider = {
   async generateRoutine(qa: WizardAnswer[]): Promise<AIRoutineResponse> {
     const userPrompt = qa.map(({ question, answer }) => `${question}\n${answer}`).join('\n\n');
-    return callOpenAI(ROUTINE_SYSTEM_PROMPT, userPrompt);
+    const raw = await callOpenAI([
+      { role: 'system', content: ROUTINE_SYSTEM_PROMPT },
+      { role: 'user', content: userPrompt },
+    ]);
+    return normalizeRoutineResponse(raw);
   },
 
-  async suggestRoutineChange(routine: Routine, scheduleForPrompt, userMessage: string): Promise<AIChangeResponse> {
-    const userPrompt = [
-      `Routine name: ${routine.name}`,
-      routine.description ? `Description: ${routine.description}` : '',
-      `Current schedule (JSON): ${JSON.stringify(scheduleForPrompt)}`,
-      '',
-      `User: ${userMessage}`,
-    ].filter(Boolean).join('\n');
-    return callOpenAI(CHANGE_SYSTEM_PROMPT, userPrompt);
+  async suggestRoutineChange(routine, scheduleForPrompt, history, userMessage): Promise<AIChangeResponse> {
+    const raw = await callOpenAI(buildChangeMessages(routine, scheduleForPrompt, history, userMessage));
+    return normalizeChangeResponse(raw);
   },
 };

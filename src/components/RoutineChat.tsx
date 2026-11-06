@@ -1,10 +1,12 @@
 import React, { useRef, useState } from 'react';
-import { Box, VStack, Text, Flex, Button, Collapse, IconButton, Input, useToast } from '@chakra-ui/react';
-import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { Box, VStack, Text, Flex, Button, Collapse, IconButton, Input, Spinner, useToast } from '@chakra-ui/react';
+import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp, FaKey } from 'react-icons/fa';
+import { Link as RouterLink } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { Routine, RoutineChange, RoutineChatMessage } from '../models/types';
 import { useExercises, usePulsarStore } from '../store/pulsarStore';
-import { AIError, getActiveAIProvider } from '../services/ai';
+import { AIError, getActiveAIProvider, useHasActiveAIProvider } from '../services/ai';
+import { applyRoutineChange } from '../utils/routineChangeUtils';
 import { resolveAIExercises } from '../services/routineBuilderService';
 import RoutineChangeCard from './RoutineChangeCard';
 
@@ -21,6 +23,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine }) => {
   const [isOpen, setIsOpen] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const hasAI = useHasActiveAIProvider();
 
   const chatHistory = routine.chatHistory;
   const changes = routine.changes || [];
@@ -30,81 +33,86 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine }) => {
     if (isOpen && chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [chatHistory.length, isOpen]);
+  }, [chatHistory.length, isOpen, isSending]);
+
+  // Always build on the latest stored routine: the prop can be a render behind, e.g. right
+  // after the user's own message was saved.
+  const getLatestRoutine = () => usePulsarStore.getState().routines.find(r => r.id === routine.id) ?? routine;
 
   const handleSend = async () => {
-    if (!chatInput.trim() || isSending) return;
-    const userMessage: RoutineChatMessage = { id: uuidv4(), role: 'user', message: chatInput.trim(), date: Date.now() };
-    const historyWithUser = [...chatHistory, userMessage];
-    setChatInput('');
-    await updateRoutine({ ...routine, chatHistory: historyWithUser });
-
+    const text = chatInput.trim();
+    if (!text || isSending) return;
     const provider = getActiveAIProvider();
+    if (!provider) return;
+
+    const priorHistory = getLatestRoutine().chatHistory;
+    const userMessage: RoutineChatMessage = { id: uuidv4(), role: 'user', message: text, date: Date.now() };
+    setChatInput('');
+    await updateRoutine({ ...getLatestRoutine(), chatHistory: [...priorHistory, userMessage] });
+
     setIsSending(true);
     try {
-      if (provider) {
-        // The model only ever sees/produces exercise names, never our internal ids.
-        const scheduleForPrompt = routine.dailySchedule.map(day => ({
-          day: day.day,
-          kind: day.kind,
-          exercises: day.exercises.map(ex => ({
-            name: exercises.find(e => e.id === ex.exerciseId)?.name || 'Unknown exercise',
-            sets: ex.sets,
-            reps: ex.reps,
-            duration: ex.duration,
-          })),
-        }));
-        const response = await provider.suggestRoutineChange(routine, scheduleForPrompt, userMessage.message);
+      const current = getLatestRoutine();
+      const knownExercises = usePulsarStore.getState().exercises;
+      // The model only ever sees/produces exercise names, never our internal ids.
+      const scheduleForPrompt = current.dailySchedule.map(day => ({
+        day: day.day,
+        kind: day.kind,
+        exercises: day.exercises.map(ex => ({
+          name: knownExercises.find(e => e.id === ex.exerciseId)?.name || 'Unknown exercise',
+          sets: ex.sets,
+          reps: ex.reps,
+          duration: ex.duration,
+        })),
+      }));
+      const history = priorHistory.map(m => ({ role: m.role, message: m.message }));
+      const response = await provider.suggestRoutineChange(current, scheduleForPrompt, history, text);
 
-        const hasScheduleOps = !!response.patch.dailySchedule?.length;
-        const hasDescriptionChange = response.patch.description !== undefined;
-        let updatedChanges = changes;
-        let aiMessage: RoutineChatMessage;
+      const hasScheduleOps = !!response.patch.dailySchedule?.length;
+      const hasDescriptionChange = response.patch.description !== undefined;
+      let newChange: RoutineChange | undefined;
 
-        if (hasScheduleOps || hasDescriptionChange) {
-          // Resolve each setDay's exercise names -> real ScheduledExercise entries,
-          // threading "known" sequentially so repeated names across days in one patch
-          // don't create duplicate exercises.
-          let known = exercises;
-          const resolvedOps = [];
-          for (const op of response.patch.dailySchedule || []) {
-            if (op.op === 'clearDay') {
-              resolvedOps.push(op);
-            } else {
-              const { scheduled, newExercises } = await resolveAIExercises(op.exercises, known, addExercise);
-              known = [...known, ...newExercises];
-              resolvedOps.push({ op: 'setDay' as const, day: op.day, kind: op.kind, exercises: scheduled });
-            }
+      if (hasScheduleOps || hasDescriptionChange) {
+        // Resolve each setDay's exercise names -> real ScheduledExercise entries,
+        // threading "known" sequentially so repeated names across days in one patch
+        // don't create duplicate exercises.
+        let known = usePulsarStore.getState().exercises;
+        const resolvedOps = [];
+        for (const op of response.patch.dailySchedule || []) {
+          if (op.op === 'clearDay') {
+            resolvedOps.push(op);
+          } else {
+            const { scheduled, newExercises } = await resolveAIExercises(op.exercises, known, addExercise);
+            known = [...known, ...newExercises];
+            resolvedOps.push({ op: 'setDay' as const, day: op.day, kind: op.kind, exercises: scheduled });
           }
-          const change: RoutineChange = {
-            id: uuidv4(),
-            status: 'pending',
-            patch: { dailySchedule: resolvedOps, description: response.patch.description },
-          };
-          updatedChanges = [...changes, change];
-          aiMessage = { id: uuidv4(), role: 'ai', message: response.commentary, date: Date.now(), pendingChangeId: change.id };
-        } else {
-          aiMessage = { id: uuidv4(), role: 'ai', message: response.commentary, date: Date.now() };
         }
-
-        await updateRoutine({ ...routine, chatHistory: [...historyWithUser, aiMessage], changes: updatedChanges });
-      } else {
-        // No AI provider set up — keep the harmless mock echo so the chat stays functional.
-        await new Promise((resolve) => setTimeout(resolve, 600));
-        const aiMessage: RoutineChatMessage = {
+        newChange = {
           id: uuidv4(),
-          role: 'ai',
-          message: `AI: I received your message: "${userMessage.message}"`,
-          date: Date.now(),
+          status: 'pending',
+          patch: { dailySchedule: resolvedOps, description: response.patch.description },
         };
-        await updateRoutine({ ...routine, chatHistory: [...historyWithUser, aiMessage] });
       }
+
+      const aiMessage: RoutineChatMessage = {
+        id: uuidv4(),
+        role: 'ai',
+        message: response.commentary,
+        date: Date.now(),
+        ...(newChange ? { pendingChangeId: newChange.id } : {}),
+      };
+      const latest = getLatestRoutine();
+      await updateRoutine({
+        ...latest,
+        chatHistory: [...latest.chatHistory, aiMessage],
+        changes: newChange ? [...(latest.changes || []), newChange] : latest.changes,
+      });
     } catch (e) {
       toast({
         title: 'AI request failed',
         description: e instanceof AIError ? e.message : 'Something went wrong talking to the AI.',
         status: 'error',
-        duration: 4000,
+        duration: 5000,
         isClosable: true,
       });
     } finally {
@@ -113,28 +121,16 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine }) => {
   };
 
   const handleAcceptChange = async (change: RoutineChange) => {
-    let dailySchedule = routine.dailySchedule;
-    if (change.patch.dailySchedule?.length) {
-      dailySchedule = [...dailySchedule];
-      for (const op of change.patch.dailySchedule) {
-        const idx = dailySchedule.findIndex(d => d.day === op.day);
-        if (op.op === 'clearDay') {
-          if (idx !== -1) dailySchedule.splice(idx, 1);
-        } else {
-          const newDay = { day: op.day, kind: op.kind, exercises: op.exercises };
-          if (idx !== -1) dailySchedule[idx] = newDay;
-          else dailySchedule.push(newDay);
-        }
-      }
-    }
-    const description = change.patch.description ?? routine.description;
-    const updatedChanges = changes.map(c => c.id === change.id ? { ...c, status: 'accepted' as const } : c);
-    await updateRoutine({ ...routine, dailySchedule, description, changes: updatedChanges });
+    const latest = getLatestRoutine();
+    const { dailySchedule, description } = applyRoutineChange(latest, change);
+    const updatedChanges = (latest.changes || []).map(c => c.id === change.id ? { ...c, status: 'accepted' as const } : c);
+    await updateRoutine({ ...latest, dailySchedule, description, changes: updatedChanges });
   };
 
   const handleRejectChange = async (change: RoutineChange) => {
-    const updatedChanges = changes.map(c => c.id === change.id ? { ...c, status: 'rejected' as const } : c);
-    await updateRoutine({ ...routine, changes: updatedChanges });
+    const latest = getLatestRoutine();
+    const updatedChanges = (latest.changes || []).map(c => c.id === change.id ? { ...c, status: 'rejected' as const } : c);
+    await updateRoutine({ ...latest, changes: updatedChanges });
   };
 
   return (
@@ -160,8 +156,8 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine }) => {
           overflowY="auto"
           ref={chatContainerRef}
         >
-          {chatHistory.length === 0 && (
-            <Text color="gray.500" fontSize="sm">Ask anything about this routine, or request changes!</Text>
+          {chatHistory.length === 0 && hasAI && (
+            <Text color="gray.500" fontSize="sm">Ask anything about this routine, or ask for changes, like "make Wednesday a rest day" or "no jumping, my knees hurt".</Text>
           )}
           {chatHistory.map((msg) => {
             const change = msg.pendingChangeId ? changes.find(c => c.id === msg.pendingChangeId) : undefined;
@@ -197,28 +193,46 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine }) => {
               </Flex>
             );
           })}
+          {isSending && (
+            <Flex align="center" gap={2} color="gray.500" fontSize="sm">
+              <Spinner size="xs" /> Thinking...
+            </Flex>
+          )}
         </VStack>
+        {hasAI ? (
         <Flex ml="1px" mb="1px" mt={3} gap={2}>
-          <Input
-            value={chatInput}
-            onChange={e => setChatInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
-            placeholder="Suggest changes or ask a question..."
-            borderRadius={16}
-            fontSize="1em"
-            bg="gray.50"
-            _dark={{ bg: 'gray.700', color: 'gray.100', borderColor: 'gray.600' }}
-            _focus={{ bg: 'white', _dark: { bg: 'gray.800' } }}
-            color="gray.800"
-            borderColor="gray.200"
-            flex={1}
-            transition="background 0.2s, color 0.2s"
-            isDisabled={isSending}
-          />
-          <Button colorScheme="cyan" onClick={handleSend} borderRadius="full" px={3} minW={10} aria-label="Send" isLoading={isSending}>
-            <FaPaperPlane />
-          </Button>
-        </Flex>
+            <Input
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
+              placeholder="Suggest changes or ask a question..."
+              borderRadius={16}
+              fontSize="1em"
+              bg="gray.50"
+              _dark={{ bg: 'gray.700', color: 'gray.100', borderColor: 'gray.600' }}
+              _focus={{ bg: 'white', _dark: { bg: 'gray.800' } }}
+              color="gray.800"
+              borderColor="gray.200"
+              flex={1}
+              transition="background 0.2s, color 0.2s"
+              isDisabled={isSending}
+            />
+            <Button colorScheme="cyan" onClick={handleSend} borderRadius="full" px={3} minW={10} aria-label="Send" isLoading={isSending}>
+              <FaPaperPlane />
+            </Button>
+          </Flex>
+        ) : (
+          <Flex mt={3} p={3} gap={3} align="center" borderRadius="md" bg="white" _dark={{ bg: 'gray.800' }} borderWidth="1px">
+            <Box as={FaKey} color="cyan.500" flexShrink={0} />
+            <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.300' }}>
+              AI chat needs your own OpenAI API key.{' '}
+              <Text as={RouterLink} to="/settings" color="cyan.600" textDecoration="underline">
+                Add it in Settings
+              </Text>{' '}
+              to ask questions and get suggested changes here.
+            </Text>
+          </Flex>
+        )}
       </Collapse>
     </Box>
   );

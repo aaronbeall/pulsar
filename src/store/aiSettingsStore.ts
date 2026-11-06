@@ -1,38 +1,53 @@
 import { create } from 'zustand';
 
 // Deliberately separate from pulsarStore.ts (which just had its own redundant persist()
-// removed — see NOTES.md 2026-07-31). This is a real, small UI-only setting, so it gets its
-// own tiny store that reads/writes localStorage directly rather than reintroducing a
+// removed — see NOTES.md 2026-07-31). These are real, small UI-only settings, so they get
+// their own tiny store that reads/writes localStorage directly rather than reintroducing a
 // blanket persist() pattern.
 
-const STORAGE_KEY = 'pulsar:openaiApiKey';
+const KEY_STORAGE_KEY = 'pulsar:openaiApiKey';
+const MODEL_STORAGE_KEY = 'pulsar:openaiModel';
 
-const readStoredKey = (): string | null => {
+// A cheap model that supports JSON mode. Overridable in Settings, since OpenAI retires
+// models on its own schedule and a user's key may not have access to every model.
+export const DEFAULT_OPENAI_MODEL = 'gpt-5-mini';
+
+const readStored = (key: string): string | null => {
   try {
-    return localStorage.getItem(STORAGE_KEY) || null;
+    return localStorage.getItem(key) || null;
   } catch {
     return null; // localStorage unavailable (e.g. private browsing)
   }
 };
 
+const writeStored = (key: string, value: string | null) => {
+  try {
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch {
+    // localStorage unavailable — the value just won't survive a reload
+  }
+};
+
 interface AiSettingsState {
   openaiApiKey: string | null;
+  openaiModel: string | null; // null = DEFAULT_OPENAI_MODEL
   setOpenaiApiKey: (key: string | null) => void;
+  setOpenaiModel: (model: string | null) => void;
 }
 
 export const useAiSettingsStore = create<AiSettingsState>((set) => ({
-  openaiApiKey: readStoredKey(),
+  openaiApiKey: readStored(KEY_STORAGE_KEY),
+  openaiModel: readStored(MODEL_STORAGE_KEY),
   setOpenaiApiKey: (key) => {
-    try {
-      if (key) {
-        localStorage.setItem(STORAGE_KEY, key);
-      } else {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    } catch {
-      // localStorage unavailable — key just won't survive a reload
-    }
-    set({ openaiApiKey: key });
+    const value = key?.trim() || null;
+    writeStored(KEY_STORAGE_KEY, value);
+    set({ openaiApiKey: value });
+  },
+  setOpenaiModel: (model) => {
+    const value = model?.trim() || null;
+    writeStored(MODEL_STORAGE_KEY, value);
+    set({ openaiModel: value });
   },
 }));
 
@@ -42,5 +57,15 @@ export const useOpenAiApiKey = (): [string | null, (key: string | null) => void]
   return [key, setKey];
 };
 
-// Non-reactive accessor for use outside React (services, non-component modules).
+export const useOpenAiModel = (): [string | null, (model: string | null) => void] => {
+  const model = useAiSettingsStore(s => s.openaiModel);
+  const setModel = useAiSettingsStore(s => s.setOpenaiModel);
+  return [model, setModel];
+};
+
+/** True when a key is set — reactive, for components that show/hide AI features. */
+export const useHasOpenAiKey = (): boolean => useAiSettingsStore(s => !!s.openaiApiKey);
+
+// Non-reactive accessors for use outside React (services, non-component modules).
 export const getOpenAiApiKey = (): string | null => useAiSettingsStore.getState().openaiApiKey;
+export const getOpenAiModel = (): string => useAiSettingsStore.getState().openaiModel || DEFAULT_OPENAI_MODEL;

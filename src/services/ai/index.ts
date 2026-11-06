@@ -1,4 +1,4 @@
-import { getOpenAiApiKey } from '../../store/aiSettingsStore';
+import { getOpenAiApiKey, useHasOpenAiKey } from '../../store/aiSettingsStore';
 import { byokProvider } from './byokProvider';
 import { AIProvider } from './types';
 
@@ -6,9 +6,8 @@ export * from './types';
 export { testApiKey } from './byokProvider';
 
 /**
- * Phase 1: BYOK only. Phase 4 (see PLAN-ai-features.md) adds a hostedProvider for
- * logged-in subscribers and prefers it here when active — everything upstream keeps
- * calling this same function and never has to change.
+ * Bring-your-own-key only for now. A later hosted provider (see PLAN-ai-features.md) would
+ * be chosen here too — everything upstream keeps calling this same function.
  */
 export function getActiveAIProvider(): AIProvider | null {
   if (getOpenAiApiKey()) return byokProvider;
@@ -18,3 +17,6 @@ export function getActiveAIProvider(): AIProvider | null {
 export function hasActiveAIProvider(): boolean {
   return getActiveAIProvider() !== null;
 }
+
+/** Reactive version of hasActiveAIProvider, for components that should update when a key is added or removed. */
+export const useHasActiveAIProvider = (): boolean => useHasOpenAiKey();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Button, Flex, Heading, Input, Text, Spinner, Skeleton, VStack, useColorModeValue } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Input, Text, Spinner, Skeleton, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { usePulsarStore, useExercises } from '../store/pulsarStore';
 import { generateRoutine, createRoutineFromTemplate } from '../services/routineBuilderService';
@@ -9,7 +9,7 @@ import { RoutineTemplate } from '../services/routineTemplates';
 import type { NavigateFunction } from 'react-router-dom';
 import { FaArrowRight, FaMagic, FaBook } from 'react-icons/fa';
 import { RoutineTemplateChooser } from '../components/RoutineTemplateChooser';
-import { hasActiveAIProvider } from '../services/ai';
+import { AIError, useHasActiveAIProvider } from '../services/ai';
 
 // Positional, matching workoutPrompts by index — no need for named keys.
 const emptyResponses = () => Array(workoutPrompts.length).fill('');
@@ -22,6 +22,8 @@ export const WorkoutSetup: React.FC = () => {
   const [showTemplateChooser, setShowTemplateChooser] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const toast = useToast();
+  const hasAI = useHasActiveAIProvider();
 
   const addExercise = usePulsarStore(s => s.addExercise);
   const addRoutine = usePulsarStore(s => s.addRoutine);
@@ -30,6 +32,7 @@ export const WorkoutSetup: React.FC = () => {
 
   // Hoist all useColorModeValue hooks
   const orTextColor = useColorModeValue('gray.300', 'gray.600');
+  const noteColor = useColorModeValue('gray.500', 'gray.400');
   const chooseBtnColor = useColorModeValue('gray', 'cyan');
   const chooseBtnOpacity = useColorModeValue(0.85, 0.95);
   const chooseBtnHoverBg = useColorModeValue('gray.100', 'cyan.900');
@@ -59,11 +62,26 @@ export const WorkoutSetup: React.FC = () => {
   const handleNext = async () => {
     if (step < workoutPrompts.length) {
       setStep(step + 1);
+    } else if (!hasAI) {
+      // No AI: offer the templates that best match the answers (keyword search).
+      setShowTemplateChooser(true);
     } else {
       setIsLoading(true);
-      const { routine } = await generateRoutine(responses, exercises, addExercise);
-      await addRoutineAndNavigate(routine);
-      setIsLoading(false);
+      try {
+        const { routine } = await generateRoutine(responses, exercises, addExercise);
+        await addRoutineAndNavigate(routine);
+      } catch (e) {
+        // Stay on the last step with the answers intact so the user can retry or pick a template.
+        toast({
+          title: "Couldn't build your routine",
+          description: e instanceof AIError ? e.message : 'Something went wrong talking to the AI. Try again.',
+          status: 'error',
+          duration: 6000,
+          isClosable: true,
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -84,7 +102,7 @@ export const WorkoutSetup: React.FC = () => {
       <Flex direction="column" align="center" justify="center" height="100%" width="100%">
         <Spinner size="xl" color="cyan.500" mb={4} />
         <Text fontSize="lg" color="gray.600" mb={4}>
-          Building your customized routine based on your answers.
+          Building your routine from your answers. This can take a few seconds.
         </Text>
         <VStack spacing={4} align="stretch" width="80%">
           <Skeleton height="20px" />
@@ -136,33 +154,41 @@ export const WorkoutSetup: React.FC = () => {
         </Button>
       ) : (
         <Box w="100%" maxW="420px" textAlign="center">
-          <Button colorScheme="cyan" size="lg" w="100%" onClick={handleNext} leftIcon={<FaMagic />} mb={2}>
-            Make my routine!
-          </Button>
-          {!hasActiveAIProvider() && (
-            <Text fontSize="xs" color={orTextColor} mb={2}>
-              Using template-based generation —{' '}
-              <Text as={RouterLink} to="/settings" textDecoration="underline">
-                add an OpenAI key in Settings
-              </Text>{' '}
-              for AI-personalized routines.
-            </Text>
+          {hasAI ? (
+            <>
+              <Button colorScheme="cyan" size="lg" w="100%" onClick={handleNext} leftIcon={<FaMagic />} mb={2}>
+                Make my routine!
+              </Button>
+              <Text fontSize="sm" color={orTextColor} my={1} fontWeight="normal" letterSpacing="wider">
+                or
+              </Text>
+              <Button
+                variant="ghost"
+                colorScheme={chooseBtnColor}
+                onClick={() => setShowTemplateChooser(true)}
+                fontWeight="normal"
+                fontSize="sm"
+                leftIcon={<FaBook style={{marginRight:4}} />}
+                opacity={chooseBtnOpacity}
+                _hover={{ opacity: 1, bg: chooseBtnHoverBg }}
+              >
+                Choose from a template...
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button colorScheme="cyan" size="lg" w="100%" onClick={handleNext} leftIcon={<FaBook />} mb={3}>
+                Find matching routines
+              </Button>
+              <Text fontSize="xs" color={noteColor}>
+                Pulsar will match your answers to its routine templates.{' '}
+                <Text as={RouterLink} to="/settings" textDecoration="underline" color="cyan.600">
+                  Add your OpenAI API key in Settings
+                </Text>{' '}
+                to have AI build a routine just for you.
+              </Text>
+            </>
           )}
-          <Text fontSize="sm" color={orTextColor} my={1} fontWeight="normal" letterSpacing="wider">
-            or
-          </Text>
-          <Button
-            variant="ghost"
-            colorScheme={chooseBtnColor}
-            onClick={() => setShowTemplateChooser(true)}
-            fontWeight="normal"
-            fontSize="sm"
-            leftIcon={<FaBook style={{marginRight:4}} />}
-            opacity={chooseBtnOpacity}
-            _hover={{ opacity: 1, bg: chooseBtnHoverBg }}
-          >
-            Choose from a template...
-          </Button>
         </Box>
       )}
     </Flex>

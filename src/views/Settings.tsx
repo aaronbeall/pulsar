@@ -17,7 +17,7 @@ import {
 import { FaExclamationTriangle, FaExternalLinkAlt, FaImages, FaPalette, FaRobot } from 'react-icons/fa';
 import { deleteDB } from 'idb'; // Import deleteDB to delete IndexedDB
 import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
-import { useOpenAiApiKey } from '../store/aiSettingsStore';
+import { DEFAULT_OPENAI_MODEL, useOpenAiApiKey, useOpenAiModel } from '../store/aiSettingsStore';
 import { testApiKey } from '../services/ai';
 
 interface SettingsProps {
@@ -30,6 +30,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
   const toast = useToast();
   const [apiKey, setApiKey] = useOpenAiApiKey();
   const [testingKey, setTestingKey] = React.useState(false);
+  const [model, setModel] = useOpenAiModel();
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
@@ -45,7 +46,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
       title: ok ? 'API key looks good' : 'Key test failed',
       description: ok
         ? 'AI-generated routines and chat-suggested edits are enabled.'
-        : 'That key was rejected by OpenAI — double check it in Settings.',
+        : 'OpenAI rejected that key, or could not be reached. Check the key and your connection.',
       status: ok ? 'success' : 'error',
       duration: 3000,
       isClosable: true,
@@ -132,9 +133,10 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
           <Heading size="sm">AI</Heading>
         </Flex>
         <Text fontSize="xs" color={mutedColor} mb={3}>
-          Add your own OpenAI API key to enable AI-generated routines and chat-suggested
-          edits. The key is stored only in this browser and used only to call OpenAI
-          directly — never sent anywhere else.
+          Add your own OpenAI API key to have AI build routines from your answers and suggest
+          changes in each routine's chat. The key is stored only in this browser and is sent
+          only to OpenAI. Usage is billed to your OpenAI account; building a routine costs
+          under a cent on the default model.
         </Text>
         <VStack align="stretch" spacing={2}>
           <Input
@@ -153,10 +155,23 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
               Get an API key <Icon as={FaExternalLinkAlt} boxSize={2.5} />
             </Link>
           </Flex>
+          <Flex align="center" gap={2}>
+            <Text fontSize="xs" color={mutedColor} flexShrink={0}>Model</Text>
+            <Input
+              placeholder={DEFAULT_OPENAI_MODEL}
+              value={model || ''}
+              onChange={(e) => setModel(e.target.value || null)}
+              size="sm"
+              borderRadius="md"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+          </Flex>
           <Text fontSize="xs" color={apiKey ? 'green.500' : mutedColor} fontWeight="medium">
             {apiKey
-              ? 'AI generation active.'
-              : 'Add a key above to enable AI-personalized routines — otherwise Pulsar picks from templates.'}
+              ? 'AI is on for new routines and routine chat.'
+              : 'AI is off. New routines are matched from templates instead.'}
           </Text>
         </VStack>
       </Box>

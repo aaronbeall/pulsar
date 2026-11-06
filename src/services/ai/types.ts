@@ -35,7 +35,7 @@ export interface AIChangeResponse {
 }
 
 export class AIError extends Error {
-  code: 'invalid_key' | 'rate_limited' | 'network' | 'empty_response' | 'parse_error';
+  code: 'no_key' | 'invalid_key' | 'rate_limited' | 'quota' | 'model' | 'network' | 'empty_response' | 'parse_error';
   constructor(code: AIError['code'], message: string) {
     super(message);
     this.name = 'AIError';
@@ -48,6 +48,20 @@ export interface WizardAnswer {
   answer: string;
 }
 
+// The routine as the model sees it: exercise names, never internal ids.
+export type ScheduleForPrompt = Array<{
+  day: DayOfWeek;
+  kind: string;
+  exercises: Array<{ name: string; sets: number; reps?: number; duration?: number }>;
+}>;
+
+// Prior chat turns sent along with a new message, so follow-ups ("yes, do that", "make it
+// shorter") have the context they refer to.
+export interface ChatTurn {
+  role: 'user' | 'ai';
+  message: string;
+}
+
 // Everything upstream (the setup wizard, the chat UI, the diff/accept card) only ever talks
 // to this interface — never to OpenAI or a backend directly. That's what lets a later hosted
 // implementation (calling a Supabase Edge Function instead) slot in with zero UI changes.
@@ -56,7 +70,8 @@ export interface AIProvider {
   generateRoutine(qa: WizardAnswer[]): Promise<AIRoutineResponse>;
   suggestRoutineChange(
     routine: Routine,
-    scheduleForPrompt: Array<{ day: DayOfWeek; kind: string; exercises: Array<{ name: string; sets: number; reps?: number; duration?: number }> }>,
+    scheduleForPrompt: ScheduleForPrompt,
+    history: ChatTurn[],
     userMessage: string
   ): Promise<AIChangeResponse>;
 }

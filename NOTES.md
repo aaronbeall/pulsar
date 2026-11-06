@@ -44,10 +44,12 @@ Historical note for context — until 2026-08-01 there was **no LLM integration 
 `routineBuilderService.ts: generateRoutine` collected real user input but ignored it,
 picking random `exerciseTemplates` instead. That's now Phase 1 of `PLAN-ai-features.md`,
 implemented — see "Phase 1 AI (BYOK) shipped" below for what changed and how it works.
-**The mock still exists as the automatic fallback** whenever no personal API key is set
-(`services/ai: getActiveAIProvider()` returns `null`), so an unconfigured install still
-behaves exactly like before — this is intentional, not a regression, per `CLAUDE.md`'s
-"remain fully useful with zero account" rule.
+**The mock is gone as of 2026-11-06.** With no personal API key set
+(`services/ai: getActiveAIProvider()` returns `null`), the wizard no longer fakes a
+"custom" routine: it keyword-matches the answers against the routine templates
+(`services/templateSearch.ts`) and lets the user pick one, and the routine chat shows an
+"add your key in Settings" prompt instead of echoing. The app stays fully useful with zero
+account, per `CLAUDE.md`, without pretending to be AI.
 
 - The other real external API call in the app is exercise cover image search
   (`webUtils.ts: fetchExerciseSearchImageUrl`) — cached in `localStorage`, Workbox
@@ -264,9 +266,9 @@ type/shape change, not a backward-compatible one.
 
 `PLAN-ai-features.md`'s Phase 1 is implemented: real OpenAI calls for both routine
 generation and chat-suggested edits, gated behind a personal API key the user pastes into
-Settings (`views/Settings.tsx`'s new "AI" card) — no login, no backend. Falls back to the
-pre-existing mock (random-picker / echo) whenever no key is set or any AI call fails, so
-the app behaves exactly as before if unconfigured.
+Settings (`views/Settings.tsx`'s new "AI" card) — no login, no backend. (Originally this
+fell back to the old random-picker/echo mock; that was replaced 2026-11-06, see "No-key
+path and AI hardening" below.)
 
 - **`services/ai/`** (new dir) — `types.ts` (`AIProvider`, `AIRoutineResponse`,
   `AIChangeResponse`, `AIError`), `byokProvider.ts` (direct `fetch` to OpenAI,
@@ -329,3 +331,40 @@ causing a new one — worth remembering next time "it worked before this change"
    change — `Routine.active` is currently a single boolean with no notion of "inactive but
    has history," which is *why* the streak-calendar/alert bugs involving inactive routines
    keep recurring. Worth fixing at the model level rather than patching each call site.
+
+## No-key path and AI hardening — 2026-11-06
+
+Decided with Aaron: bring-your-own-key is the only AI path for now, and without a key the
+app does template matching and nothing else.
+- **No key → keyword template search.** `services/templateSearch.ts` (pure, tested) holds the
+  ranking that used to live inside `RoutineTemplateChooser.tsx`, rewritten: stopwords and
+  numbers dropped, everyday phrasings mapped to template vocabulary ("lose weight" → fat
+  loss, "get stronger" → strength, "run a marathon" → running/endurance), weighted bag of
+  words per template (name and keywords count most), half credit for related word forms.
+  The old version did raw substring regex counts, so words like "a"/"to" matched every
+  template. The wizard's last step becomes "Find matching routines" and opens the chooser
+  ranked by the answers. The random routine generator was deleted (`generateRandomRoutineName`
+  stays — the chooser's "Random" name button uses it).
+- **AI failures surface instead of silently downgrading.** `generateRoutine` throws `AIError`
+  (now with `no_key`/`quota`/`model` codes, OpenAI's own error message on other failures);
+  the wizard shows a toast and keeps the answers so the user can retry or pick a template.
+- **Responses are validated.** `services/ai/normalize.ts` (pure, tested) coerces day names
+  ("wed", "monday"), numeric strings, reps-and-duration-together, and drops empty days or
+  `setDay` ops with no exercises, throwing `parse_error` when nothing usable is left.
+- **Chat has context.** `suggestRoutineChange` now takes prior chat turns (last 12) so
+  follow-ups like "yes, do that" work; the routine schedule goes in the system message.
+  The chat builds on the latest stored routine (`usePulsarStore.getState()`) rather than a
+  possibly stale prop, and accepting a change uses `utils/routineChangeUtils.ts:
+  applyRoutineChange` (pure, tested), which keeps days in Sunday–Saturday order.
+- **Model is configurable**, default `gpt-5-mini` with `reasoning_effort: low` (sent only to
+  gpt-5/o-series models). `gpt-4o-mini` was the original default but OpenAI retires it
+  2027-01-14. Prompts now steer the model toward the curated `exerciseTemplates` names so
+  most exercises resolve with good metadata and images; ad hoc exercises the model gives a
+  `duration` for are created as timed.
+- Verified end to end in the built app at iPhone 13 size with OpenAI mocked via Playwright
+  route interception (no real key available): no-key template flow, AI generation, a chat
+  change proposal accepted, a plain question answered, persistence across reload, and a 401
+  surfacing as a toast. Not yet run against the real OpenAI API.
+- Old routines without `chatHistory` were intentionally not migrated (Aaron: existing local
+  data can be reset).
+
