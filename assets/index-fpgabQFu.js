@@ -718,7 +718,7 @@ Advanced Bro Split     | Rest                | Chest & Triceps     | Back & Bice
           <h2>Schedule</h2>
           ${R}
           <div class="branding">
-            <img src="/favicon.svg" alt="Pulsar logo" class="branding-logo" />
+            <img src="${new URL("/pulsar/favicon.svg",window.location.href).href}" alt="Pulsar logo" class="branding-logo" />
             <span class="branding-title">PULSAR</span>
             <span class="branding-exported">Exported from Pulsar on ${new Date().toLocaleString()}</span>
           </div>
