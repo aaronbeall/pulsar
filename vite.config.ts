@@ -2,6 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// Set only in PR preview builds (see .github/workflows/pr-preview.yml), which deploy to a
+// pr-<n>/ subpath of the live site.
+const previewPr = process.env.VITE_PREVIEW_PR;
+
 export default defineConfig({
   base: process.env.BASE || '/',
   plugins: [
@@ -15,6 +19,10 @@ export default defineConfig({
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,ico,json}'],
+        // The live app's service worker scope (/pulsar/) also covers the PR previews under
+        // /pulsar/pr-<n>/, and its SPA navigation fallback would otherwise answer a preview
+        // URL with the cached live index.html. Previews register their own, narrower worker.
+        navigateFallbackDenylist: previewPr ? [] : [/\/pr-\d+(\/|$)/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/commons\.wikimedia\.org\/w\/api\.php/,
@@ -53,8 +61,8 @@ export default defineConfig({
       },
       manifest: {
         id: '.',
-        name: 'Pulsar',
-        short_name: 'Pulsar',
+        name: previewPr ? `Pulsar (PR #${previewPr})` : 'Pulsar',
+        short_name: previewPr ? `Pulsar #${previewPr}` : 'Pulsar',
         description: 'A modern, installable workout and routine tracker.',
         // Relative, not absolute — this app deploys to a subpath (e.g. /pulsar/ on
         // GitHub Pages) as well as domain root locally, and relative start_url/scope
