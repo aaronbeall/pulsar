@@ -16,7 +16,11 @@ interface PulsarDB extends DBSchema {
   };
 }
 
-const DB_NAME = 'PulsarDB';
+// PR preview builds are served from the same origin as the live app (a pr-<n>/ subpath on
+// GitHub Pages), and IndexedDB is per-origin, so give each preview its own database to keep
+// test data from touching real workout history.
+const PREVIEW_PR = import.meta.env.VITE_PREVIEW_PR;
+const DB_NAME = PREVIEW_PR ? `PulsarDB-pr-${PREVIEW_PR}` : 'PulsarDB';
 const DB_VERSION = 1;
 
 export const getDB = async () => {
