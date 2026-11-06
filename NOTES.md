@@ -367,4 +367,13 @@ app does template matching and nothing else.
   surfacing as a toast. Not yet run against the real OpenAI API.
 - Old routines without `chatHistory` were intentionally not migrated (Aaron: existing local
   data can be reset).
+- **AI onboarding dialog** (`components/AIOnboardingDialog.tsx`, added the same day at
+  Aaron's request): the one place AI gets turned on. Every AI entry point opens it instead
+  of linking to a raw key field: the wizard's "Turn on AI for a custom routine", the routine
+  chat's "Turn on AI", and Settings' "Turn on AI" / "Change key". It explains what AI does,
+  offers "Use your own OpenAI key" (steps to get one, then the key is verified against
+  `GET /v1/models` before it is saved), and shows a disabled "Pulsar Premium — coming soon"
+  option. That second card is where the subscription path (`PLAN-ai-subscription.md`) plugs
+  in later. Settings no longer has an editable raw key field; with a key set it shows the
+  last 4 characters, Test key, Change key, Turn off AI, and the model override.
 

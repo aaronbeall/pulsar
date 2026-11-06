@@ -27,7 +27,8 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   generation and routine chat call OpenAI directly from the browser through the
   `services/ai` `AIProvider` interface. Without a key there is no AI and no mock: the
   wizard keyword-matches templates (`services/templateSearch.ts`) and the chat asks for a
-  key. Don't reintroduce a fake "AI" fallback. Hosted AI behind login/subscription is a
+  key. Turning AI on always goes through `components/AIOnboardingDialog.tsx`, which is
+  also where premium subscriptions will be offered. Don't reintroduce a fake "AI" fallback. Hosted AI behind login/subscription is a
   later phase (see `PLAN-ai-subscription.md`).
 - **Never put a real API key behind a `VITE_`-prefixed env var again.** The existing
   Google CSE key is already public in the client bundle (acceptable for a free-tier image

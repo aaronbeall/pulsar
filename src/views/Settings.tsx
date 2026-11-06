@@ -12,9 +12,11 @@ import {
   VStack,
   useColorMode,
   useColorModeValue,
+  useDisclosure,
   useToast,
 } from '@chakra-ui/react';
-import { FaExclamationTriangle, FaExternalLinkAlt, FaImages, FaPalette, FaRobot } from 'react-icons/fa';
+import { FaExclamationTriangle, FaImages, FaMagic, FaPalette, FaRobot } from 'react-icons/fa';
+import AIOnboardingDialog from '../components/AIOnboardingDialog';
 import { deleteDB } from 'idb'; // Import deleteDB to delete IndexedDB
 import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
 import { DEFAULT_OPENAI_MODEL, useOpenAiApiKey, useOpenAiModel } from '../store/aiSettingsStore';
@@ -31,6 +33,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
   const [apiKey, setApiKey] = useOpenAiApiKey();
   const [testingKey, setTestingKey] = React.useState(false);
   const [model, setModel] = useOpenAiModel();
+  const aiOnboarding = useDisclosure();
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
@@ -132,48 +135,48 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
           <Icon as={FaRobot} color="cyan.500" />
           <Heading size="sm">AI</Heading>
         </Flex>
-        <Text fontSize="xs" color={mutedColor} mb={3}>
-          Add your own OpenAI API key to have AI build routines from your answers and suggest
-          changes in each routine's chat. The key is stored only in this browser and is sent
-          only to OpenAI. Usage is billed to your OpenAI account; building a routine costs
-          under a cent on the default model.
-        </Text>
-        <VStack align="stretch" spacing={2}>
-          <Input
-            type="password"
-            placeholder="sk-..."
-            value={apiKey || ''}
-            onChange={(e) => setApiKey(e.target.value || null)}
-            size="sm"
-            borderRadius="md"
-          />
-          <Flex gap={3} align="center" wrap="wrap">
-            <Button size="sm" onClick={handleTestKey} isDisabled={!apiKey} isLoading={testingKey}>
-              Test key
+        {apiKey ? (
+          <VStack align="stretch" spacing={3}>
+            <Text fontSize="sm" color="green.500" fontWeight="medium">
+              AI is on, using your own OpenAI key (ending {apiKey.slice(-4)}).
+            </Text>
+            <Flex gap={2} wrap="wrap">
+              <Button size="sm" onClick={handleTestKey} isLoading={testingKey}>
+                Test key
+              </Button>
+              <Button size="sm" variant="outline" onClick={aiOnboarding.onOpen}>
+                Change key
+              </Button>
+              <Button size="sm" variant="ghost" colorScheme="red" onClick={() => setApiKey(null)}>
+                Turn off AI
+              </Button>
+            </Flex>
+            <Flex align="center" gap={2}>
+              <Text fontSize="xs" color={mutedColor} flexShrink={0}>Model</Text>
+              <Input
+                placeholder={DEFAULT_OPENAI_MODEL}
+                value={model || ''}
+                onChange={(e) => setModel(e.target.value || null)}
+                size="sm"
+                borderRadius="md"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+            </Flex>
+          </VStack>
+        ) : (
+          <VStack align="stretch" spacing={3}>
+            <Text fontSize="sm" color={mutedColor}>
+              AI is off. Turn it on to have AI build routines from your answers and suggest
+              changes in each routine's chat. Without it, new routines are matched from templates.
+            </Text>
+            <Button colorScheme="cyan" leftIcon={<FaMagic />} onClick={aiOnboarding.onOpen} alignSelf="flex-start">
+              Turn on AI
             </Button>
-            <Link href="https://platform.openai.com/api-keys" isExternal color="cyan.500" fontSize="xs" display="inline-flex" alignItems="center" gap={1}>
-              Get an API key <Icon as={FaExternalLinkAlt} boxSize={2.5} />
-            </Link>
-          </Flex>
-          <Flex align="center" gap={2}>
-            <Text fontSize="xs" color={mutedColor} flexShrink={0}>Model</Text>
-            <Input
-              placeholder={DEFAULT_OPENAI_MODEL}
-              value={model || ''}
-              onChange={(e) => setModel(e.target.value || null)}
-              size="sm"
-              borderRadius="md"
-              autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck={false}
-            />
-          </Flex>
-          <Text fontSize="xs" color={apiKey ? 'green.500' : mutedColor} fontWeight="medium">
-            {apiKey
-              ? 'AI is on for new routines and routine chat.'
-              : 'AI is off. New routines are matched from templates instead.'}
-          </Text>
-        </VStack>
+          </VStack>
+        )}
+        <AIOnboardingDialog isOpen={aiOnboarding.isOpen} onClose={aiOnboarding.onClose} />
       </Box>
 
       <Box bg={dangerBg} borderWidth="1px" borderColor={dangerBorder} borderRadius="xl" p={{ base: 4, sm: 5 }}>

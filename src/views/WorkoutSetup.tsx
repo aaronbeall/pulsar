@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Button, Flex, Heading, Input, Text, Spinner, Skeleton, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { Box, Button, Flex, Heading, Input, Text, Spinner, Skeleton, VStack, useColorModeValue, useDisclosure, useToast } from '@chakra-ui/react';
+import AIOnboardingDialog from '../components/AIOnboardingDialog';
+import { useNavigate } from 'react-router-dom';
 import { usePulsarStore, useExercises } from '../store/pulsarStore';
 import { generateRoutine, createRoutineFromTemplate } from '../services/routineBuilderService';
 import { workoutPrompts } from '../constants/prompts'; // Import reusable prompts
@@ -24,6 +25,7 @@ export const WorkoutSetup: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const hasAI = useHasActiveAIProvider();
+  const aiOnboarding = useDisclosure();
 
   const addExercise = usePulsarStore(s => s.addExercise);
   const addRoutine = usePulsarStore(s => s.addRoutine);
@@ -177,16 +179,27 @@ export const WorkoutSetup: React.FC = () => {
             </>
           ) : (
             <>
-              <Button colorScheme="cyan" size="lg" w="100%" onClick={handleNext} leftIcon={<FaBook />} mb={3}>
+              <Button colorScheme="cyan" size="lg" w="100%" onClick={handleNext} leftIcon={<FaBook />} mb={2}>
                 Find matching routines
               </Button>
-              <Text fontSize="xs" color={noteColor}>
-                Pulsar will match your answers to its routine templates.{' '}
-                <Text as={RouterLink} to="/settings" textDecoration="underline" color="cyan.600">
-                  Add your OpenAI API key in Settings
-                </Text>{' '}
-                to have AI build a routine just for you.
+              <Text fontSize="sm" color={orTextColor} my={1} fontWeight="normal" letterSpacing="wider">
+                or
               </Text>
+              <Button
+                variant="ghost"
+                colorScheme="cyan"
+                size="lg"
+                w="100%"
+                leftIcon={<FaMagic />}
+                onClick={aiOnboarding.onOpen}
+                mb={2}
+              >
+                Turn on AI for a custom routine
+              </Button>
+              <Text fontSize="xs" color={noteColor}>
+                Without AI, Pulsar matches your answers to its routine templates.
+              </Text>
+              <AIOnboardingDialog isOpen={aiOnboarding.isOpen} onClose={aiOnboarding.onClose} />
             </>
           )}
         </Box>

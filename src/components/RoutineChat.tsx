@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { Box, VStack, Text, Flex, Button, Collapse, IconButton, Input, Spinner, useToast } from '@chakra-ui/react';
-import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp, FaKey } from 'react-icons/fa';
-import { Link as RouterLink } from 'react-router-dom';
+import { Box, VStack, Text, Flex, Button, Collapse, IconButton, Input, Spinner, useDisclosure, useToast } from '@chakra-ui/react';
+import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp, FaMagic } from 'react-icons/fa';
+import AIOnboardingDialog from './AIOnboardingDialog';
 import { v4 as uuidv4 } from 'uuid';
 import { Routine, RoutineChange, RoutineChatMessage } from '../models/types';
 import { useExercises, usePulsarStore } from '../store/pulsarStore';
@@ -24,6 +24,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine }) => {
   const [isSending, setIsSending] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const hasAI = useHasActiveAIProvider();
+  const aiOnboarding = useDisclosure();
 
   const chatHistory = routine.chatHistory;
   const changes = routine.changes || [];
@@ -222,15 +223,14 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine }) => {
             </Button>
           </Flex>
         ) : (
-          <Flex mt={3} p={3} gap={3} align="center" borderRadius="md" bg="white" _dark={{ bg: 'gray.800' }} borderWidth="1px">
-            <Box as={FaKey} color="cyan.500" flexShrink={0} />
+          <Flex mt={3} p={3} gap={3} direction="column" borderRadius="md" bg="white" _dark={{ bg: 'gray.800' }} borderWidth="1px">
             <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.300' }}>
-              AI chat needs your own OpenAI API key.{' '}
-              <Text as={RouterLink} to="/settings" color="cyan.600" textDecoration="underline">
-                Add it in Settings
-              </Text>{' '}
-              to ask questions and get suggested changes here.
+              Turn on AI to ask questions about this routine and get suggested changes here.
             </Text>
+            <Button colorScheme="cyan" size="md" leftIcon={<FaMagic />} onClick={aiOnboarding.onOpen} alignSelf="flex-start">
+              Turn on AI
+            </Button>
+            <AIOnboardingDialog isOpen={aiOnboarding.isOpen} onClose={aiOnboarding.onClose} />
           </Flex>
         )}
       </Collapse>
