@@ -97,8 +97,8 @@ interface ExerciseProgressProps {
   exercise: WorkoutExercise;
   currentSet: number;
   exerciseDetail: Exercise | undefined;
-  /** Start the next set (records `currentSetStartedAt`). */
-  onStartSet: () => void;
+  /** Start the next set at `startedAt` (recorded as `currentSetStartedAt`). */
+  onStartSet: (startedAt: number) => void;
   /** Record the current set as done; for timed sets, how many seconds were done. */
   onCompleteSet: (durationDoneSec?: number) => void;
 }
@@ -113,7 +113,15 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
   // All timing is derived from wall-clock timestamps (see utils/setProgress.ts): the
   // interval below only triggers re-renders, so a throttled or frozen timer (screen
   // locked, app in background) can delay the display but never make it wrong.
-  const setStartedAt = exercise.currentSetStartedAt;
+  //
+  // Starting/completing a set saves to IndexedDB before the `exercise` prop catches up,
+  // so the tap is reflected locally right away (`pending`) until the prop matches. Without
+  // this the old button stays up for a moment and a quick second tap counts twice.
+  const [pending, setPending] = useState<{ startedAt: number | undefined } | null>(null);
+  useEffect(() => {
+    if (pending && exercise.currentSetStartedAt === pending.startedAt) setPending(null);
+  }, [exercise.currentSetStartedAt, pending]);
+  const setStartedAt = pending ? pending.startedAt : exercise.currentSetStartedAt;
   const isActive = !!setStartedAt;
   const [restStartedAt, setRestStartedAt] = useState<number | null>(null);
   const isRestPeriod = !isActive && restStartedAt !== null;
@@ -180,20 +188,26 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
     cueRef.current = null;
     vibrateSetEnd();
     setRestStartedAt(setEndsAt(setStartedAt, exercise.duration));
+    setPending({ startedAt: undefined });
     onCompleteSet(exercise.duration);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setStartedAt, timer?.isDone]);
 
   const handleStart = () => {
     unlockAudio(); // must happen inside the tap for iOS to allow the end beep
+    if (setStartedAt) return; // already running (double tap)
+    const startedAt = Date.now();
     setRestStartedAt(null);
-    setNow(Date.now());
-    onStartSet();
+    setNow(startedAt);
+    setPending({ startedAt });
+    onStartSet(startedAt);
   };
 
   const handleComplete = () => {
-    if (setStartedAt) completedForRef.current = setStartedAt;
+    if (!setStartedAt) return; // already completed (double tap)
+    completedForRef.current = setStartedAt;
     setRestStartedAt(Date.now());
+    setPending({ startedAt: undefined });
     onCompleteSet(exercise.duration ? timeElapsed : undefined);
   };
 

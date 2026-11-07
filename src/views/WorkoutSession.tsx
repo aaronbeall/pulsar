@@ -172,12 +172,12 @@ export const WorkoutSession: React.FC = () => {
     }
   };
 
-  const handleStartSet = async (exerciseIndex: number) => {
+  const handleStartSet = async (exerciseIndex: number, startedAt: number) => {
     const current = getFreshWorkout();
     if (!current) return;
     const updatedWorkout: Workout = {
       ...current,
-      exercises: current.exercises.map((ex, i) => (i === exerciseIndex ? startSet(ex, Date.now()) : ex)),
+      exercises: current.exercises.map((ex, i) => (i === exerciseIndex ? startSet(ex, startedAt) : ex)),
     };
     // Persisted (not just local state) so a running timer survives a reload or the OS
     // killing the backgrounded app.
@@ -347,7 +347,7 @@ export const WorkoutSession: React.FC = () => {
               currentSet={currentSetIndex}
               exerciseDetail={currentExerciseDetail}
               onCompleteSet={(durationDoneSec) => handleCompleteSet(currentExerciseIndex, durationDoneSec)}
-              onStartSet={() => handleStartSet(currentExerciseIndex)}
+              onStartSet={(startedAt) => handleStartSet(currentExerciseIndex, startedAt)}
             />
           )}
         </SlideFade>

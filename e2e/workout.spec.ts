@@ -45,7 +45,7 @@ test('finishing a workout early flags the skipped exercises', async ({ page }) =
 
   // Finish appears once at least one exercise is done: work through the first one.
   for (let set = 1; set <= 5; set++) {
-    await page.getByRole('button', { name: set === 1 ? 'Start Set 1' : /^Start Next (Set|Exercise)$/ }).click();
+    await page.getByRole('button', { name: `Start Set ${set}` }).click();
     await page.getByRole('button', { name: 'Complete 5 Reps' }).click();
   }
 
