@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Button, Flex, Heading, Input, Text, Spinner, Skeleton, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Input, Text, Skeleton, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { usePulsarStore, useExercises } from '../store/pulsarStore';
 import { generateRoutine, createRoutineFromTemplate } from '../services/routineBuilderService';
@@ -11,6 +11,7 @@ import { FaArrowRight, FaMagic, FaBook } from 'react-icons/fa';
 import { RoutineTemplateChooser } from '../components/RoutineTemplateChooser';
 import { AIError } from '../services/ai';
 import { useAIGate } from '../hooks/useAIGate';
+import ThinkingIndicator from '../components/ThinkingIndicator';
 
 // Positional, matching workoutPrompts by index — no need for named keys.
 const emptyResponses = () => Array(workoutPrompts.length).fill('');
@@ -20,6 +21,8 @@ export const WorkoutSetup: React.FC = () => {
   const [step, setStep] = useState<number>(1);
   const [responses, setResponses] = useState<string[]>(emptyResponses);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [streamedCommentary, setStreamedCommentary] = useState('');
+  const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
   const [showTemplateChooser, setShowTemplateChooser] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -33,6 +36,7 @@ export const WorkoutSetup: React.FC = () => {
 
   // Hoist all useColorModeValue hooks
   const orTextColor = useColorModeValue('gray.300', 'gray.600');
+  const commentaryColor = useColorModeValue('gray.600', 'gray.300');
   const chooseBtnColor = useColorModeValue('gray', 'cyan');
   const chooseBtnOpacity = useColorModeValue(0.85, 0.95);
   const chooseBtnHoverBg = useColorModeValue('gray.100', 'cyan.900');
@@ -72,8 +76,12 @@ export const WorkoutSetup: React.FC = () => {
 
   const generateWithAI = async () => {
     setIsLoading(true);
+    setIsGeneratingWithAI(true);
+    setStreamedCommentary('');
     try {
-      const { routine } = await generateRoutine(responses, exercises, addExercise);
+      const { routine } = await generateRoutine(responses, exercises, addExercise, {
+        onCommentary: (text) => setStreamedCommentary(text),
+      });
       await addRoutineAndNavigate(routine);
     } catch (e) {
       // Stay on the last step with the answers intact so the user can retry or pick a template.
@@ -86,6 +94,7 @@ export const WorkoutSetup: React.FC = () => {
       });
     } finally {
       setIsLoading(false);
+      setIsGeneratingWithAI(false);
     }
   };
 
@@ -105,16 +114,24 @@ export const WorkoutSetup: React.FC = () => {
   if (isLoading) {
     return (
       <Flex direction="column" align="center" justify="center" height="100%" width="100%">
-        <Spinner size="xl" color="cyan.500" mb={4} />
-        <Text fontSize="lg" color="gray.600" mb={4}>
-          Building your routine from your answers. This can take a few seconds.
-        </Text>
-        <VStack spacing={4} align="stretch" width="80%">
-          <Skeleton height="20px" />
-          <Skeleton height="20px" />
-          <Skeleton height="20px" />
-          <Skeleton height="20px" />
-        </VStack>
+        <Box mb={4}>
+          <ThinkingIndicator
+            size="lg"
+            labels={isGeneratingWithAI ? ['Reading your answers', 'Picking exercises', 'Balancing your week', 'Almost there'] : ['Setting up your routine']}
+          />
+        </Box>
+        {streamedCommentary ? (
+          // The coach's note streams in while the schedule is still being written.
+          <Text fontSize="md" color={commentaryColor} width="85%" maxW="480px" whiteSpace="pre-wrap" data-testid="ai-streaming-commentary">
+            {streamedCommentary}
+          </Text>
+        ) : (
+          <VStack spacing={4} align="stretch" width="80%">
+            <Skeleton height="20px" />
+            <Skeleton height="20px" />
+            <Skeleton height="20px" />
+          </VStack>
+        )}
       </Flex>
     );
   }

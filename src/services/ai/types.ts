@@ -67,11 +67,18 @@ export interface ChatTurn {
 // implementation (calling a Supabase Edge Function instead) slot in with zero UI changes.
 // See PLAN-ai-features.md.
 export interface AIProvider {
-  generateRoutine(qa: WizardAnswer[]): Promise<AIRoutineResponse>;
+  generateRoutine(qa: WizardAnswer[], options?: StreamOptions): Promise<AIRoutineResponse>;
   suggestRoutineChange(
     routine: Routine,
     scheduleForPrompt: ScheduleForPrompt,
     history: ChatTurn[],
-    userMessage: string
+    userMessage: string,
+    options?: StreamOptions
   ): Promise<AIChangeResponse>;
+}
+
+export interface StreamOptions {
+  /** Called as the reply's commentary is written: the text so far, and whether it's finished.
+   *  The full response (routine or change) still only arrives when the promise resolves. */
+  onCommentary?: (text: string, done: boolean) => void;
 }
