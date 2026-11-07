@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Button, Flex, Heading, Input, Text, Spinner, Skeleton, VStack, useColorModeValue } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Input, Text, Spinner, Skeleton, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { usePulsarStore, useExercises } from '../store/pulsarStore';
 import { generateRoutine, createRoutineFromTemplate } from '../services/routineBuilderService';
@@ -9,6 +9,8 @@ import { RoutineTemplate } from '../services/routineTemplates';
 import type { NavigateFunction } from 'react-router-dom';
 import { FaArrowRight, FaMagic, FaBook } from 'react-icons/fa';
 import { RoutineTemplateChooser } from '../components/RoutineTemplateChooser';
+import { AIError } from '../services/ai';
+import { useAIGate } from '../hooks/useAIGate';
 
 // Positional, matching workoutPrompts by index — no need for named keys.
 const emptyResponses = () => Array(workoutPrompts.length).fill('');
@@ -21,6 +23,8 @@ export const WorkoutSetup: React.FC = () => {
   const [showTemplateChooser, setShowTemplateChooser] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const toast = useToast();
+  const aiGate = useAIGate();
 
   const addExercise = usePulsarStore(s => s.addExercise);
   const addRoutine = usePulsarStore(s => s.addRoutine);
@@ -59,15 +63,35 @@ export const WorkoutSetup: React.FC = () => {
     if (step < workoutPrompts.length) {
       setStep(step + 1);
     } else {
-      setIsLoading(true);
+      aiGate.requireAI(generateWithAI, {
+        reason: 'Building a routine from your answers uses Pulsar AI.',
+        alternative: { label: 'Create from a template instead', onClick: () => setShowTemplateChooser(true) },
+      });
+    }
+  };
+
+  const generateWithAI = async () => {
+    setIsLoading(true);
+    try {
       const { routine } = await generateRoutine(responses, exercises, addExercise);
       await addRoutineAndNavigate(routine);
+    } catch (e) {
+      // Stay on the last step with the answers intact so the user can retry or pick a template.
+      toast({
+        title: "Couldn't build your routine",
+        description: e instanceof AIError ? e.message : 'Something went wrong talking to the AI. Try again.',
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
+      });
+    } finally {
       setIsLoading(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       handleNext();
     }
   };
@@ -83,7 +107,7 @@ export const WorkoutSetup: React.FC = () => {
       <Flex direction="column" align="center" justify="center" height="100%" width="100%">
         <Spinner size="xl" color="cyan.500" mb={4} />
         <Text fontSize="lg" color="gray.600" mb={4}>
-          Building your customized routine based on your answers.
+          Building your routine from your answers. This can take a few seconds.
         </Text>
         <VStack spacing={4} align="stretch" width="80%">
           <Skeleton height="20px" />
@@ -153,6 +177,7 @@ export const WorkoutSetup: React.FC = () => {
           >
             Choose from a template...
           </Button>
+          {aiGate.gate}
         </Box>
       )}
     </Flex>

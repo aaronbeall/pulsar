@@ -18,16 +18,16 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
   const toast = useToast();
   const exercise = usePulsarStore(s => s.exercises.find(e => e.id === exerciseId));
   if (!exercise) return null;
-  const [edit, setEdit] = React.useState({ ...exercise });
-  const [changed, setChanged] = React.useState(false);
+  const [edit, setEdit] = useState({ ...exercise });
+  const [changed, setChanged] = useState(false);
   const getExerciseStats = usePulsarStore(s => s.getExerciseStats);
   const stats = useMemo(() => getExerciseStats(exerciseId), [exerciseId, getExerciseStats]);
   const updateExercise = usePulsarStore(s => s.updateExercise);
-  const [cyclingImage, setCyclingImage] = React.useState(false);
-  const [imageCandidates, setImageCandidates] = React.useState<string[] | null>(null);
-  const [candidateIndex, setCandidateIndex] = React.useState(-1);
+  const [cyclingImage, setCyclingImage] = useState(false);
+  const [imageCandidates, setImageCandidates] = useState<string[] | null>(null);
+  const [candidateIndex, setCandidateIndex] = useState(-1);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setEdit({ ...exercise });
     setChanged(false);
     setImageCandidates(null);
@@ -38,7 +38,7 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
   // one created before the free-exercise-db/Wikimedia tiers existed — quietly retry once
   // when the dialog opens, so "always have some image" doesn't require the user to
   // manually notice and fix every stale exercise by hand.
-  React.useEffect(() => {
+  useEffect(() => {
     let cancelled = false;
     if (!exercise.coverImageUrl) {
       resolveExerciseImage(exercise.name).then(imageUrl => {

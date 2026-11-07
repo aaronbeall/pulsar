@@ -1,6 +1,6 @@
 import { Box, Button, Flex, Heading, Text, useColorModeValue } from '@chakra-ui/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaFlagCheckered, FaDumbbell } from 'react-icons/fa';
 import { Counter } from '../components/Counter';
 import Confetti from 'react-confetti';
@@ -15,8 +15,8 @@ export const CongratulatoryInterstitial: React.FC<{
   kind: string;
   completedExercises: number;
 }> = ({ streak, streakType, isPerfect, totalWorkouts, onDismiss, nickname, kind, completedExercises }) => {
-  const [step, setStep] = React.useState(0);
-  React.useEffect(() => {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
     let timers: NodeJS.Timeout[] = [];
     timers.push(setTimeout(() => setStep(1), 900));
     if (streak > 0 && streakType !== 'none') {

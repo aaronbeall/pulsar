@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Flex, Heading, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
 import { FaChartBar, FaClipboardList, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaTrophy } from 'react-icons/fa';
-import { useRoutines, useWorkouts } from '../store/pulsarStore';
+import { usePulsarLoading, useRoutines, useWorkouts } from '../store/pulsarStore';
 import { formatTotalDuration, getHistorySummaryStats, getHistoryTimeline, getRoutineTimeline } from '../utils/historyStats';
 import YearActivityCalendar from '../components/YearActivityCalendar';
 import StatCard from '../components/StatCard';
@@ -13,19 +13,21 @@ import WeeklyActivityGraph from '../components/WeeklyActivityGraph';
 const History: React.FC = () => {
   const routines = useRoutines();
   const workouts = useWorkouts();
-  const isLoading = routines === undefined || workouts === undefined;
+  // routines/workouts default to [] (never undefined) even before loadAll() resolves, so
+  // the store's own `loading` flag is the only reliable signal here.
+  const isLoading = usePulsarLoading();
 
-  const summary = React.useMemo(
+  const summary = useMemo(
     () => (routines && workouts ? getHistorySummaryStats(workouts, routines) : null),
     [workouts, routines]
   );
 
-  const routineTimeline = React.useMemo(
+  const routineTimeline = useMemo(
     () => (routines && workouts ? getRoutineTimeline(routines, workouts) : []),
     [routines, workouts]
   );
 
-  const historyTimeline = React.useMemo(
+  const historyTimeline = useMemo(
     () => (routines && workouts ? getHistoryTimeline(workouts, routines) : []),
     [workouts, routines]
   );

@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Button,
   Flex,
+  FormControl,
+  FormLabel,
   Heading,
   Icon,
+  Input,
   Link,
   Select,
   Text,
@@ -13,9 +16,12 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FaExclamationTriangle, FaImages, FaPalette } from 'react-icons/fa';
+import { FaExclamationTriangle, FaImages, FaKey, FaPalette, FaRobot } from 'react-icons/fa';
+import { useAIGate } from '../hooks/useAIGate';
 import { deleteDB } from 'idb'; // Import deleteDB to delete IndexedDB
 import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
+import { DEFAULT_OPENAI_MODEL, useOpenAiApiKey, useOpenAiModel } from '../store/aiSettingsStore';
+import { testApiKey } from '../services/ai';
 import BackupRestoreCard from '../components/BackupRestoreCard';
 
 interface SettingsProps {
@@ -23,14 +29,38 @@ interface SettingsProps {
   onColorSchemeChange: (scheme: string) => void;
 }
 
+// Shows only the last 4 characters of a key, like a card number on a bank statement. The dot
+// count is fixed so the mask doesn't reveal the key's length.
+const maskApiKey = (key: string) => `${'•'.repeat(12)}${key.slice(-4)}`;
+
 const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange }) => {
   const { colorMode, setColorMode } = useColorMode();
   const toast = useToast();
+  const [apiKey, setApiKey] = useOpenAiApiKey();
+  const [testingKey, setTestingKey] = useState(false);
+  const [model, setModel] = useOpenAiModel();
+  const aiGate = useAIGate();
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const dangerBg = useColorModeValue('red.50', 'rgba(254, 178, 178, 0.06)');
   const dangerBorder = useColorModeValue('red.200', 'red.700');
+
+  const handleTestKey = async () => {
+    if (!apiKey) return;
+    setTestingKey(true);
+    const ok = await testApiKey(apiKey);
+    setTestingKey(false);
+    toast({
+      title: ok ? 'API key looks good' : 'Key test failed',
+      description: ok
+        ? 'AI-generated routines and chat-suggested edits are enabled.'
+        : 'OpenAI rejected that key, or could not be reached. Check the key and your connection.',
+      status: ok ? 'success' : 'error',
+      duration: 3000,
+      isClosable: true,
+    });
+  };
 
   const handleClearSettings = () => {
     localStorage.clear();
@@ -104,6 +134,63 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
             </Select>
           </Flex>
         </VStack>
+      </Box>
+
+      <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
+        <Flex align="center" gap={2} mb={3}>
+          <Icon as={FaRobot} color="cyan.500" />
+          <Heading size="sm">AI</Heading>
+        </Flex>
+        {apiKey ? (
+          <VStack align="stretch" spacing={3}>
+            <FormControl>
+              <FormLabel fontSize="sm" mb={1}>OpenAI API key</FormLabel>
+              {/* Bank-style mask: only the last 4 characters are ever shown. */}
+              <Input
+                value={maskApiKey(apiKey)}
+                isReadOnly
+                fontFamily="mono"
+                letterSpacing="wider"
+                aria-label="OpenAI API key, masked"
+                data-testid="masked-api-key"
+              />
+            </FormControl>
+            <Flex gap={2} wrap="wrap">
+              <Button size="sm" onClick={handleTestKey} isLoading={testingKey}>
+                Test key
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => aiGate.openKeySetup()}>
+                Change key
+              </Button>
+              <Button size="sm" variant="ghost" colorScheme="red" onClick={() => setApiKey(null)}>
+                Remove key
+              </Button>
+            </Flex>
+            <FormControl>
+              <FormLabel fontSize="sm" mb={1}>Model</FormLabel>
+              <Input
+                placeholder={DEFAULT_OPENAI_MODEL}
+                value={model || ''}
+                onChange={(e) => setModel(e.target.value || null)}
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+            </FormControl>
+          </VStack>
+        ) : (
+          <VStack align="stretch" spacing={3}>
+            <Text fontSize="sm" color={mutedColor}>
+              Pulsar AI builds routines from your answers and suggests changes in each routine's
+              chat. When you first use it, you'll be asked for your own OpenAI key. You can also
+              add it now.
+            </Text>
+            <Button variant="outline" colorScheme="cyan" leftIcon={<FaKey />} onClick={() => aiGate.openKeySetup()} alignSelf="flex-start">
+              Add OpenAI key
+            </Button>
+          </VStack>
+        )}
+        {aiGate.gate}
       </Box>
 
       <BackupRestoreCard />

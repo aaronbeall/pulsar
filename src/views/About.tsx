@@ -83,12 +83,21 @@ const About: React.FC = () => {
                 <ListItem>If installed as an app (PWA), your browser may cache pages and assets locally for offline use. This cache stays on your device.</ListItem>
               </UnorderedList>
 
-              <SectionHeading>Future AI features</SectionHeading>
+              <SectionHeading>AI features</SectionHeading>
+              <Text mb={2}>
+                AI features are optional. Pulsar is fully usable with zero account and local-only data.
+                If you add your own OpenAI API key, then when you use an AI feature Pulsar sends OpenAI
+                what that feature needs, directly from your browser:
+              </Text>
+              <UnorderedList spacing={1} pl={2} mb={2}>
+                <ListItem>Building a routine: your answers to the setup questions.</ListItem>
+                <ListItem>Routine chat: your message, recent chat messages, and that routine's name, description and schedule.</ListItem>
+              </UnorderedList>
               <Text>
-                Pulsar is fully usable with zero account and local-only data. Any future AI-powered
-                features (like AI-generated routines) will be entirely optional, will require creating
-                an account and an active subscription, and this policy will be updated before that
-                launches.
+                Your key is stored only in this browser and is sent only to OpenAI. OpenAI handles that
+                data under its own terms and privacy policy. Nothing is sent to OpenAI unless you use an
+                AI feature. If a Pulsar subscription with built-in AI is offered later, this policy will
+                be updated before it launches.
               </Text>
             </TabPanel>
 

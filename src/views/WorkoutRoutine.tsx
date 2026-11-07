@@ -24,7 +24,7 @@ import {
   useColorModeValue,
   useDisclosure
 } from '@chakra-ui/react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FaChartBar, FaEdit, FaEllipsisV, FaInfoCircle, FaPlay, FaPlayCircle, FaPowerOff, FaStar, FaTimesCircle, FaTrash, FaFileExport } from 'react-icons/fa'; // Import icons
 import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
@@ -34,7 +34,7 @@ import { RoutineDisplayTable } from '../components/RoutineDisplayTable';
 import { RoutineEditor } from '../components/RoutineEditor';
 import SwitchRoutineDialog from '../components/SwitchRoutineDialog';
 import { ExportRoutineDialog } from '../components/ExportRoutineDialog';
-import type { Routine, RoutineChatMessage } from '../models/types';
+import type { Routine } from '../models/types';
 import { useExercises, usePulsarStore, useRoutine, useRoutines, useWorkouts } from '../store/pulsarStore';
 
 const WorkoutRoutine: React.FC = () => {
@@ -49,16 +49,14 @@ const WorkoutRoutine: React.FC = () => {
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const addRoutine = usePulsarStore(s => s.addRoutine);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
-  const [newResponses, setNewResponses] = useState<RoutineChatMessage[]>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [chatHistory, setChatHistory] = useState<RoutineChatMessage[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
-  const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
+  const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
-  const cancelRef = React.useRef(null);
+  const cancelRef = useRef(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -73,18 +71,10 @@ const WorkoutRoutine: React.FC = () => {
     }
   }, [searchParams, onOpen, setSearchParams]);
 
-  useEffect(() => {
-    if (routine) {
-      setChatHistory(routine.chatHistory);
-      setNewResponses(routine.chatHistory.filter(m => m.role === 'ai' && !m.dismissed));
-    }
-  }, [routine]);
-
   const dismissResponse = async (id: string) => {
     if (!routine) return;
     const updatedChatHistory = routine.chatHistory.map(m => m.id === id ? { ...m, dismissed: true } : m);
     await updateRoutine({ ...routine, chatHistory: updatedChatHistory });
-    setNewResponses((prev) => prev.filter(m => m.id !== id));
   };
 
   // Remove old activeRoutines usage in toggleActiveState
@@ -154,7 +144,7 @@ const WorkoutRoutine: React.FC = () => {
         </BreadcrumbItem>
       </Breadcrumb>
       {/* AI Chat Interface */}
-      <RoutineChat chatHistory={chatHistory} setChatHistory={setChatHistory} />
+      <RoutineChat routine={routine} onEditManually={() => setIsEditing(true)} />
       <Box width="100%" maxWidth="1200px">
         {/* Minimalistic routine status banner — hidden while editing, RoutineEditor's SaveBar takes over as the header */}
         {!isEditing && routine.active && (

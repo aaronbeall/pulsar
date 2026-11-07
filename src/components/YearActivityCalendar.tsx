@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Box, Flex, Icon, IconButton, SimpleGrid, Text, useColorModeValue, useToken } from '@chakra-ui/react';
 import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { FaTimes } from 'react-icons/fa';
@@ -26,9 +26,9 @@ const LegendItem: React.FC<{ label: string; children: React.ReactNode }> = ({ la
 
 const YearActivityCalendar: React.FC<YearActivityCalendarProps> = ({ workouts, routines }) => {
   const currentYear = new Date().getFullYear();
-  const [year, setYear] = React.useState(currentYear);
+  const [year, setYear] = useState(currentYear);
 
-  const activity = React.useMemo(() => getYearActivity(year, workouts, routines), [year, workouts, routines]);
+  const activity = useMemo(() => getYearActivity(year, workouts, routines), [year, workouts, routines]);
 
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('gray.200', 'gray.700');

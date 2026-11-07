@@ -2,12 +2,12 @@
 
 ## MVP
 - [ ] Create routine
-  - [ ] AI generation
-  - [ ] AI key prompt setting
+  - [x] AI generation (Phase 1 BYOK — 2026-08-01, see PLAN-ai-features.md; real OpenAI call; with no key the wizard keyword-matches templates instead — 2026-11-06)
+  - [x] AI key prompt setting (Settings.tsx "AI" card — personal OpenAI key, stored local-only)
   - [x] Create from templates
 - [ ] Edit routine
   - [x] Manual editing
-  - [ ] AI chat suggestions
+  - [x] AI chat suggestions (Phase 1 BYOK — 2026-08-01: chat proposes a RoutineChange, rendered as an inline diff card with Accept/Reject)
   - [ ] Add/edit day from templates
 - [x] Exercise How-To link
 - [x] Exercise image/wiki
