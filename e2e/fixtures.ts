@@ -14,7 +14,8 @@ export type OpenAIMock = (body: unknown, route: Route) => unknown | Promise<unkn
  * Answers the app's OpenAI calls (the bring-your-own-key provider) with canned replies, so
  * AI flows can be tested without a key or network. `reply` gets the request body and returns
  * the assistant message content (a string, or an object that is JSON-encoded the way a
- * `response_format: json_object` reply would be).
+ * `response_format: json_object` reply would be). Streamed requests get the same content as
+ * server-sent events.
  *
  * Every test already gets a default that fails OpenAI calls loudly, so a test can never
  * reach the real API by accident; calling this replaces that default for the test.
@@ -27,7 +28,17 @@ export async function mockOpenAI(page: Page, reply: OpenAIMock) {
       return route.fulfill({ json: { object: 'list', data: [{ id: 'gpt-4o-mini', object: 'model' }] } });
     }
     const body = route.request().postDataJSON();
-    const content = await reply(body, route);
+    const reply_ = await reply(body, route);
+    const content = typeof reply_ === 'string' ? reply_ : JSON.stringify(reply_);
+    if (body?.stream) {
+      // The app streams replies: answer as server-sent events, a few characters per event,
+      // the way OpenAI does. (Playwright delivers the body in one go, but the app still has to
+      // parse it as a stream.)
+      const events = (content.match(/[\s\S]{1,8}/g) || []).map(
+        (piece) => `data: ${JSON.stringify({ id: 'chatcmpl-e2e', object: 'chat.completion.chunk', choices: [{ index: 0, delta: { content: piece } }] })}\n\n`,
+      );
+      return route.fulfill({ contentType: 'text/event-stream', body: `${events.join('')}data: [DONE]\n\n` });
+    }
     return route.fulfill({
       json: {
         id: 'chatcmpl-e2e',
@@ -36,7 +47,7 @@ export async function mockOpenAI(page: Page, reply: OpenAIMock) {
           {
             index: 0,
             finish_reason: 'stop',
-            message: { role: 'assistant', content: typeof content === 'string' ? content : JSON.stringify(content) },
+            message: { role: 'assistant', content },
           },
         ],
       },

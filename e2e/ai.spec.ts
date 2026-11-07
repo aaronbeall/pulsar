@@ -55,10 +55,17 @@ test('the key prompt offers templates as the non-AI way forward', async ({ page 
 
 test('routine chat asks for a key, sends the message, and applies an accepted change', async ({ page }) => {
   await createRoutineFromTemplate(page, 'Strength Builder');
-  await mockOpenAI(page, () => ({
-    commentary: 'Done: Friday is now a rest day.',
-    patch: { dailySchedule: [{ op: 'clearDay', day: 'Friday' }] },
-  }));
+  // Hold the reply until the test has seen the thinking state.
+  let release!: () => void;
+  const replyReady = new Promise<void>((resolve) => { release = resolve; });
+  await mockOpenAI(page, async (body: any) => {
+    expect(body.stream).toBe(true);
+    await replyReady;
+    return {
+      commentary: 'Done: Friday is now a rest day.',
+      patch: { dailySchedule: [{ op: 'clearDay', day: 'Friday' }] },
+    };
+  });
 
   const input = page.getByPlaceholder('Suggest changes or ask a question...');
   await input.fill('make friday a rest day');
@@ -70,7 +77,10 @@ test('routine chat asks for a key, sends the message, and applies an accepted ch
   await prompt.getByRole('button', { name: 'Continue' }).click();
 
   await expect(page.getByText('make friday a rest day')).toBeVisible();
+  await expect(page.getByTestId('ai-thinking')).toBeVisible();
+  release();
   await expect(page.getByText('Done: Friday is now a rest day.')).toBeVisible();
+  await expect(page.getByTestId('ai-streaming-reply')).toHaveCount(0);
   await page.getByRole('button', { name: 'Accept' }).click();
   await expect(page.getByText('Accepted', { exact: true })).toBeVisible();
 

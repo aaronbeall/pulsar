@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { Box, VStack, Text, Flex, Button, Collapse, IconButton, Input, Spinner, useToast } from '@chakra-ui/react';
+import { Box, VStack, Text, Flex, Button, Collapse, IconButton, Input, useToast } from '@chakra-ui/react';
+import { keyframes } from '@emotion/react';
 import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useAIGate } from '../hooks/useAIGate';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,6 +10,18 @@ import { AIError, getActiveAIProvider } from '../services/ai';
 import { applyRoutineChange } from '../utils/routineChangeUtils';
 import { resolveAIExercises } from '../services/routineBuilderService';
 import RoutineChangeCard from './RoutineChangeCard';
+import ThinkingIndicator from './ThinkingIndicator';
+
+const blink = keyframes`
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+`;
+
+/** The streamed reply's state while a message is in flight: null until the first words arrive. */
+interface StreamingReply {
+  text: string;
+  done: boolean;
+}
 
 interface RoutineChatProps {
   routine: Routine;
@@ -24,6 +37,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
   const [chatInput, setChatInput] = useState('');
   const [isOpen, setIsOpen] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [streaming, setStreaming] = useState<StreamingReply | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const aiGate = useAIGate();
 
@@ -35,7 +49,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
     if (isOpen && chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [chatHistory.length, isOpen, isSending]);
+  }, [chatHistory.length, isOpen, isSending, streaming?.text]);
 
   // Always build on the latest stored routine: the prop can be a render behind, e.g. right
   // after the user's own message was saved.
@@ -76,7 +90,9 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
         })),
       }));
       const history = priorHistory.map(m => ({ role: m.role, message: m.message }));
-      const response = await provider.suggestRoutineChange(current, scheduleForPrompt, history, text);
+      const response = await provider.suggestRoutineChange(current, scheduleForPrompt, history, text, {
+        onCommentary: (partial, done) => setStreaming({ text: partial, done }),
+      });
 
       const hasScheduleOps = !!response.patch.dailySchedule?.length;
       const hasDescriptionChange = response.patch.description !== undefined;
@@ -127,6 +143,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
       });
     } finally {
       setIsSending(false);
+      setStreaming(null);
     }
   };
 
@@ -183,12 +200,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
                   alignItems={msg.role === 'user' ? 'flex-end' : 'flex-start'}
                   gap={1}
                 >
-                  {msg.role === 'ai' && (
-                    <Box mb={0.5} color="gray.400" display="flex" alignItems="center" justifyContent="flex-start" fontWeight="bold" fontSize="sm" gap={1} lineHeight={1}>
-                      <FaRobot size={16} />
-                      <span style={{ fontWeight: 600, fontSize: '0.93em', color: '#6B7280', lineHeight: 1 }}>Pulsar AI</span>
-                    </Box>
-                  )}
+                  {msg.role === 'ai' && <AIBubbleHeader />}
                   <span style={{ marginTop: 0 }}>{msg.message}</span>
                 </Box>
                 {change && (
@@ -204,8 +216,35 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
             );
           })}
           {isSending && (
-            <Flex align="center" gap={2} color="gray.500" fontSize="sm">
-              <Spinner size="xs" /> Thinking...
+            // The reply being written: a thinking cue until the first words arrive, then the
+            // text as it streams in, then a quieter cue while any routine change is drafted.
+            <Flex direction="column" gap={1} align="flex-start" data-testid="ai-streaming-reply">
+              <Box bg="gray.200" color="gray.800" px={3} py={2} borderRadius="xl" maxW="80%" fontSize="md" display="flex" flexDirection="column" gap={1}>
+                <AIBubbleHeader />
+                {streaming?.text ? (
+                  <span style={{ whiteSpace: 'pre-wrap' }}>
+                    {streaming.text}
+                    {!streaming.done && (
+                      <Box
+                        as="span"
+                        display="inline-block"
+                        w="0.5em"
+                        h="1em"
+                        ml="1px"
+                        verticalAlign="text-bottom"
+                        bg="cyan.400"
+                        borderRadius="sm"
+                        animation={`${blink} 1s step-end infinite`}
+                        sx={{ '@media (prefers-reduced-motion: reduce)': { animation: 'none' } }}
+                        aria-hidden
+                      />
+                    )}
+                  </span>
+                ) : (
+                  <ThinkingIndicator labels={['Thinking', 'Looking over your routine', 'Still thinking']} />
+                )}
+              </Box>
+              {streaming?.done && <ThinkingIndicator labels={['Checking for changes', 'Drafting changes']} />}
             </Flex>
           )}
         </VStack>
@@ -235,5 +274,12 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
     </Box>
   );
 };
+
+const AIBubbleHeader: React.FC = () => (
+  <Box mb={0.5} color="gray.400" display="flex" alignItems="center" justifyContent="flex-start" fontWeight="bold" fontSize="sm" gap={1} lineHeight={1}>
+    <FaRobot size={16} />
+    <span style={{ fontWeight: 600, fontSize: '0.93em', color: '#6B7280', lineHeight: 1 }}>Pulsar AI</span>
+  </Box>
+);
 
 export default RoutineChat;
