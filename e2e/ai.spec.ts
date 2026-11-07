@@ -71,12 +71,41 @@ test('routine chat asks for a key, sends the message, and applies an accepted ch
 
   await expect(page.getByText('make friday a rest day')).toBeVisible();
   await expect(page.getByText('Done: Friday is now a rest day.')).toBeVisible();
-  await page.getByRole('button', { name: 'Accept' }).click();
+  // The suggestion also shows inline on the day it changes, until it's decided.
+  await expect(page.locator('#routine-day-Friday').getByText('Suggested change')).toBeVisible();
+  await page.getByRole('button', { name: 'Accept all' }).click();
   await expect(page.getByText('Accepted', { exact: true })).toBeVisible();
+  await expect(page.locator('#routine-day-Friday').getByText('Suggested change')).toHaveCount(0);
 
   // Friday's workout is gone after a reload too.
   await page.reload();
   await expect(page.getByText('Done: Friday is now a rest day.')).toBeVisible();
+});
+
+test('each day of a suggestion is accepted or rejected inline, and the chat summary follows', async ({ page }) => {
+  await createRoutineFromTemplate(page, 'Strength Builder');
+  await mockOpenAI(page, () => ({
+    commentary: 'Two tweaks for you.',
+    patch: { dailySchedule: [{ op: 'clearDay', day: 'Friday' }, { op: 'setDay', day: 'Sunday', kind: 'Mobility', exercises: [{ name: 'Plank', sets: 2, duration: 30 }] }] },
+  }));
+
+  const input = page.getByPlaceholder('Suggest changes or ask a question...');
+  await input.fill('two tweaks');
+  await input.press('Enter');
+  await page.getByRole('dialog').getByPlaceholder('sk-...').fill('sk-test-key');
+  await page.getByRole('dialog').getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByText('Two tweaks for you.')).toBeVisible();
+
+  await page.locator('#routine-day-Friday').getByRole('button', { name: 'Accept' }).click();
+  await page.locator('#routine-day-Sunday').getByRole('button', { name: 'Reject' }).click();
+  await expect(page.getByLabel('Accepted')).toHaveCount(1);
+  await expect(page.getByLabel('Rejected')).toHaveCount(1);
+  await expect(page.getByText('Partly accepted')).toBeVisible();
+
+  // Both the accepted change and the routine's history survive a reload.
+  await page.reload();
+  await page.getByRole('button', { name: 'Activity' }).click();
+  await expect(page.getByText('Friday made a rest day')).toBeVisible();
 });
 
 test('routine chat offers manual editing as the non-AI way forward', async ({ page }) => {
