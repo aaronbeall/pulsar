@@ -32,10 +32,13 @@ import About from './views/About';
 import { usePulsarStoreInit } from './store/pulsarStore';
 import { useInstallPromptInit, useInstallPromptStore } from './store/installPromptStore';
 import logoSvg from './assets/logo.svg';
+import { requestPersistentStorage } from './utils/storagePersistence';
 
 const App: React.FC = () => {
   usePulsarStoreInit(); // Load all data from DB into Zustand store on app mount
   useInstallPromptInit(); // Listen for PWA installability as early as possible
+  // Ask the browser not to evict our IndexedDB data. Fire-and-forget: Settings shows the result.
+  React.useEffect(() => { requestPersistentStorage(); }, []);
   const { colorMode, setColorMode } = useColorMode();
   const [colorScheme, setColorScheme] = React.useState<string>(() => {
     return localStorage.getItem('colorScheme') || 'red';

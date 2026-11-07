@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text } from '@chakra-ui/react';
 import { formatDistanceToNow, format, formatDistance } from 'date-fns';
+import { formatSeconds } from '../utils/setProgress';
 
 interface TimeElapsedProps {
   startTime: number;
   endTime?: number;
+  /** Time spent in sets / resting between them, once any set is done (seconds). */
+  exerciseSec?: number;
+  restSec?: number;
 }
 
-const TimeElapsed: React.FC<TimeElapsedProps> = ({ startTime, endTime }) => {
+const TimeElapsed: React.FC<TimeElapsedProps> = ({ startTime, endTime, exerciseSec, restSec }) => {
   const [elapsedTime, setElapsedTime] = useState<string>('');
 
   useEffect(() => {
@@ -40,6 +44,11 @@ const TimeElapsed: React.FC<TimeElapsedProps> = ({ startTime, endTime }) => {
       <Text fontSize="lg" fontWeight="bold" color="cyan.500">
         {elapsedTime}
       </Text>
+      {!!exerciseSec && (
+        <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.400" }} mt={1}>
+          Exercise {formatSeconds(exerciseSec)} · Rest {formatSeconds(restSec ?? 0)}
+        </Text>
+      )}
     </Box>
   );
 };

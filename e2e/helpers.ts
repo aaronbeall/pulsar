@@ -46,7 +46,7 @@ export async function createRoutineFromTemplate(page: Page, templateName = 'Stre
  * congratulations screen shows.
  */
 export async function completeAllSets(page: Page) {
-  const startSet = page.getByRole('button', { name: /^(Start Set \d+|Start Next Set|Start Next Exercise)$/ });
+  const startSet = page.getByRole('button', { name: /^Start Set \d+$/ });
   const completeSet = page.getByRole('button', { name: /^Complete \d+ Reps$/ });
   const done = page.getByRole('heading', { name: /Completed!$/ });
 

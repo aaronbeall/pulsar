@@ -13,7 +13,7 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { Routine, Workout } from '../models/types';
-import { useRoutines, useWorkouts } from '../store/pulsarStore';
+import { usePulsarLoading, useRoutines, useWorkouts } from '../store/pulsarStore';
 import { FaPlus, FaDumbbell, FaStar } from 'react-icons/fa';
 import Timeline from '../components/Timeline';
 import { hasRoutineForToday, getWorkoutStatusForToday } from '../utils/workoutUtils';
@@ -70,7 +70,8 @@ export const WorkoutLanding: React.FC = () => {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  const isLoading = routines === undefined || workouts === undefined;
+  // Wait for IndexedDB to load: `routines` is [] until then, which would redirect to setup.
+  const isLoading = usePulsarLoading();
 
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 

@@ -18,6 +18,8 @@ you can keep `npx vite preview --port 4173` open between runs (rebuild after app
   surviving a reload), and the "Make my routine!" path.
 - `workout.spec.ts`: completing every set of a workout and seeing it on Home and in
   History, resuming a workout after a reload, and finishing a workout early.
+- `data-safety.spec.ts`: a timed set catching up after a simulated screen lock and
+  surviving a reload mid-set, backup → wipe → restore, and rejecting a non-backup file.
 - `navigation.spec.ts`: bottom nav and menu reach every screen, and dark mode persists.
 
 ## How tests are kept deterministic
