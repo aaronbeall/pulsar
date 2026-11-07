@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Flex, Heading, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
 import { FaChartBar, FaClipboardList, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaTrophy } from 'react-icons/fa';
 import { usePulsarLoading, useRoutines, useWorkouts } from '../store/pulsarStore';
@@ -17,17 +17,17 @@ const History: React.FC = () => {
   // the store's own `loading` flag is the only reliable signal here.
   const isLoading = usePulsarLoading();
 
-  const summary = React.useMemo(
+  const summary = useMemo(
     () => (routines && workouts ? getHistorySummaryStats(workouts, routines) : null),
     [workouts, routines]
   );
 
-  const routineTimeline = React.useMemo(
+  const routineTimeline = useMemo(
     () => (routines && workouts ? getRoutineTimeline(routines, workouts) : []),
     [routines, workouts]
   );
 
-  const historyTimeline = React.useMemo(
+  const historyTimeline = useMemo(
     () => (routines && workouts ? getHistoryTimeline(workouts, routines) : []),
     [workouts, routines]
   );

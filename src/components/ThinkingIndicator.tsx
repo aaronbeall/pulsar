@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Flex, Icon, Text, useColorModeValue } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { HiSparkles } from 'react-icons/hi';
@@ -32,12 +32,12 @@ const SIZES = {
 const LABEL_INTERVAL_MS = 2800;
 
 const ThinkingIndicator: React.FC<ThinkingIndicatorProps> = ({ labels = ['Thinking'], size = 'sm' }) => {
-  const [labelIndex, setLabelIndex] = React.useState(0);
+  const [labelIndex, setLabelIndex] = useState(0);
   const base = useColorModeValue('#6B7280', '#A0AEC0');
   const highlight = useColorModeValue('#0BC5EA', '#76E4F7');
   const { icon, font, gap } = SIZES[size];
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (labels.length < 2) return;
     const id = setInterval(() => setLabelIndex(i => Math.min(i + 1, labels.length - 1)), LABEL_INTERVAL_MS);
     return () => clearInterval(id);

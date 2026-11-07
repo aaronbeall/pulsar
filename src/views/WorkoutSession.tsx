@@ -2,7 +2,7 @@ import { AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, Al
 import { keyframes } from '@emotion/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMutation } from '@tanstack/react-query';
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FaFlagCheckered, FaInfoCircle, FaTimesCircle } from 'react-icons/fa';
 import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -27,12 +27,12 @@ export const WorkoutSession: React.FC = () => {
   const workouts = useWorkouts();
   const addWorkout = usePulsarStore(s => s.addWorkout);
   const updateWorkout = usePulsarStore(s => s.updateWorkout);
-  const [workout, setWorkout] = React.useState<Workout | null>(null);
-  const [routine, setRoutine] = React.useState<Routine | null>(null);
-  const [selectedExerciseIndex, setSelectedExerciseIndex] = React.useState<number | null>(null);
-  const [finishDialogOpen, setFinishDialogOpen] = React.useState(false);
-  const finishCancelRef = React.useRef<HTMLButtonElement>(null);
-  const [showInterstitial, setShowInterstitial] = React.useState(false);
+  const [workout, setWorkout] = useState<Workout | null>(null);
+  const [routine, setRoutine] = useState<Routine | null>(null);
+  const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null);
+  const [finishDialogOpen, setFinishDialogOpen] = useState(false);
+  const finishCancelRef = useRef<HTMLButtonElement>(null);
+  const [showInterstitial, setShowInterstitial] = useState(false);
   const toast = useToast();
 
   // Find-or-create a workout for a given routine/day. Reads fresh store state via
@@ -84,7 +84,7 @@ export const WorkoutSession: React.FC = () => {
   });
 
   // Look up an existing workout by sessionId — pure reactive read, no writes, so no race.
-  React.useEffect(() => {
+  useEffect(() => {
     if (!sessionId) return;
     const existingWorkout = workouts.find(w => w.id === sessionId);
     if (existingWorkout) {
@@ -97,8 +97,8 @@ export const WorkoutSession: React.FC = () => {
   // Deps intentionally exclude workouts/routines/exercises: those change as a side
   // effect of the mutation itself, which previously caused this effect to re-fire
   // mid-flight and create/redirect twice.
-  const hasTriggeredCreateRef = React.useRef(false);
-  React.useEffect(() => {
+  const hasTriggeredCreateRef = useRef(false);
+  useEffect(() => {
     if (sessionId || hasTriggeredCreateRef.current) return;
     const routineId = searchParams.get('routineId');
     if (!routineId) {
@@ -113,12 +113,12 @@ export const WorkoutSession: React.FC = () => {
 
   // Tracks whether the workout is still active, without making the wake-lock effect
   // below depend on (and re-run for) every workout state change.
-  const workoutActiveRef = React.useRef(true);
-  React.useEffect(() => {
+  const workoutActiveRef = useRef(true);
+  useEffect(() => {
     workoutActiveRef.current = !workout?.completedAt;
   }, [workout?.completedAt]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let wakeLock: WakeLockSentinel | null = null;
     const requestWakeLock = async () => {
       try {
@@ -199,7 +199,7 @@ export const WorkoutSession: React.FC = () => {
   };
 
   // Replace useEffect for streakCount and streakType with useMemo
-  const streakInfo = React.useMemo(() => {
+  const streakInfo = useMemo(() => {
     if (workout && workout.completedAt) {
       return getStreakInfo(workouts, routines);
     }
@@ -216,7 +216,7 @@ export const WorkoutSession: React.FC = () => {
   const showFinishedAlert = !!(workout && workout.completedAt);
 
   // Helper: check if workout exercises match the routine for the day
-  const isRoutineUpdated = React.useMemo(() => {
+  const isRoutineUpdated = useMemo(() => {
     if (!routine || !workout) return false;
     const workoutDay = workout.day;
     // Get the exercises for this day from the routine
@@ -230,7 +230,7 @@ export const WorkoutSession: React.FC = () => {
   }, [routine, workout]);
 
   // Handler: restart workout to match routine
-  const handleRestartToRoutine = React.useCallback(() => {
+  const handleRestartToRoutine = useCallback(() => {
     if (!routine || !workout) return;
     const workoutDay = workout.day;
     const scheduledExercises = findExercisesForDay(routine, workoutDay);
@@ -425,12 +425,12 @@ export const WorkoutSession: React.FC = () => {
 };
 
 const WorkoutFinishedBanner: React.FC<{ streak: number; streakType: 'none' | 'start' | 'continue' }> = ({ streak, streakType }) => {
-  const [prevStreak, setPrevStreak] = React.useState<number | null>(null);
-  const [countStep, setCountStep] = React.useState<'none' | 'prev-in' | 'count-transition' | 'done'>('none');
-  const [showFlame, setShowFlame] = React.useState(false);
+  const [prevStreak, setPrevStreak] = useState<number | null>(null);
+  const [countStep, setCountStep] = useState<'none' | 'prev-in' | 'count-transition' | 'done'>('none');
+  const [showFlame, setShowFlame] = useState(false);
 
   // Set prevStreak: 0 for streak start, streak-1 for continue, null otherwise
-  React.useEffect(() => {
+  useEffect(() => {
     if (streakType === 'start') {
       setPrevStreak(0);
     } else if (streak > 1) {
@@ -441,7 +441,7 @@ const WorkoutFinishedBanner: React.FC<{ streak: number; streakType: 'none' | 'st
   }, [streak, streakType]);
 
   // Animation sequence
-  React.useEffect(() => {
+  useEffect(() => {
     if (streak > 0 && streakType !== 'none') {
       setShowFlame(false);
       setCountStep('none');

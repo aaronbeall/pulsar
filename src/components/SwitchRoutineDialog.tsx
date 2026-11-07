@@ -11,7 +11,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { FaExchangeAlt, FaLayerGroup, FaTimesCircle } from 'react-icons/fa';
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 interface SwitchRoutineDialogProps {
   isOpen: boolean;
@@ -23,14 +23,14 @@ const SwitchRoutineDialog: React.FC<SwitchRoutineDialogProps> = ({ isOpen, onClo
   const routines = usePulsarStore(s => s.routines);
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const toast = useToast();
-  const cancelRef = React.useRef<HTMLButtonElement>(null);
-  const [switching, setSwitching] = React.useState(false);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const [switching, setSwitching] = useState(false);
 
-  const activeRoutines = React.useMemo(() => routines.filter(r => r.active && r.id !== routine.id), [routines, routine.id]);
+  const activeRoutines = useMemo(() => routines.filter(r => r.active && r.id !== routine.id), [routines, routine.id]);
   const hasOtherActive = activeRoutines.length > 0;
 
   // If dialog is opened and there are no other active routines, immediately activate this one and close
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen && !hasOtherActive && !routine.active) {
       (async () => {
         setSwitching(true);

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 // Animated Counter component
 export const Counter: React.FC<{
@@ -12,8 +12,8 @@ export const Counter: React.FC<{
   color?: string;
   fontWeight?: string | number;
 }> = ({ from, to, delay = 0, duration = 1000, style, className, fontSize, color, fontWeight }) => {
-  const [value, setValue] = React.useState(from);
-  React.useEffect(() => {
+  const [value, setValue] = useState(from);
+  useEffect(() => {
     let raf: number;
     let start: number | null = null;
     let timeout: NodeJS.Timeout;

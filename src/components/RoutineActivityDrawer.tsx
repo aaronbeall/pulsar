@@ -13,7 +13,7 @@ import {
   useColorModeValue
 } from '@chakra-ui/react';
 import { format } from 'date-fns'; // Import date-fns for formatting dates
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FaCheckCircle, FaInfoCircle, FaPlay, FaPowerOff, FaTimes, FaTrophy } from 'react-icons/fa'; // Import icons
 import { Routine, Workout } from '../models/types';
 import { getRoutineStats } from '../utils/workoutUtils';
@@ -105,7 +105,7 @@ const ActivityTimeline: React.FC<{
   workouts: Workout[];
 }> = React.memo(({ routine, workouts }) => {
   // Compute timelineEvents inside the component
-  const timelineEvents = React.useMemo(() => [
+  const timelineEvents = useMemo(() => [
     ...workouts
       .filter(w => w.routineId === routine.id)
       .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
