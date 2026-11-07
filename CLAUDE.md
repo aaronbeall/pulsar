@@ -54,6 +54,10 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   freeExerciseDb.ts`, `src/assets/homeBackgrounds.ts`) — no components yet. When adding new
   pure logic, add tests alongside it rather than letting that become an afterthought;
   component tests will need jsdom/testing-library added when that becomes worth it.
+- **Playwright e2e tests** cover the main happy paths (`npm run test:e2e`, specs in `e2e/`,
+  see `e2e/README.md`). They run at a phone viewport with a pinned clock, no outside network,
+  and OpenAI calls blocked unless mocked with `mockOpenAI`. When a UI change breaks a flow
+  they cover, update the spec in the same change; when adding a new main flow, add one.
 - **GitHub Pages hosting is provisional.** Once any backend piece lands (auth, billing, AI
   proxy), the static frontend should move to Cloudflare Pages rather than keeping GitHub
   Pages alongside a separate API origin — see `PLAN-ai-subscription.md` for why.
