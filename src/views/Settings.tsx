@@ -3,6 +3,8 @@ import {
   Box,
   Button,
   Flex,
+  FormControl,
+  FormLabel,
   Heading,
   Icon,
   Input,
@@ -26,6 +28,10 @@ interface SettingsProps {
   colorScheme: string;
   onColorSchemeChange: (scheme: string) => void;
 }
+
+// Shows only the last 4 characters of a key, like a card number on a bank statement. The dot
+// count is fixed so the mask doesn't reveal the key's length.
+const maskApiKey = (key: string) => `${'•'.repeat(12)}${key.slice(-4)}`;
 
 const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange }) => {
   const { colorMode, setColorMode } = useColorMode();
@@ -137,9 +143,18 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
         </Flex>
         {apiKey ? (
           <VStack align="stretch" spacing={3}>
-            <Text fontSize="sm" color="green.500" fontWeight="medium">
-              Using your own OpenAI key (ending {apiKey.slice(-4)}).
-            </Text>
+            <FormControl>
+              <FormLabel fontSize="sm" mb={1}>OpenAI API key</FormLabel>
+              {/* Bank-style mask: only the last 4 characters are ever shown. */}
+              <Input
+                value={maskApiKey(apiKey)}
+                isReadOnly
+                fontFamily="mono"
+                letterSpacing="wider"
+                aria-label="OpenAI API key, masked"
+                data-testid="masked-api-key"
+              />
+            </FormControl>
             <Flex gap={2} wrap="wrap">
               <Button size="sm" onClick={handleTestKey} isLoading={testingKey}>
                 Test key
@@ -151,19 +166,17 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
                 Remove key
               </Button>
             </Flex>
-            <Flex align="center" gap={2}>
-              <Text fontSize="xs" color={mutedColor} flexShrink={0}>Model</Text>
+            <FormControl>
+              <FormLabel fontSize="sm" mb={1}>Model</FormLabel>
               <Input
                 placeholder={DEFAULT_OPENAI_MODEL}
                 value={model || ''}
                 onChange={(e) => setModel(e.target.value || null)}
-                size="sm"
-                borderRadius="md"
                 autoCapitalize="off"
                 autoCorrect="off"
                 spellCheck={false}
               />
-            </Flex>
+            </FormControl>
           </VStack>
         ) : (
           <VStack align="stretch" spacing={3}>
