@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Button,
@@ -78,16 +78,16 @@ export const WorkoutLanding: React.FC = () => {
   // Active routines drive "today"'s status alert and the week schedule below, so they must
   // never be favorite-filtered — that filter only scopes which past/inactive routines are
   // listed, not what's actually active/scheduled.
-  const activeRoutines = React.useMemo(() => routines.filter(r => r.active), [routines]);
-  const inactiveRoutines = React.useMemo(() => routines.filter(r => !r.active), [routines]);
-  const filteredInactiveRoutines = React.useMemo(
+  const activeRoutines = useMemo(() => routines.filter(r => r.active), [routines]);
+  const inactiveRoutines = useMemo(() => routines.filter(r => !r.active), [routines]);
+  const filteredInactiveRoutines = useMemo(
     () => inactiveRoutines.filter(r => !showFavoritesOnly || r.favorite),
     [inactiveRoutines, showFavoritesOnly]
   );
 
-  const hasFavorites = React.useMemo(() => inactiveRoutines.some(r => r.favorite), [inactiveRoutines]);
+  const hasFavorites = useMemo(() => inactiveRoutines.some(r => r.favorite), [inactiveRoutines]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isLoading && routines.length === 0) {
       navigate('setup', { replace: true });
     }

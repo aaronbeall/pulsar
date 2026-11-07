@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { Box, Flex, IconButton, Text, useColorModeValue, useToken } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
@@ -27,8 +27,8 @@ interface StreakCalendarProps {
 
 const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) => {
   // Only use active routines for streak info
-  const activeRoutines = React.useMemo(() => routines.filter(r => r.active), [routines]);
-  const { days, streak, status } = React.useMemo(() => getStreakInfo(workouts, activeRoutines), [workouts, activeRoutines]);
+  const activeRoutines = useMemo(() => routines.filter(r => r.active), [routines]);
+  const { days, streak, status } = useMemo(() => getStreakInfo(workouts, activeRoutines), [workouts, activeRoutines]);
   const isGrayed = status !== 'up_to_date';
   const isPending = status === 'pending';
   const flameColor = isGrayed ? 'gray.400' : 'orange.400';
@@ -48,19 +48,19 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
   // Which month is currently displayed — defaults to the current month, independent of
   // the rolling streak count above (the streak/flame always reflects "now", not the
   // month being browsed).
-  const today = React.useMemo(() => {
+  const today = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
-  const [viewDate, setViewDate] = React.useState(() => startOfMonth(new Date()));
+  const [viewDate, setViewDate] = useState(() => startOfMonth(new Date()));
   const isCurrentMonthView = isSameMonth(viewDate, today);
   const monthStart = startOfMonth(viewDate);
   const monthEnd = endOfMonth(viewDate);
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 });
   const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
 
-  const calendarDays: { date: Date; isCurrentMonth: boolean; streakDay: StreakDay | null }[] = React.useMemo(
+  const calendarDays: { date: Date; isCurrentMonth: boolean; streakDay: StreakDay | null }[] = useMemo(
     () =>
       eachDayOfInterval({ start: gridStart, end: gridEnd }).map((date) => ({
         date,

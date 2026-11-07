@@ -30,7 +30,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { FaCopy, FaPaste, FaArrowRight, FaSave, FaChevronDown } from 'react-icons/fa';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { produce } from 'immer';
 import { DragDropContext, Draggable, DraggableProvided, DraggableStateSnapshot, Droppable, DroppableProvided, DroppableStateSnapshot, DropResult, OnDragEndResponder } from 'react-beautiful-dnd';
 import { FaCheck, FaCheckCircle, FaCog, FaDumbbell, FaEdit, FaExchangeAlt, FaGripVertical, FaPlus, FaRegCalendarAlt, FaSearch, FaStopwatch, FaSync, FaThumbsDown, FaThumbsUp, FaTimes, FaUndo, FaEllipsisV, FaBook } from 'react-icons/fa'; // Import icons
@@ -960,7 +960,7 @@ const AddExerciseRow = React.memo<{
   const exercises = usePulsarStore(s => s.exercises);
   const addExercise = usePulsarStore(s => s.addExercise);
 
-  const exerciseSuggestions = React.useMemo(() => {
+  const exerciseSuggestions = useMemo(() => {
     const exerciseNames = new Set(exercises.map(e => normalizeExerciseName(e.name)));
     const uniqueTemplates = exerciseTemplates
       .filter(t => !exerciseNames.has(normalizeExerciseName(t.name)));

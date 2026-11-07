@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Button,
@@ -37,7 +37,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
   const { colorMode, setColorMode } = useColorMode();
   const toast = useToast();
   const [apiKey, setApiKey] = useOpenAiApiKey();
-  const [testingKey, setTestingKey] = React.useState(false);
+  const [testingKey, setTestingKey] = useState(false);
   const [model, setModel] = useOpenAiModel();
   const aiGate = useAIGate();
   const cardBg = useColorModeValue('white', 'gray.800');

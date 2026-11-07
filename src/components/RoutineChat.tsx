@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Box, VStack, Text, Flex, Button, Collapse, IconButton, Input, Spinner, useToast } from '@chakra-ui/react';
 import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useAIGate } from '../hooks/useAIGate';
@@ -31,7 +31,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
   const changes = routine.changes || [];
 
   // Scroll chat container to bottom when new messages arrive
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen && chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }

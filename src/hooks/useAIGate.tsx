@@ -1,4 +1,4 @@
-import React from 'react';
+import { useCallback, useRef, useState } from 'react';
 import AIAccessDialog, { AIAccessAlternative } from '../components/AIAccessDialog';
 import { hasActiveAIProvider } from '../services/ai';
 
@@ -15,10 +15,10 @@ interface GateRequest {
  * the key check without any caller changing.
  */
 export function useAIGate() {
-  const [request, setRequest] = React.useState<GateRequest | null>(null);
-  const pendingAction = React.useRef<(() => void) | null>(null);
+  const [request, setRequest] = useState<GateRequest | null>(null);
+  const pendingAction = useRef<(() => void) | null>(null);
 
-  const requireAI = React.useCallback((action: () => void, options: GateRequest = {}) => {
+  const requireAI = useCallback((action: () => void, options: GateRequest = {}) => {
     if (hasActiveAIProvider()) {
       action();
       return;
@@ -28,17 +28,17 @@ export function useAIGate() {
   }, []);
 
   /** Open the dialog with nothing to continue afterwards (e.g. adding or changing a key from Settings). */
-  const openKeySetup = React.useCallback((options: GateRequest = {}) => {
+  const openKeySetup = useCallback((options: GateRequest = {}) => {
     pendingAction.current = null;
     setRequest(options);
   }, []);
 
-  const close = React.useCallback(() => {
+  const close = useCallback(() => {
     pendingAction.current = null;
     setRequest(null);
   }, []);
 
-  const handleUnlocked = React.useCallback(() => {
+  const handleUnlocked = useCallback(() => {
     const action = pendingAction.current;
     pendingAction.current = null;
     setRequest(null);
