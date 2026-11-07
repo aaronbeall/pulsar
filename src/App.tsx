@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Divider,
@@ -38,9 +38,9 @@ const App: React.FC = () => {
   usePulsarStoreInit(); // Load all data from DB into Zustand store on app mount
   useInstallPromptInit(); // Listen for PWA installability as early as possible
   // Ask the browser not to evict our IndexedDB data. Fire-and-forget: Settings shows the result.
-  React.useEffect(() => { requestPersistentStorage(); }, []);
+  useEffect(() => { requestPersistentStorage(); }, []);
   const { colorMode, setColorMode } = useColorMode();
-  const [colorScheme, setColorScheme] = React.useState<string>(() => {
+  const [colorScheme, setColorScheme] = useState<string>(() => {
     return localStorage.getItem('colorScheme') || 'red';
   });
   const location = useLocation();

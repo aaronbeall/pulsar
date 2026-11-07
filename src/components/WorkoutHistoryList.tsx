@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Badge, Box, Button, Circle, Flex, Icon, Text, VStack, useColorModeValue } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
 import { format, formatDistance } from 'date-fns';
@@ -19,7 +19,7 @@ interface WorkoutHistoryListProps {
 }
 
 const WorkoutHistoryList: React.FC<WorkoutHistoryListProps> = ({ items, routines, showRoutineName = true }) => {
-  const [showAll, setShowAll] = React.useState(false);
+  const [showAll, setShowAll] = useState(false);
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const rowHoverBg = useColorModeValue('gray.50', 'gray.700');
   const connectorColor = useColorModeValue('gray.200', 'gray.700');

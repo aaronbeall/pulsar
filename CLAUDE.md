@@ -23,6 +23,8 @@ at best. All design and layout work going forward must be mobile-first-friendly:
 
 ## Things to keep in mind while developing
 
+- **Import React hooks directly** (`import { useState } from 'react'`) and call them as
+  `useState(...)`, never `React.useState(...)`.
 - **AI is bring-your-own-key only.** With a personal OpenAI key (Settings), routine
   generation and routine chat call OpenAI directly from the browser through the
   `services/ai` `AIProvider` interface. Without a key there is no AI and no mock: the

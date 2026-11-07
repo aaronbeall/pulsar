@@ -30,7 +30,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { FaCopy, FaPaste, FaArrowRight, FaSave, FaChevronDown } from 'react-icons/fa';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { produce } from 'immer';
 import { DragDropContext, Draggable, DraggableProvided, DraggableStateSnapshot, Droppable, DroppableProvided, DroppableStateSnapshot, DropResult, OnDragEndResponder } from 'react-beautiful-dnd';
 import { FaCheck, FaCheckCircle, FaCog, FaDumbbell, FaEdit, FaExchangeAlt, FaGripVertical, FaPlus, FaRegCalendarAlt, FaSearch, FaStopwatch, FaSync, FaThumbsDown, FaThumbsUp, FaTimes, FaUndo, FaEllipsisV, FaBook } from 'react-icons/fa'; // Import icons
@@ -88,7 +88,7 @@ export const RoutineEditor: React.FC<{
   // AI suggestions accepted while editing (inline here, in the chat summary, or in the review
   // view) are applied to the stored routine right away; mirror them into the draft too, so
   // what's on screen matches and a later Save doesn't undo them.
-  const appliedDecisions = React.useRef<Set<string> | null>(null);
+  const appliedDecisions = useRef<Set<string> | null>(null);
   useEffect(() => {
     const acceptedNow: Array<{ id: string; key: RoutineChangeItemKey; op?: RoutineChangeOp; description?: string }> = [];
     for (const change of initialRoutine.changes || []) {
@@ -1032,7 +1032,7 @@ const AddExerciseRow = React.memo<{
   const exercises = usePulsarStore(s => s.exercises);
   const addExercise = usePulsarStore(s => s.addExercise);
 
-  const exerciseSuggestions = React.useMemo(() => {
+  const exerciseSuggestions = useMemo(() => {
     const exerciseNames = new Set(exercises.map(e => normalizeExerciseName(e.name)));
     const uniqueTemplates = exerciseTemplates
       .filter(t => !exerciseNames.has(normalizeExerciseName(t.name)));

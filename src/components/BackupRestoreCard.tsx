@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertDialog,
   AlertDialogBody,
@@ -82,23 +82,23 @@ async function saveBackupFile(json: string, fileName: string): Promise<boolean> 
 const BackupRestoreCard: React.FC = () => {
   const toast = useToast();
   const replaceAll = usePulsarStore(s => s.replaceAll);
-  const [lastBackupAt, setLastBackupAt] = React.useState<number | null>(readLastBackup);
-  const [persistence, setPersistence] = React.useState<PersistenceStatus | null>(null);
-  const [pendingRestore, setPendingRestore] = React.useState<PulsarBackup | null>(null);
+  const [lastBackupAt, setLastBackupAt] = useState<number | null>(readLastBackup);
+  const [persistence, setPersistence] = useState<PersistenceStatus | null>(null);
+  const [pendingRestore, setPendingRestore] = useState<PulsarBackup | null>(null);
   // Compared once when a file is chosen, against what's on the device at that moment.
-  const comparison = React.useMemo(
+  const comparison = useMemo(
     () => (pendingRestore ? compareBackupToDevice(pendingRestore, usePulsarStore.getState()) : null),
     [pendingRestore],
   );
-  const [isRestoring, setIsRestoring] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const cancelRef = React.useRef<HTMLButtonElement>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
 
-  React.useEffect(() => {
+  useEffect(() => {
     getPersistenceStatus().then(setPersistence);
   }, []);
 

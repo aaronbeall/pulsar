@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Badge,
   Box,
@@ -49,16 +49,16 @@ interface AIAccessDialogProps {
 const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, onUnlocked, onClose, alternative }) => {
   const [existingKey, setApiKey] = useOpenAiApiKey();
   const toast = useToast();
-  const [draftKey, setDraftKey] = React.useState('');
-  const keyInputRef = React.useRef<HTMLInputElement>(null);
-  const [verifying, setVerifying] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [draftKey, setDraftKey] = useState('');
+  const keyInputRef = useRef<HTMLInputElement>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const cardBorder = useColorModeValue('gray.200', 'gray.600');
   const keyCardBg = useColorModeValue('white', 'gray.700');
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       setDraftKey('');
       setError(null);

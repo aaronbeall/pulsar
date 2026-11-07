@@ -24,7 +24,7 @@ import {
   useColorModeValue,
   useDisclosure
 } from '@chakra-ui/react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FaChartBar, FaEdit, FaEllipsisV, FaInfoCircle, FaPlay, FaPlayCircle, FaPowerOff, FaStar, FaTimesCircle, FaTrash, FaFileExport } from 'react-icons/fa'; // Import icons
 import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
@@ -56,15 +56,15 @@ const WorkoutRoutine: React.FC = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [isEditing, setIsEditing] = useState(false);
   const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
-  const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
+  const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
-  const cancelRef = React.useRef(null);
+  const cancelRef = useRef(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const decideChange = useRoutineChangeActions(routineId || '');
-  const proposals = React.useMemo(() => getPendingProposals({ changes: routine?.changes }), [routine?.changes]);
+  const proposals = useMemo(() => getPendingProposals({ changes: routine?.changes }), [routine?.changes]);
 
   // Deep-link support: ?activity=1 (e.g. from the History view) opens the Activity drawer on arrival.
   useEffect(() => {
