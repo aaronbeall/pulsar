@@ -96,3 +96,40 @@ export function summarizeBackup(backup: PulsarBackup): string {
     plural(backup.exercises.length, 'exercise'),
   ].join(', ');
 }
+
+type BackupData = Pick<PulsarBackup, 'routines' | 'workouts'>;
+
+/**
+ * When the data was last used: the latest workout start/finish, set end or routine
+ * creation. Null when there's no activity at all.
+ */
+export function latestActivityAt(data: BackupData): number | null {
+  let latest: number | null = null;
+  const consider = (t: number | undefined) => {
+    if (typeof t === 'number' && (latest === null || t > latest)) latest = t;
+  };
+  data.routines.forEach(r => consider(r.createdAt));
+  data.workouts.forEach(w => {
+    consider(w.startedAt);
+    consider(w.completedAt);
+    w.exercises?.forEach(ex => ex.setLog?.forEach(set => consider(set.endedAt)));
+  });
+  return latest;
+}
+
+export interface BackupComparison {
+  backupLatest: number | null;
+  deviceLatest: number | null;
+  /** The device has activity after the backup's latest, which a restore would lose. */
+  deviceIsNewer: boolean;
+}
+
+export function compareBackupToDevice(backup: BackupData, device: BackupData): BackupComparison {
+  const backupLatest = latestActivityAt(backup);
+  const deviceLatest = latestActivityAt(device);
+  return {
+    backupLatest,
+    deviceLatest,
+    deviceIsNewer: deviceLatest !== null && (backupLatest === null || deviceLatest > backupLatest),
+  };
+}

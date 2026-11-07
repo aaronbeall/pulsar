@@ -17,17 +17,20 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { FaDatabase, FaDownload, FaUpload, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { usePulsarStore } from '../store/pulsarStore';
 import {
   BackupParseError,
   PulsarBackup,
   backupFileName,
+  compareBackupToDevice,
   createBackup,
   parseBackup,
   summarizeBackup,
 } from '../utils/backup';
 import { PersistenceStatus, getPersistenceStatus, requestPersistentStorage } from '../utils/storagePersistence';
+
+const formatDate = (t: number | null) => (t ? format(t, 'MMM d, yyyy h:mm a') : 'none');
 
 const LAST_BACKUP_KEY = 'pulsar:lastBackupAt';
 
@@ -82,6 +85,11 @@ const BackupRestoreCard: React.FC = () => {
   const [lastBackupAt, setLastBackupAt] = React.useState<number | null>(readLastBackup);
   const [persistence, setPersistence] = React.useState<PersistenceStatus | null>(null);
   const [pendingRestore, setPendingRestore] = React.useState<PulsarBackup | null>(null);
+  // Compared once when a file is chosen, against what's on the device at that moment.
+  const comparison = React.useMemo(
+    () => (pendingRestore ? compareBackupToDevice(pendingRestore, usePulsarStore.getState()) : null),
+    [pendingRestore],
+  );
   const [isRestoring, setIsRestoring] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const cancelRef = React.useRef<HTMLButtonElement>(null);
@@ -239,10 +247,26 @@ const BackupRestoreCard: React.FC = () => {
             <AlertDialogBody>
               {pendingRestore && (
                 <>
-                  <Text mb={2}>
-                    This backup has {summarizeBackup(pendingRestore)}
-                    {pendingRestore.exportedAt ? `, saved ${formatDistanceToNow(pendingRestore.exportedAt)} ago` : ''}.
-                  </Text>
+                  <Box fontSize="sm" borderWidth="1px" borderColor={cardBorder} borderRadius="md" mb={3}>
+                    <Box p={3} borderBottomWidth="1px" borderColor={cardBorder}>
+                      <Text fontWeight="semibold">
+                        Backup{pendingRestore.exportedAt ? `, saved ${formatDate(pendingRestore.exportedAt)}` : ''}
+                      </Text>
+                      <Text color={mutedColor}>{summarizeBackup(pendingRestore)}</Text>
+                      <Text color={mutedColor}>Last activity: {formatDate(comparison?.backupLatest ?? null)}</Text>
+                    </Box>
+                    <Box p={3}>
+                      <Text fontWeight="semibold">This device now</Text>
+                      <Text color={mutedColor}>{summarizeBackup(createBackup(usePulsarStore.getState()))}</Text>
+                      <Text color={mutedColor}>Last activity: {formatDate(comparison?.deviceLatest ?? null)}</Text>
+                    </Box>
+                  </Box>
+                  {comparison?.deviceIsNewer && (
+                    <Flex gap={2} color="orange.400" fontSize="sm" mb={3} align="start">
+                      <Icon as={FaExclamationCircle} mt={0.5} flexShrink={0} />
+                      <Text>This device has newer activity than the backup. Restoring will lose it.</Text>
+                    </Flex>
+                  )}
                   <Text fontWeight="semibold">It will replace everything currently in Pulsar on this device.</Text>
                 </>
               )}

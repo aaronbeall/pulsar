@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BackupParseError, backupFileName, createBackup, parseBackup, summarizeBackup } from './backup';
+import { BackupParseError, backupFileName, compareBackupToDevice, createBackup, latestActivityAt, parseBackup, summarizeBackup } from './backup';
 import { Exercise, Routine, Workout } from '../models/types';
 
 const exercise = { id: 'e1', name: 'Push-up' } as unknown as Exercise;
@@ -33,5 +33,35 @@ describe('backup', () => {
 
   it('names files by local date', () => {
     expect(backupFileName(new Date(2026, 10, 6, 9).getTime())).toBe('pulsar-backup-2026-11-06.json');
+  });
+});
+
+describe('compareBackupToDevice', () => {
+  const data = (workoutTimes: number[], setEnd?: number) => ({
+    routines: [{ ...routine, createdAt: 100 }],
+    workouts: workoutTimes.map((t, i) => ({
+      ...workout,
+      id: `w${i}`,
+      startedAt: t,
+      exercises: setEnd ? [{ exerciseId: 'e1', sets: 1, setLog: [{ startedAt: t, endedAt: setEnd }] }] : [],
+    })) as unknown as Workout[],
+  });
+
+  it('flags a device with newer activity than the backup', () => {
+    expect(compareBackupToDevice(data([1000]), data([1000, 5000]))).toEqual({
+      backupLatest: 1000, deviceLatest: 5000, deviceIsNewer: true,
+    });
+  });
+
+  it('does not flag when the backup is as new or newer', () => {
+    expect(compareBackupToDevice(data([5000]), data([1000])).deviceIsNewer).toBe(false);
+    expect(compareBackupToDevice(data([1000]), data([1000])).deviceIsNewer).toBe(false);
+  });
+
+  it('counts set ends and an empty device', () => {
+    expect(latestActivityAt(data([1000], 9000))).toBe(9000);
+    expect(compareBackupToDevice(data([1000]), { routines: [], workouts: [] })).toEqual({
+      backupLatest: 1000, deviceLatest: null, deviceIsNewer: false,
+    });
   });
 });

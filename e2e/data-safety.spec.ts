@@ -86,6 +86,20 @@ test('backs up and restores all data', async ({ page }) => {
   expect(backup.routines).toHaveLength(1);
   await expect(page.getByText('Last backup:')).not.toContainText('never');
 
+  // Make a second routine after the backup: restoring now would lose it, and the dialog says so.
+  await page.clock.fastForward('01:00');
+  await createRoutineFromTemplate(page, 'Strength Builder');
+  await page.goto('/settings');
+  const [newerChooser] = await Promise.all([
+    page.waitForEvent('filechooser'),
+    page.getByRole('button', { name: 'Restore Backup' }).click(),
+  ]);
+  await newerChooser.setFiles(file);
+  const newerDialog = page.getByRole('alertdialog', { name: 'Restore this backup?' });
+  await expect(newerDialog).toContainText('This device has newer activity than the backup');
+  await expect(newerDialog).toContainText('2 routines');
+  await newerDialog.getByRole('button', { name: 'Cancel' }).click();
+
   // Wipe everything, then restore from the file.
   await page.evaluate(() => new Promise((resolve) => {
     const del = indexedDB.deleteDatabase('PulsarDB');
@@ -99,6 +113,7 @@ test('backs up and restores all data', async ({ page }) => {
   await chooser.setFiles(file);
   const dialog = page.getByRole('alertdialog', { name: 'Restore this backup?' });
   await expect(dialog).toContainText('1 routine');
+  await expect(dialog).not.toContainText('newer activity'); // device is empty
   await dialog.getByRole('button', { name: 'Replace & Restore' }).click();
   await expect(page.getByText('Backup restored')).toBeVisible();
 
