@@ -3,6 +3,8 @@ import { Box, VStack, HStack, Text, Circle, Flex, useColorModeValue, Icon } from
 import { Exercise, WorkoutExercise } from '../models/types';
 import { motion } from 'framer-motion';
 import { FaCheck } from 'react-icons/fa';
+import { getWorkoutTiming } from '../utils/workoutTiming';
+import { formatSeconds } from '../utils/setProgress';
 
 const MotionCircle = motion(Circle);
 const MotionBox = motion(Box);
@@ -22,6 +24,7 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
   exerciseDetails,
   onSelectExercise
 }) => {
+  const timing = React.useMemo(() => getWorkoutTiming({ exercises }), [exercises]);
   const connectorColor = useColorModeValue('gray.200', 'gray.700');
   const activeColor = useColorModeValue('cyan.500', 'cyan.400');
   const completedColor = useColorModeValue('green.500', 'green.400');
@@ -110,7 +113,7 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
                     </Text>
                   </HStack>
 
-                  <HStack spacing={2}>
+                  <HStack spacing={2} width="100%">
                     {Array.from({ length: exercise.sets }).map((_, setIdx) => (
                       <MotionCircle
                         key={setIdx}
@@ -145,6 +148,13 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
                         ) : null}
                       </MotionCircle>
                     ))}
+                    {timing && timing.exercises[exerciseIdx]?.setSec.length > 0 && (
+                      <Text fontSize="xs" color={mutedTextColor} ml="auto" pl={2} whiteSpace="nowrap">
+                        {formatSeconds(timing.exercises[exerciseIdx].activeSec)}
+                        {timing.exercises[exerciseIdx].restSec >= 1 &&
+                          ` · rest ${formatSeconds(timing.exercises[exerciseIdx].restSec)}`}
+                      </Text>
+                    )}
                   </HStack>
                 </VStack>
               </Flex>

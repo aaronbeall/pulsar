@@ -76,4 +76,12 @@ export interface WorkoutExercise extends ScheduledExercise {
   // Wall-clock time (ms) the in-progress set started; unset between sets. Persisted so a
   // running timer survives the screen locking, the app being backgrounded, or a reload.
   currentSetStartedAt?: number;
+  // One entry per finished set, in order. Exercise and rest times are derived from these
+  // (see utils/workoutTiming.ts).
+  setLog?: SetRecord[];
+}
+
+export interface SetRecord {
+  startedAt: number; // ms
+  endedAt: number; // ms
 }

@@ -62,5 +62,6 @@ describe('formatSeconds', () => {
     expect(formatSeconds(45)).toBe('45s');
     expect(formatSeconds(90)).toBe('1:30');
     expect(formatSeconds(605)).toBe('10:05');
+    expect(formatSeconds(3725)).toBe('1:02:05');
   });
 });

@@ -47,28 +47,35 @@ export function startSet(exercise: WorkoutExercise, now: number): WorkoutExercis
 }
 
 /**
- * Record one finished set. For timed exercises `durationDoneSec` is how long was actually
- * done (the full duration when the timer ran out, less if ended early). The exercise is
- * completed once all its sets are.
+ * Record one finished set, ending at `endedAt` (for a timed set that ran out, that's its
+ * scheduled end, not when the app noticed). For timed exercises `durationDoneSec` is how
+ * long was actually done (the full duration when the timer ran out, less if ended early).
+ * The exercise is completed once all its sets are.
  */
-export function completeSet(exercise: WorkoutExercise, now: number, durationDoneSec?: number): WorkoutExercise {
+export function completeSet(exercise: WorkoutExercise, endedAt: number, durationDoneSec?: number): WorkoutExercise {
   const completedSets = (exercise.completedSets ?? 0) + 1;
   const done = completedSets >= exercise.sets;
+  // A set completed without a recorded start (e.g. tapped before the start was saved)
+  // gets a zero-length record rather than none, so the set count and the log agree.
+  const setStartedAt = Math.min(exercise.currentSetStartedAt ?? endedAt, endedAt);
   return {
     ...exercise,
-    startedAt: exercise.startedAt ?? now,
+    startedAt: exercise.startedAt ?? setStartedAt,
     completedSets,
     completedDuration: exercise.duration
       ? (exercise.completedDuration ?? 0) + Math.max(0, Math.round(durationDoneSec ?? exercise.duration))
       : exercise.completedDuration,
     currentSetStartedAt: undefined,
-    completedAt: done ? exercise.completedAt ?? now : exercise.completedAt,
+    setLog: [...(exercise.setLog ?? []), { startedAt: setStartedAt, endedAt }],
+    completedAt: done ? exercise.completedAt ?? endedAt : exercise.completedAt,
   };
 }
 
-/** 45 -> "45s", 90 -> "1:30" */
+/** 45 -> "45s", 90 -> "1:30", 3725 -> "1:02:05" */
 export function formatSeconds(totalSec: number): string {
   const s = Math.max(0, Math.floor(totalSec));
   if (s < 60) return `${s}s`;
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  if (s < 3600) return `${Math.floor(s / 60)}:${pad(s % 60)}`;
+  return `${Math.floor(s / 3600)}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`;
 }

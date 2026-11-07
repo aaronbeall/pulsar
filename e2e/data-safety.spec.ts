@@ -49,6 +49,8 @@ test('a timed set catches up after the phone was locked', async ({ page }) => {
   // The set recorded itself at its real end, and rest is counted from then (~1:30).
   await expect(page.getByText(/Rest Time: 1:3\d/)).toBeVisible();
   await expect(page.getByText('1/2 × 30s')).toBeVisible();
+  // Each set's start/end is stored, so exercise time shows (rest only counts between sets).
+  await expect(page.getByText('Exercise 30s · Rest 0s')).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { __vibrations: unknown[] }).__vibrations.length)).toBe(1);
 
   // A set in progress survives a reload with the right time left.
@@ -58,6 +60,10 @@ test('a timed set catches up after the phone was locked', async ({ page }) => {
   await expect(page.getByText(/^(20|19|18)s$/)).toBeVisible();
   await page.clock.fastForward(25_000);
   await expect(page.getByRole('heading', { name: /Completed!$/ })).toBeVisible();
+
+  // Two 30s sets with ~1:40 between them (2:00 locked + 10s into set 2, minus set 1).
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByText(/Exercise 1:00 · Rest 1:\d\d/)).toBeVisible();
 });
 
 test('backs up and restores all data', async ({ page }) => {

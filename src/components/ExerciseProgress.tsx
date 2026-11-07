@@ -99,8 +99,11 @@ interface ExerciseProgressProps {
   exerciseDetail: Exercise | undefined;
   /** Start the next set at `startedAt` (recorded as `currentSetStartedAt`). */
   onStartSet: (startedAt: number) => void;
-  /** Record the current set as done; for timed sets, how many seconds were done. */
-  onCompleteSet: (durationDoneSec?: number) => void;
+  /**
+   * Record the current set as done; for timed sets, how many seconds were done. `endedAt`
+   * is when the set really ended, if not now (a timed set that ran out while locked).
+   */
+  onCompleteSet: (durationDoneSec?: number, endedAt?: number) => void;
 }
 
 const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
@@ -187,9 +190,10 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
     }
     cueRef.current = null;
     vibrateSetEnd();
-    setRestStartedAt(setEndsAt(setStartedAt, exercise.duration));
+    const endedAt = setEndsAt(setStartedAt, exercise.duration);
+    setRestStartedAt(endedAt);
     setPending({ startedAt: undefined });
-    onCompleteSet(exercise.duration);
+    onCompleteSet(exercise.duration, endedAt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setStartedAt, timer?.isDone]);
 

@@ -15,6 +15,7 @@ import { DayOfWeek, Routine, Workout } from '../models/types';
 import { useExercises, usePulsarStore, useRoutines, useWorkouts } from '../store/pulsarStore';
 import { generateRandomName } from '../utils/nameUtils';
 import { completeSet, startSet } from '../utils/setProgress';
+import { getWorkoutTiming } from '../utils/workoutTiming';
 import { findExercisesForDay, findWorkoutForDay, getStreakInfo, getTodayDayOfWeek } from '../utils/workoutUtils';
 
 export const WorkoutSession: React.FC = () => {
@@ -151,10 +152,10 @@ export const WorkoutSession: React.FC = () => {
   const getFreshWorkout = () =>
     workout ? usePulsarStore.getState().workouts.find(w => w.id === workout.id) ?? workout : null;
 
-  const handleCompleteSet = async (exerciseIndex: number, durationDoneSec?: number) => {
+  const handleCompleteSet = async (exerciseIndex: number, durationDoneSec?: number, endedAt?: number) => {
     const current = getFreshWorkout();
     if (!current) return;
-    const now = Date.now();
+    const now = endedAt ?? Date.now();
     const exercise = completeSet(current.exercises[exerciseIndex], now, durationDoneSec);
     const exercisesAfter = current.exercises.map((ex, i) => (i === exerciseIndex ? exercise : ex));
     const updatedWorkout: Workout = { ...current, exercises: exercisesAfter };
@@ -263,6 +264,7 @@ export const WorkoutSession: React.FC = () => {
   const currentExerciseIndex = currentExercise ? workout.exercises.indexOf(currentExercise) : -1;
   const currentExerciseDetail = currentExercise ? exercises.find(e => e.id === currentExercise.exerciseId) : null;
   const currentSetIndex = currentExercise ? (currentExercise.completedSets || 0) : 0;
+  const workoutTiming = getWorkoutTiming(workout);
 
   if (showInterstitial) {
     const isPerfect = workout.completedAt && workout.exercises.every(ex => ex.completedAt);
@@ -331,7 +333,12 @@ export const WorkoutSession: React.FC = () => {
             "{workout.nickname}"
           </Heading>
         </Box>
-        <TimeElapsed startTime={workout.startedAt} endTime={workout.completedAt} />
+        <TimeElapsed
+          startTime={workout.startedAt}
+          endTime={workout.completedAt}
+          exerciseSec={workoutTiming.activeSec}
+          restSec={workoutTiming.restSec}
+        />
       </Flex>
 
       <VStack spacing={6} align="stretch">
@@ -346,7 +353,7 @@ export const WorkoutSession: React.FC = () => {
               exercise={currentExercise}
               currentSet={currentSetIndex}
               exerciseDetail={currentExerciseDetail}
-              onCompleteSet={(durationDoneSec) => handleCompleteSet(currentExerciseIndex, durationDoneSec)}
+              onCompleteSet={(durationDoneSec, endedAt) => handleCompleteSet(currentExerciseIndex, durationDoneSec, endedAt)}
               onStartSet={(startedAt) => handleStartSet(currentExerciseIndex, startedAt)}
             />
           )}

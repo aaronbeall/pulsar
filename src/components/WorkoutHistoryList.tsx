@@ -6,6 +6,8 @@ import { FaCalendarAlt, FaCheck, FaClock, FaPowerOff, FaTrophy } from 'react-ico
 import { Routine } from '../models/types';
 import { HistoryTimelineItem, getRoutineName, getWorkoutKind, isPerfectWorkout } from '../utils/historyStats';
 import DayKindBadge from './DayKindBadge';
+import { getWorkoutTiming } from '../utils/workoutTiming';
+import { formatSeconds } from '../utils/setProgress';
 
 const PAGE_SIZE = 10;
 const DOT_CENTER = '16px'; // Circle is 16px, row has px={2} (8px) — 8 + 8 = 16.
@@ -131,6 +133,14 @@ const WorkoutHistoryList: React.FC<WorkoutHistoryListProps> = ({ items, routines
                       <Text ml={1} color={inProgressColor} fontWeight="medium">In progress</Text>
                     )}
                   </Flex>
+                  {(() => {
+                    const timing = getWorkoutTiming(workout);
+                    return timing.activeSec > 0 ? (
+                      <Text fontSize="xs" color={mutedColor} mt={0.5}>
+                        Exercise {formatSeconds(timing.activeSec)} · Rest {formatSeconds(timing.restSec)}
+                      </Text>
+                    ) : null;
+                  })()}
                 </Box>
               </Flex>
             );
