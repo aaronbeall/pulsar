@@ -20,6 +20,7 @@ import { deleteDB } from 'idb'; // Import deleteDB to delete IndexedDB
 import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
 import { DEFAULT_OPENAI_MODEL, useOpenAiApiKey, useOpenAiModel } from '../store/aiSettingsStore';
 import { testApiKey } from '../services/ai';
+import BackupRestoreCard from '../components/BackupRestoreCard';
 
 interface SettingsProps {
   colorScheme: string;
@@ -62,7 +63,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
 
   const handleDeleteAllData = async () => {
     const confirmed = window.confirm(
-      'Are you sure you want to delete all data? This action cannot be undone.'
+      'Are you sure you want to delete all data? This cannot be undone unless you have saved a backup.'
     );
     if (confirmed) {
       await deleteDB('PulsarDB'); // Delete the IndexedDB
@@ -178,6 +179,8 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
         )}
         {aiGate.gate}
       </Box>
+
+      <BackupRestoreCard />
 
       <Box bg={dangerBg} borderWidth="1px" borderColor={dangerBorder} borderRadius="xl" p={{ base: 4, sm: 5 }}>
         <Flex align="center" gap={2} mb={1}>

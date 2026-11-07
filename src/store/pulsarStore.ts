@@ -25,6 +25,8 @@ interface PulsarStoreState {
   addWorkout: (workout: Workout) => Promise<void>;
   updateWorkout: (workout: Workout) => Promise<void>;
   removeWorkout: (id: string) => Promise<void>;
+  // Replace all data (restore from backup)
+  replaceAll: (data: { exercises: Exercise[]; routines: Routine[]; workouts: Workout[] }) => Promise<void>;
   // Get stats for an exercise by id
   getExerciseStats: (exerciseId: string) => ExerciseStats;
 }
@@ -80,6 +82,10 @@ export const usePulsarStore = create<PulsarStoreState>()((set, get) => ({
   removeWorkout: async (id) => {
     await db.removeWorkout(id);
     set({ workouts: get().workouts.filter(w => w.id !== id) });
+  },
+  replaceAll: async (data) => {
+    await db.replaceAllData(data);
+    set({ exercises: data.exercises, routines: data.routines, workouts: data.workouts, copiedRoutineDay: null });
   },
   getExerciseStats: (exerciseId) => {
     const routines = get().routines;

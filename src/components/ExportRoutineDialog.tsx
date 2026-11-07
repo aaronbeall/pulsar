@@ -247,7 +247,7 @@ export const ExportRoutineDialog: React.FC<ExportRoutineDialogProps> = ({ isOpen
           <h2>Schedule</h2>
           ${scheduleHtml}
           <div class="branding">
-            <img src="/favicon.svg" alt="Pulsar logo" class="branding-logo" />
+            <img src="${new URL(`${import.meta.env.BASE_URL}favicon.svg`, window.location.href).href}" alt="Pulsar logo" class="branding-logo" />
             <span class="branding-title">PULSAR</span>
             <span class="branding-exported">Exported from Pulsar on ${new Date().toLocaleString()}</span>
           </div>
