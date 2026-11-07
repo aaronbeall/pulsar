@@ -14,6 +14,8 @@ import { DAYS_OF_WEEK } from '../constants/days';
 import { DayOfWeek, Routine, Workout } from '../models/types';
 import { useExercises, usePulsarStore, useRoutines, useWorkouts } from '../store/pulsarStore';
 import { generateRandomName } from '../utils/nameUtils';
+import { completeSet, startSet } from '../utils/setProgress';
+import { getWorkoutTiming } from '../utils/workoutTiming';
 import { findExercisesForDay, findWorkoutForDay, getStreakInfo, getTodayDayOfWeek } from '../utils/workoutUtils';
 
 export const WorkoutSession: React.FC = () => {
@@ -144,45 +146,43 @@ export const WorkoutSession: React.FC = () => {
     };
   }, []);
 
-  const handleComplete = async (exerciseIndex: number) => {
-    if (!workout) return;
-    const updatedWorkout = { ...workout };
-    const exercise = updatedWorkout.exercises[exerciseIndex];
-    if (exercise.duration) {
-      exercise.completedDuration = exercise.duration;
-      if (!exercise.completedAt) {
-        exercise.completedAt = Date.now();
-      }
-    } else {
-      exercise.completedSets = (exercise.completedSets || 0) + 1;
-      if (exercise.completedSets === exercise.sets && !exercise.completedAt) {
-        exercise.completedAt = Date.now();
-      }
-    }
+  // Both handlers read the workout fresh from the store rather than from render state:
+  // a timed set can complete itself from an effect right after it was started, before
+  // this component has re-rendered with the started set.
+  const getFreshWorkout = () =>
+    workout ? usePulsarStore.getState().workouts.find(w => w.id === workout.id) ?? workout : null;
+
+  const handleCompleteSet = async (exerciseIndex: number, durationDoneSec?: number, endedAt?: number) => {
+    const current = getFreshWorkout();
+    if (!current) return;
+    const now = endedAt ?? Date.now();
+    const exercise = completeSet(current.exercises[exerciseIndex], now, durationDoneSec);
+    const exercisesAfter = current.exercises.map((ex, i) => (i === exerciseIndex ? exercise : ex));
+    const updatedWorkout: Workout = { ...current, exercises: exercisesAfter };
     // Set workout.completedAt if all exercises are complete
-    const allCompleted = updatedWorkout.exercises.every(ex => ex.completedAt);
-    if (allCompleted && !updatedWorkout.completedAt) {
-      updatedWorkout.completedAt = Date.now();
+    if (exercisesAfter.every(ex => ex.completedAt) && !updatedWorkout.completedAt) {
+      updatedWorkout.completedAt = now;
       setShowInterstitial(true);
     }
     await updateWorkout(updatedWorkout);
     setWorkout(updatedWorkout);
     // If the exercise is now completed, auto-advance to the first incomplete exercise (if any)
     if (exercise.completedAt) {
-      const firstIncompleteIdx = updatedWorkout.exercises.findIndex(ex => !ex.completedAt);
+      const firstIncompleteIdx = exercisesAfter.findIndex(ex => !ex.completedAt);
       setSelectedExerciseIndex(firstIncompleteIdx !== -1 ? firstIncompleteIdx : null);
     }
   };
 
-  const handleStart = (exerciseIndex: number) => {
-    if (!workout) return;
-    const updatedWorkout = { ...workout };
-    const exercise = updatedWorkout.exercises[exerciseIndex];
-    if (!exercise.startedAt) {
-      exercise.startedAt = Date.now();
-      exercise.completedSets = 0;
-      exercise.completedDuration = 0;
-    }
+  const handleStartSet = async (exerciseIndex: number, startedAt: number) => {
+    const current = getFreshWorkout();
+    if (!current) return;
+    const updatedWorkout: Workout = {
+      ...current,
+      exercises: current.exercises.map((ex, i) => (i === exerciseIndex ? startSet(ex, startedAt) : ex)),
+    };
+    // Persisted (not just local state) so a running timer survives a reload or the OS
+    // killing the backgrounded app.
+    await updateWorkout(updatedWorkout);
     setWorkout(updatedWorkout);
   };
 
@@ -264,6 +264,7 @@ export const WorkoutSession: React.FC = () => {
   const currentExerciseIndex = currentExercise ? workout.exercises.indexOf(currentExercise) : -1;
   const currentExerciseDetail = currentExercise ? exercises.find(e => e.id === currentExercise.exerciseId) : null;
   const currentSetIndex = currentExercise ? (currentExercise.completedSets || 0) : 0;
+  const workoutTiming = getWorkoutTiming(workout);
 
   if (showInterstitial) {
     const isPerfect = workout.completedAt && workout.exercises.every(ex => ex.completedAt);
@@ -332,7 +333,12 @@ export const WorkoutSession: React.FC = () => {
             "{workout.nickname}"
           </Heading>
         </Box>
-        <TimeElapsed startTime={workout.startedAt} endTime={workout.completedAt} />
+        <TimeElapsed
+          startTime={workout.startedAt}
+          endTime={workout.completedAt}
+          exerciseSec={workoutTiming.activeSec}
+          restSec={workoutTiming.restSec}
+        />
       </Flex>
 
       <VStack spacing={6} align="stretch">
@@ -347,8 +353,8 @@ export const WorkoutSession: React.FC = () => {
               exercise={currentExercise}
               currentSet={currentSetIndex}
               exerciseDetail={currentExerciseDetail}
-              onComplete={() => handleComplete(currentExerciseIndex)}
-              onNext={() => handleStart(currentExerciseIndex)}
+              onCompleteSet={(durationDoneSec, endedAt) => handleCompleteSet(currentExerciseIndex, durationDoneSec, endedAt)}
+              onStartSet={(startedAt) => handleStartSet(currentExerciseIndex, startedAt)}
             />
           )}
         </SlideFade>

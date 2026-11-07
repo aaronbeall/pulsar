@@ -70,9 +70,7 @@ export const WorkoutLanding: React.FC = () => {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  // routines/workouts default to [] (never undefined) even before loadAll() resolves, so
-  // the store's own `loading` flag is the only reliable signal — an emptiness check here
-  // would misfire on every fresh load and redirect straight to /setup before data arrives.
+  // Wait for IndexedDB to load: `routines` is [] until then, which would redirect to setup.
   const isLoading = usePulsarLoading();
 
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
