@@ -1,3 +1,4 @@
+import { getHowToUrl } from '../utils/webUtils';
 import React, { useState, useEffect, useRef } from 'react';
 import { useUrlModal } from '../hooks/useUrlModal';
 import { 
@@ -292,10 +293,10 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
             transition="opacity 0.2s"
           />
         )}
-        {exerciseDetail?.howToUrl && (
+        {exerciseDetail && getHowToUrl(exerciseDetail) && (
           <IconButton
             as="a"
-            href={exerciseDetail.howToUrl}
+            href={getHowToUrl(exerciseDetail)}
             target="_blank"
             rel="noopener noreferrer"
             size="sm"

@@ -1,3 +1,4 @@
+import { getHowToUrl } from '../utils/webUtils';
 import React, { useEffect, useMemo, useState } from "react";
 import { Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Text, Box, VStack, Input, Textarea, Checkbox, Button, HStack, Tag, IconButton, useToast, Flex, Switch, ButtonGroup, Spinner } from "@chakra-ui/react";
 import { FaChartBar, FaCalendarAlt, FaDumbbell, FaTimes, FaCheck, FaListOl, FaClock, FaSync, FaPlayCircle, FaSyncAlt } from "react-icons/fa";
@@ -169,10 +170,10 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
                     {cyclingImage ? <Spinner size="md" color="cyan.400" /> : <FaDumbbell size={40} color="#A0AEC0" />}
                   </Box>
                 )}
-                {edit.howToUrl && (
+                {getHowToUrl(edit) && (
                   <IconButton
                     as="a"
-                    href={edit.howToUrl}
+                    href={getHowToUrl(edit)}
                     target="_blank"
                     rel="noopener noreferrer"
                     size="sm"

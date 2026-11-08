@@ -1,3 +1,4 @@
+import { getHowToQuery, getSearchUrl } from './webUtils';
 import { addDays, startOfDay } from 'date-fns';
 import { DAYS_OF_WEEK } from '../constants/days';
 import type {
@@ -93,7 +94,7 @@ function exercisesFor(routines: Routine[], workouts: Workout[] = []): Exercise[]
       name: spec.name,
       description: '',
       targetMuscles: spec.muscles,
-      howToUrl: '',
+      howToUrl: getSearchUrl(getHowToQuery(spec.name)),
       coverImageUrl: IMG + spec.img,
       iconImageUrl: IMG + spec.img,
       ...(spec.timed ? { timed: true } : {}),
