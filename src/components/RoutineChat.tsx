@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useSessionDraft } from '../hooks/useSessionDraft';
 import { Box, VStack, Text, Flex, Button, Collapse, IconButton, Input, useToast } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp } from 'react-icons/fa';
@@ -37,7 +38,8 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
   const addExercise = usePulsarStore(s => s.addExercise);
   const exercises = useExercises();
   const toast = useToast();
-  const [chatInput, setChatInput] = useState('');
+  // Survives leaving for Google sign-in from the AI gate, so the message isn't lost.
+  const [chatInput, setChatInput] = useSessionDraft(`pulsar:chatDraft:${routine.id}`, () => '');
   const [isOpen, setIsOpen] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [streaming, setStreaming] = useState<StreamingReply | null>(null);
@@ -68,13 +70,14 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
     if (!text || isSending) return;
     // Without AI access this prompts for it, then sends the same message once unlocked.
     aiGate.requireAI(() => sendMessage(text), {
+      kind: 'edit',
       reason: 'Chatting with your routine uses Pulsar AI.',
       alternative: onEditManually && { label: 'Edit the routine myself', onClick: onEditManually },
     });
   };
 
   const sendMessage = async (text: string) => {
-    const provider = getActiveAIProvider();
+    const provider = getActiveAIProvider('edit');
     if (!provider) return;
 
     const priorHistory = getLatestRoutine().chatHistory;

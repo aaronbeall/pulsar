@@ -363,8 +363,8 @@ export const generateRoutine = async (
   addExercise: (ex: Exercise) => Promise<void>,
   options?: StreamOptions
 ): Promise<{ routine: Routine, exercises: Exercise[] }> => {
-  const provider = getActiveAIProvider();
-  if (!provider) throw new AIError('no_key', 'Add your OpenAI API key in Settings to use AI.');
+  const provider = getActiveAIProvider('plan');
+  if (!provider) throw new AIError('no_key', 'Pulsar AI isn\'t set up. Sign in or add your OpenAI key in Settings.');
   return generateRoutineWithAI(provider, responses, exercises, addExercise, options);
 };
 

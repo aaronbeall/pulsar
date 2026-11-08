@@ -20,9 +20,11 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FaCrown, FaExternalLinkAlt, FaKey } from 'react-icons/fa';
+import { FaCrown, FaExternalLinkAlt, FaGoogle, FaKey } from 'react-icons/fa';
 import { useOpenAiApiKey } from '../store/aiSettingsStore';
-import { testApiKey } from '../services/ai';
+import { AIKind, testApiKey } from '../services/ai';
+import { useAccount } from '../hooks/useAccount';
+import { signInWithGoogle } from '../services/account';
 
 export interface AIAccessAlternative {
   label: string;
@@ -33,6 +35,8 @@ interface AIAccessDialogProps {
   isOpen: boolean;
   /** What the user was about to do, e.g. "Building a routine from your answers uses Pulsar AI." */
   reason?: string;
+  /** Which hosted allowance the action needs, to say whether it's used up. */
+  kind?: AIKind;
   /** Called once AI access is in place (a verified key was saved). The caller continues the action. */
   onUnlocked: () => void;
   onClose: () => void;
@@ -43,11 +47,17 @@ interface AIAccessDialogProps {
 
 // The paywall-style gate shown when someone uses an AI feature without AI access. AI is never
 // something you "turn on": features always look available, and this appears at the moment of
-// use. Today the only way through is the user's own OpenAI key; the Pulsar Premium option is
-// where a subscription (hosted AI, no key) will be offered — see PLAN-ai-features.md and
-// PLAN-ai-subscription.md. Open it through hooks/useAIGate.tsx rather than directly.
-const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, onUnlocked, onClose, alternative }) => {
+// use. Ways through, first the one that fits:
+// - signed out where hosted AI is offered: sign in with Google for the free allowance;
+// - signed in with the allowance used: Pulsar AI subscription (coming soon);
+// - always: the user's own OpenAI key.
+// Open it through hooks/useAIGate.tsx rather than directly.
+const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, onUnlocked, onClose, alternative }) => {
   const [existingKey, setApiKey] = useOpenAiApiKey();
+  const account = useAccount();
+  const [signingIn, setSigningIn] = useState(false);
+  const offerSignIn = account.hostedAI && !account.user;
+  const allowanceUsed = account.hostedAI && !!account.user && !!kind && !!account.ai && account.ai[kind].used >= account.ai[kind].limit;
   const toast = useToast();
   const [draftKey, setDraftKey] = useState('');
   const keyInputRef = useRef<HTMLInputElement>(null);
@@ -64,6 +74,21 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, onUnloc
       setError(null);
     }
   }, [isOpen]);
+
+  const handleSignIn = async () => {
+    setSigningIn(true);
+    try {
+      // Come back to this page without the dialog open: the action can't resume after the
+      // round trip to Google, so the user taps it again (answers and drafts are kept).
+      const params = new URLSearchParams(window.location.search);
+      params.delete('ai');
+      const query = params.toString();
+      await signInWithGoogle(window.location.pathname + (query ? `?${query}` : ''));
+    } catch (e) {
+      setSigningIn(false);
+      toast({ title: "Couldn't start sign-in", description: e instanceof Error ? e.message : undefined, status: 'error', duration: 4000, isClosable: true });
+    }
+  };
 
   const handleVerify = async () => {
     const key = draftKey.trim();
@@ -88,7 +113,7 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, onUnloc
       <ModalOverlay />
       <ModalContent>
         <ModalHeader pr={12}>
-          {existingKey ? 'Change your OpenAI key' : 'Unlock Pulsar AI'}
+          {existingKey ? 'Change your OpenAI key' : allowanceUsed ? 'Keep using Pulsar AI' : 'Unlock Pulsar AI'}
           {reason && (
             <Text fontSize="sm" fontWeight="normal" color={mutedColor} mt={1}>
               {reason}
@@ -98,21 +123,39 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, onUnloc
         <ModalCloseButton size="lg" />
         <ModalBody>
           <VStack align="stretch" spacing={4}>
-            <Box borderWidth="2px" borderColor={cardBorder} borderStyle="dashed" borderRadius="lg" p={4} opacity={0.7} aria-disabled>
-              <Flex align="center" gap={2} mb={1} wrap="wrap">
-                <Icon as={FaCrown} color="yellow.500" />
-                <Text fontWeight="bold">Pulsar Premium</Text>
-                <Badge colorScheme="purple">Coming soon</Badge>
-              </Flex>
-              <Text fontSize="sm" color={mutedColor}>
-                AI included with a subscription. No key or OpenAI account needed.
-              </Text>
-            </Box>
+            {offerSignIn ? (
+              <Box borderWidth="2px" borderColor="cyan.400" borderRadius="lg" p={4} bg={keyCardBg} data-testid="ai-signin-option">
+                <Flex align="center" gap={2} mb={1}>
+                  <Icon as={FaCrown} color="yellow.500" />
+                  <Heading size="sm">Try Pulsar AI free</Heading>
+                </Flex>
+                <Text fontSize="sm" color={mutedColor} mb={3}>
+                  Sign in to get 1 AI routine plan and 2 AI edits, free. No OpenAI account needed.
+                  Your workouts stay on this device.
+                </Text>
+                <Button leftIcon={<FaGoogle />} colorScheme="cyan" size="lg" w="full" onClick={handleSignIn} isLoading={signingIn}>
+                  Continue with Google
+                </Button>
+              </Box>
+            ) : (
+              <Box borderWidth="2px" borderColor={cardBorder} borderStyle="dashed" borderRadius="lg" p={4} opacity={0.7} aria-disabled data-testid="ai-premium-option">
+                <Flex align="center" gap={2} mb={1} wrap="wrap">
+                  <Icon as={FaCrown} color="yellow.500" />
+                  <Text fontWeight="bold">Pulsar AI</Text>
+                  <Badge colorScheme="purple">Coming soon</Badge>
+                </Flex>
+                <Text fontSize="sm" color={mutedColor}>
+                  {allowanceUsed
+                    ? "You've used your free AI. Pulsar AI for $3.99 a month adds 20 routine plans and 200 edits every month."
+                    : 'AI included with a subscription. No key or OpenAI account needed.'}
+                </Text>
+              </Box>
+            )}
 
             <Box borderWidth="2px" borderColor="cyan.400" borderRadius="lg" p={4} bg={keyCardBg}>
               <Flex align="center" gap={2} mb={1}>
                 <Icon as={FaKey} color="cyan.500" />
-                <Heading size="sm">Use your own OpenAI key</Heading>
+                <Heading size="sm">{offerSignIn ? 'Or use your own OpenAI key' : 'Use your own OpenAI key'}</Heading>
               </Flex>
               <Text fontSize="sm" color={mutedColor} mb={3}>
                 Free from Pulsar. OpenAI bills your account directly, usually under a cent per routine.{' '}
@@ -144,13 +187,14 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, onUnloc
         <ModalFooter flexDirection="column" gap={2} alignItems="stretch">
           <Button
             colorScheme="cyan"
+            variant={offerSignIn ? 'outline' : 'solid'}
             size="lg"
             onClick={handleVerify}
             isLoading={verifying}
             loadingText="Checking key..."
             isDisabled={!draftKey.trim()}
           >
-            Continue
+            {offerSignIn ? 'Use this key' : 'Continue'}
           </Button>
           {alternative && (
             <Button variant="ghost" size="lg" onClick={alternative.onClick}>

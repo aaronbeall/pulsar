@@ -7,3 +7,7 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 # Mirrors the AUTH_ORIGINS var in wrangler.jsonc (localhost is always allowed).
 AUTH_ORIGINS=https://pulsarfit.app
+# Pulsar's own OpenAI key for hosted AI. Leave empty to run without hosted AI.
+OPENAI_API_KEY=
+AI_MODEL=gpt-5-mini
+AI_DAILY_BUDGET_USD=10

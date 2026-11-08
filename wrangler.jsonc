@@ -24,8 +24,12 @@
   "vars": {
     // Origins where Google sign-in is offered: each needs <origin>/api/auth/callback/google
     // registered in the Google OAuth client. localhost always works. Comma-separated.
-    "AUTH_ORIGINS": "https://pulsarfit.app"
+    "AUTH_ORIGINS": "https://pulsarfit.app",
+    // Hosted Pulsar AI (worker/ai/). Allowances and prices are in worker/ai/plans.ts.
+    "AI_MODEL": "gpt-5-mini",
+    // Daily spend across all accounts before hosted AI turns itself off until tomorrow (UTC).
+    "AI_DAILY_BUDGET_USD": "10"
   },
   // Secrets (wrangler secret put, or .dev.vars locally): BETTER_AUTH_SECRET,
-  // GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET. See README "Deploying".
+  // GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OPENAI_API_KEY. See README "Deploying".
 }

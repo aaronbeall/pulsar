@@ -35,7 +35,10 @@ export interface AIChangeResponse {
 }
 
 export class AIError extends Error {
-  code: 'no_key' | 'invalid_key' | 'rate_limited' | 'quota' | 'model' | 'network' | 'empty_response' | 'parse_error';
+  code:
+    | 'no_key' | 'invalid_key' | 'rate_limited' | 'quota' | 'model' | 'network' | 'empty_response' | 'parse_error'
+    // Hosted Pulsar AI (hostedProvider.ts)
+    | 'signin_required' | 'allowance_used' | 'busy';
   constructor(code: AIError['code'], message: string) {
     super(message);
     this.name = 'AIError';
@@ -63,9 +66,8 @@ export interface ChatTurn {
 }
 
 // Everything upstream (the setup wizard, the chat UI, the diff/accept card) only ever talks
-// to this interface — never to OpenAI or a backend directly. That's what lets a later hosted
-// implementation (calling a Supabase Edge Function instead) slot in with zero UI changes.
-// See PLAN-ai-features.md.
+// to this interface — never to OpenAI or a backend directly. Two implementations: the user's
+// own key (byokProvider.ts) and hosted Pulsar AI through the site's API (hostedProvider.ts).
 export interface AIProvider {
   generateRoutine(qa: WizardAnswer[], options?: StreamOptions): Promise<AIRoutineResponse>;
   suggestRoutineChange(

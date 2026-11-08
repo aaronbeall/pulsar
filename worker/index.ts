@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { createAuth, signInAvailable } from './auth';
+import { aiRoutes, aiStatus } from './ai/routes';
 import { fallbackFor } from './fallback';
 
 // The site's Worker. Cloudflare serves files from dist/ before this runs, so it only sees
@@ -24,8 +25,11 @@ app.get('/api/me', async (c) => {
   const user = session
     ? { id: session.user.id, name: session.user.name, email: session.user.email, image: session.user.image ?? null }
     : null;
-  return c.json({ signInAvailable: true, user });
+  const ai = user ? await aiStatus(c.env, user.id) : null;
+  return c.json({ signInAvailable: true, hostedAI: Boolean(c.env.OPENAI_API_KEY), user, ai });
 });
+
+app.route('/api/ai', aiRoutes);
 
 app.notFound(async (c) => {
   const url = new URL(c.req.url);

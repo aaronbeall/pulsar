@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AccountState, NO_ACCOUNT, fetchAccount } from '../services/account';
+import { ACCOUNT_QUERY_KEY, AccountState, fetchAccount, getAccountSnapshot } from '../services/account';
 
-export const ACCOUNT_QUERY_KEY = ['account'] as const;
+export { ACCOUNT_QUERY_KEY };
 
 /** The visitor's account (see services/account.ts). Starts as "no sign-in" until loaded. */
 export function useAccount() {
@@ -13,7 +13,7 @@ export function useAccount() {
   });
   const queryClient = useQueryClient();
   return {
-    ...(query.data ?? NO_ACCOUNT),
+    ...(query.data ?? getAccountSnapshot()),
     isLoading: query.isLoading,
     /** Refetch after signing out or deleting the account. */
     refresh: () => queryClient.invalidateQueries({ queryKey: ACCOUNT_QUERY_KEY }),
