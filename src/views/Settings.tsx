@@ -16,13 +16,15 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FaExclamationTriangle, FaImages, FaKey, FaPalette, FaRobot } from 'react-icons/fa';
+import { FaCode, FaExclamationTriangle, FaImages, FaKey, FaPalette, FaRobot } from 'react-icons/fa';
 import { useAIGate } from '../hooks/useAIGate';
 import { deleteDB } from 'idb'; // Import deleteDB to delete IndexedDB
 import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
 import { DEFAULT_OPENAI_MODEL, useOpenAiApiKey, useOpenAiModel } from '../store/aiSettingsStore';
 import { testApiKey } from '../services/ai';
 import BackupRestoreCard from '../components/BackupRestoreCard';
+import { DB_NAME } from '../db/indexedDb';
+import { isDevMode, setDevMode } from '../utils/devMode';
 
 interface SettingsProps {
   colorScheme: string;
@@ -40,6 +42,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
   const [testingKey, setTestingKey] = useState(false);
   const [model, setModel] = useOpenAiModel();
   const aiGate = useAIGate();
+  const devMode = isDevMode();
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
@@ -62,7 +65,9 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
     });
   };
 
+  // Dev mode only: wipes every localStorage value (OpenAI key, model, colors, prompts, caches).
   const handleClearSettings = () => {
+    if (!window.confirm('Clear all settings, including your OpenAI key? Workout data is kept.')) return;
     localStorage.clear();
     window.location.reload(); // Reload the app to reset settings
   };
@@ -72,7 +77,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
       'Are you sure you want to delete all data? This cannot be undone unless you have saved a backup.'
     );
     if (confirmed) {
-      await deleteDB('PulsarDB'); // Delete the IndexedDB
+      await deleteDB(DB_NAME); // This build's database (PR previews use their own)
       toast({
         title: 'All data deleted.',
         description: 'All data has been successfully deleted.',
@@ -166,17 +171,6 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
                 Remove key
               </Button>
             </Flex>
-            <FormControl>
-              <FormLabel fontSize="sm" mb={1}>Model</FormLabel>
-              <Input
-                placeholder={DEFAULT_OPENAI_MODEL}
-                value={model || ''}
-                onChange={(e) => setModel(e.target.value || null)}
-                autoCapitalize="off"
-                autoCorrect="off"
-                spellCheck={false}
-              />
-            </FormControl>
           </VStack>
         ) : (
           <VStack align="stretch" spacing={3}>
@@ -204,14 +198,45 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
           These actions are permanent and cannot be undone.
         </Text>
         <VStack spacing={3} align="stretch">
-          <Button variant="outline" colorScheme="red" size="sm" onClick={handleClearSettings}>
-            Clear All Settings
-          </Button>
           <Button variant="outline" colorScheme="red" size="sm" onClick={handleDeleteAllData}>
             Delete All Data
           </Button>
         </VStack>
       </Box>
+
+      {devMode && (
+        <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderStyle="dashed" borderRadius="xl" p={{ base: 4, sm: 5 }} data-testid="developer-settings">
+          <Flex align="center" gap={2} mb={1}>
+            <Icon as={FaCode} color="purple.400" />
+            <Heading size="sm">Developer</Heading>
+          </Flex>
+          <Text fontSize="xs" color={mutedColor} mb={4}>
+            Testing tools, shown only in dev mode. In dev mode you can also tap a past day on the
+            Home calendar to log it as done.
+          </Text>
+          <VStack spacing={3} align="stretch">
+            <FormControl>
+              <FormLabel fontSize="sm" mb={1}>OpenAI model</FormLabel>
+              <Input
+                placeholder={DEFAULT_OPENAI_MODEL}
+                value={model || ''}
+                onChange={(e) => setModel(e.target.value || null)}
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+              />
+            </FormControl>
+            <Button variant="outline" colorScheme="red" size="sm" onClick={handleClearSettings}>
+              Clear All Settings
+            </Button>
+            {!import.meta.env.DEV && (
+              <Button variant="ghost" size="sm" onClick={() => { setDevMode(false); window.location.reload(); }}>
+                Turn off dev mode
+              </Button>
+            )}
+          </VStack>
+        </Box>
+      )}
 
       <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
         <Flex align="center" gap={2} mb={3}>

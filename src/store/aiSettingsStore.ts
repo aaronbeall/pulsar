@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { isDevMode } from '../utils/devMode';
 
 // Deliberately separate from pulsarStore.ts (which just had its own redundant persist()
 // removed — see NOTES.md 2026-07-31). These are real, small UI-only settings, so they get
@@ -68,4 +69,7 @@ export const useHasOpenAiKey = (): boolean => useAiSettingsStore(s => !!s.openai
 
 // Non-reactive accessors for use outside React (services, non-component modules).
 export const getOpenAiApiKey = (): string | null => useAiSettingsStore.getState().openaiApiKey;
-export const getOpenAiModel = (): string => useAiSettingsStore.getState().openaiModel || DEFAULT_OPENAI_MODEL;
+// The model override is a dev-mode setting (see DEV-FEATURES.md): outside dev mode the default
+// model is always used, even if an override was saved earlier.
+export const getOpenAiModel = (): string =>
+  (isDevMode() && useAiSettingsStore.getState().openaiModel) || DEFAULT_OPENAI_MODEL;

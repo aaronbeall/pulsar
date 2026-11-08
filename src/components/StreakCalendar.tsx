@@ -19,6 +19,7 @@ import { getStreakInfo, StreakDay, getDayOfWeek, findRoutineForDay, findExercise
 import { DAYS_OF_WEEK } from '../constants/days';
 import { usePulsarStore } from '../store/pulsarStore';
 import { v4 as uuidv4 } from 'uuid';
+import { isDevMode } from '../utils/devMode';
 
 interface StreakCalendarProps {
   workouts: Workout[];
@@ -81,7 +82,12 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
 
   const addWorkout = usePulsarStore(s => s.addWorkout);
 
+  // Dev-mode only (see DEV-FEATURES.md): tapping a past day logs a completed "Manual Entry"
+  // workout for it, to fake streak/history data while testing.
+  const devMode = isDevMode();
+
   const handleDayClick = async (date: Date, isCurrentMonth: boolean) => {
+    if (!devMode) return;
     // Only allow for days in the viewed month that are past or today
     if (!isCurrentMonth) return;
     if (date > today) return;
@@ -261,7 +267,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                 if (prevIsStreak) borderLeft = 'none';
                 if (nextIsStreak) borderRight = 'none';
               }
-              const canLog = isCurrentMonth && !!findRoutineForDay(routines, getDayOfWeek(date));
+              const canLog = devMode && isCurrentMonth && !!findRoutineForDay(routines, getDayOfWeek(date));
               // Outer box: no margin between days
               return (
                 <Box
@@ -273,7 +279,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                   justifyContent="center"
                   opacity={isCurrentMonth ? 1 : 0.35}
                   title={date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  onClick={() => handleDayClick(date, isCurrentMonth)}
+                  onClick={devMode ? () => handleDayClick(date, isCurrentMonth) : undefined}
                   cursor={canLog ? 'pointer' : undefined}
                 >
                   {/* Inner pill/dot for all days, style toggled by state */}

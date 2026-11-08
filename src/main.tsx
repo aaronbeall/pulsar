@@ -6,6 +6,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import theme from './theme'; // Import the custom theme
 import App from './App';
 import './index.css';
+import { initDevMode } from './utils/devMode';
+
+initDevMode(); // Apply ?dev=1 / ?dev=0 before anything reads the flag
 
 const base = import.meta.env.BASE_URL;
 const queryClient = new QueryClient();
