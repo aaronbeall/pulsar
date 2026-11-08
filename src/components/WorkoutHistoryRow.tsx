@@ -8,6 +8,7 @@ import { getRoutineName, getWorkoutKind, isPerfectWorkout } from '../utils/histo
 import DayKindBadge from './DayKindBadge';
 import { getWorkoutTiming } from '../utils/workoutTiming';
 import { formatSeconds } from '../utils/setProgress';
+import { formatSessionName } from '../utils/sessionName';
 
 /** Horizontal center of the row's status dot, for drawing a timeline line through a list of rows. */
 export const ROW_DOT_CENTER = '16px'; // Circle is 16px, row has px={2} (8px): 8 + 8 = 16.
@@ -59,7 +60,7 @@ const WorkoutHistoryRow: React.FC<WorkoutHistoryRowProps> = ({ workout, routines
       <Box flex={1} minW={0}>
         <Flex align="center" gap={2} mb={0.5} wrap="wrap">
           <Text fontWeight="bold" fontSize="sm" noOfLines={1}>
-            {workout.nickname}
+            {formatSessionName(workout.nickname)}
           </Text>
           {kind && <DayKindBadge kind={kind} />}
           {isPerfectWorkout(workout) && (

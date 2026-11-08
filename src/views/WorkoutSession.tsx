@@ -18,6 +18,7 @@ import { generateRandomName } from '../utils/nameUtils';
 import { completeSet, startSet } from '../utils/setProgress';
 import { getWorkoutTiming } from '../utils/workoutTiming';
 import { findExercisesForDay, findWorkoutForDay, getStreakInfo, getTodayDayOfWeek } from '../utils/workoutUtils';
+import { formatSessionName } from '../utils/sessionName';
 
 export const WorkoutSession: React.FC = () => {
   const { sessionId } = useParams();
@@ -359,7 +360,7 @@ export const WorkoutSession: React.FC = () => {
             <Box as={FaInfoCircle} fontSize="1em" ml={1} color="gray.400" _hover={{ color: 'cyan.400' }} aria-label="View routine details" />
           </Text>
           <Heading fontSize={{ base: 'xl', sm: '2xl' }} mb={2} bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
-            "{workout.nickname}"
+            {formatSessionName(workout.nickname)}
           </Heading>
         </Box>
         {isDraft ? (

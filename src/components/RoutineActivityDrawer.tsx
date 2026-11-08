@@ -18,6 +18,7 @@ import { FaCheckCircle, FaEdit, FaInfoCircle, FaPlay, FaPowerOff, FaRobot, FaTim
 import { Routine, Workout } from '../models/types';
 import { getRoutineStats } from '../utils/workoutUtils';
 import WeeklyActivityGraph from './WeeklyActivityGraph';
+import { formatSessionName } from '../utils/sessionName';
 
 const RoutineStatsBox: React.FC<{ routine: Routine, workouts: Workout[] }> = React.memo(({ routine, workouts }) => {
   const stats = getRoutineStats(routine, workouts);
@@ -218,7 +219,7 @@ const ActivityTimeline: React.FC<{
               </Text>
               {event.name && (
                 <Text fontSize="md" color="gray.700" _dark={{ color: 'gray.200' }} mt={0.5}>
-                  "{event.name}"
+                  {event.type === 'workout' ? formatSessionName(event.name) : event.name}
                 </Text>
               )}
               {event.detail && (
