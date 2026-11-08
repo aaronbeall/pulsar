@@ -20,8 +20,11 @@ at `/app/`. That's a base-path change plus moving this folder, not a rewrite.
 - `index.html`, `home.css`: the page. Mobile-first; wider screens are the enhancement.
 - `main.ts`: the pulsar hero, a particle system in plain WebGL (no three.js) with all
   motion computed in the vertex shader. It pauses when the hero is off screen or the tab is
-  hidden, draws one still frame under `prefers-reduced-motion`, and falls back to a CSS
+  hidden, opens with an ignition reveal (shockwaves, then a fast spin that settles), draws one still frame under `prefers-reduced-motion`, and falls back to a CSS
   drawing without WebGL.
+- `nebula.jpg`: the galactic backdrop behind the hero, generated procedurally by
+  `python3 scripts/generate-home-nebula.py [seed]` (numpy + Pillow). Change the seed for a
+  different sky.
 - `shots/`: real app screenshots. Regenerate them after UI changes:
 
   ```sh
