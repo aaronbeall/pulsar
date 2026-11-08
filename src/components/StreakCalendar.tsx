@@ -27,9 +27,8 @@ interface StreakCalendarProps {
 }
 
 const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) => {
-  // Only use active routines for streak info
-  const activeRoutines = useMemo(() => routines.filter(r => r.active), [routines]);
-  const { days, streak, status } = useMemo(() => getStreakInfo(workouts, activeRoutines), [workouts, activeRoutines]);
+  // All routines, not just active ones: past days are judged by each routine's schedule history.
+  const { days, streak, status } = useMemo(() => getStreakInfo(workouts, routines), [workouts, routines]);
   const isGrayed = status !== 'up_to_date';
   const isPending = status === 'pending';
   const flameColor = isGrayed ? 'gray.400' : 'orange.400';
@@ -283,7 +282,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                   cursor={canLog ? 'pointer' : undefined}
                 >
                   {/* Inner pill/dot for all days, style toggled by state */}
-                  {(!isCompleted && !isPending && !isTodayPendingCell && !isFuture && streakDay && !streakDay.rest) ? (
+                  {(!isCompleted && !isTodayPendingCell && !isFuture && streakDay && !streakDay.rest) ? (
                     <Box
                       display="flex"
                       alignItems="center"
@@ -326,7 +325,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                           sx={isStreak ? { filter: 'drop-shadow(0 0 6px #FFD600) drop-shadow(0 0 12px #FFD600)' } : undefined}
                         />
                       )}
-                      {(isPending || isTodayPendingCell) && isToday && (
+                      {isTodayPendingCell && (
                         <Box
                           position="absolute"
                           top="50%"

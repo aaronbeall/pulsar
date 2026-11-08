@@ -17,7 +17,7 @@ export interface HistorySummaryStats {
 // these all used to be separate .filter()/.reduce() calls in the view.
 export function getHistorySummaryStats(workouts: Workout[], routines: Routine[]): HistorySummaryStats {
   const activeRoutines = routines.filter(r => r.active);
-  const { streak } = getStreakInfo(workouts, activeRoutines);
+  const { streak } = getStreakInfo(workouts, routines);
 
   let totalCompleted = 0;
   let perfectWorkouts = 0;
