@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Box, Button, Container, Flex, Heading, Text, useColorModeValue, Highlight, Spinner, Icon } from '@chakra-ui/react';
 import { format } from 'date-fns';
 import { FaDumbbell } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { useExercises, useRoutines, useWorkouts } from '../store/pulsarStore';
+import { useExercises, usePulsarLoading, useRoutines, useWorkouts } from '../store/pulsarStore';
 import { findExercisesForToday, findRoutineForToday, getWorkoutStatusForToday, hasRoutineForToday } from '../utils/workoutUtils';
 import StreakCalendar from '../components/StreakCalendar';
 import InstallAppAlert from '../components/InstallAppAlert';
@@ -24,7 +24,9 @@ const Home: React.FC = () => {
   const routines = useRoutines();
   const workouts = useWorkouts();
   const exercises = useExercises();
-  const isLoading = routines === undefined || workouts === undefined;
+  // routines/workouts default to [] (never undefined) even before loadAll() resolves, so
+  // the store's own `loading` flag is the only reliable signal here.
+  const isLoading = usePulsarLoading();
   const navigate = useNavigate();
   const now = new Date();
   const glassBg = useColorModeValue('whiteAlpha.700', 'blackAlpha.400');
@@ -35,7 +37,7 @@ const Home: React.FC = () => {
     'linear-gradient(135deg, rgba(30,30,40,0.45) 0%, rgba(0,0,0,0.32) 100%)'
   );
 
-  const activeRoutines = React.useMemo(() => routines.filter(r => r.active), [routines]);
+  const activeRoutines = useMemo(() => routines.filter(r => r.active), [routines]);
 
   const todayStatus = routines.length > 0 && hasRoutineForToday(routines)
     ? getWorkoutStatusForToday(workouts, routines)
@@ -43,7 +45,7 @@ const Home: React.FC = () => {
 
   // Cover images of whatever's scheduled today, for the workout-day background pick to
   // draw from alongside the curated photo pool (see pickTodaysHomeBackground).
-  const todaysExerciseImages = React.useMemo(() => {
+  const todaysExerciseImages = useMemo(() => {
     const todayRoutine = findRoutineForToday(routines);
     if (!todayRoutine) return [];
     return findExercisesForToday(todayRoutine)
@@ -51,7 +53,7 @@ const Home: React.FC = () => {
       .filter((url): url is string => !!url);
   }, [routines, exercises]);
 
-  const background = React.useMemo(
+  const background = useMemo(
     () => pickTodaysHomeBackground(todayStatus === 'rest', todaysExerciseImages),
     [todayStatus, todaysExerciseImages]
   );

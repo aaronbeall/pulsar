@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Box, VStack, HStack, Text, Circle, Flex, useColorModeValue, Icon } from '@chakra-ui/react';
 import { Exercise, WorkoutExercise } from '../models/types';
 import { motion } from 'framer-motion';
@@ -24,7 +24,7 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
   exerciseDetails,
   onSelectExercise
 }) => {
-  const timing = React.useMemo(() => getWorkoutTiming({ exercises }), [exercises]);
+  const timing = useMemo(() => getWorkoutTiming({ exercises }), [exercises]);
   const connectorColor = useColorModeValue('gray.200', 'gray.700');
   const activeColor = useColorModeValue('cyan.500', 'cyan.400');
   const completedColor = useColorModeValue('green.500', 'green.400');

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { HStack, IconButton, Text } from "@chakra-ui/react";
 import { LuMinus, LuPlus } from "react-icons/lu";
 
@@ -16,8 +16,8 @@ const NumericStepper: React.FC<NumericStepperProps> = ({ value, min = 1, max, on
   const canIncrement = max === undefined || value < max;
 
   // Hold-to-increment/decrement logic
-  const holdTimeout = React.useRef<NodeJS.Timeout | null>(null);
-  const holdInterval = React.useRef<NodeJS.Timeout | null>(null);
+  const holdTimeout = useRef<NodeJS.Timeout | null>(null);
+  const holdInterval = useRef<NodeJS.Timeout | null>(null);
 
   const handleHold = (type: 'inc' | 'dec') => {
     let current = value;
@@ -45,7 +45,7 @@ const NumericStepper: React.FC<NumericStepperProps> = ({ value, min = 1, max, on
     holdInterval.current = null;
   };
 
-  React.useEffect(() => () => clearHold(), []);
+  useEffect(() => () => clearHold(), []);
 
   return (
     <HStack gap={{ base: 0.5, md: 1 }} mr={2} align="center">

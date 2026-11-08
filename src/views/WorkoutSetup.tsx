@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Button, Flex, Heading, Input, Text, Spinner, Skeleton, VStack, useColorModeValue } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Input, Text, Skeleton, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { usePulsarStore, useExercises } from '../store/pulsarStore';
 import { generateRoutine, createRoutineFromTemplate } from '../services/routineBuilderService';
@@ -9,6 +9,10 @@ import { RoutineTemplate } from '../services/routineTemplates';
 import type { NavigateFunction } from 'react-router-dom';
 import { FaArrowRight, FaMagic, FaBook } from 'react-icons/fa';
 import { RoutineTemplateChooser } from '../components/RoutineTemplateChooser';
+import { AIError } from '../services/ai';
+import { useAIGate } from '../hooks/useAIGate';
+import ThinkingIndicator from '../components/ThinkingIndicator';
+import RoutineBuildProgress, { PlannedDay } from '../components/RoutineBuildProgress';
 
 // Positional, matching workoutPrompts by index — no need for named keys.
 const emptyResponses = () => Array(workoutPrompts.length).fill('');
@@ -18,9 +22,14 @@ export const WorkoutSetup: React.FC = () => {
   const [step, setStep] = useState<number>(1);
   const [responses, setResponses] = useState<string[]>(emptyResponses);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
+  const [build, setBuild] = useState<{ commentary: string; commentaryDone: boolean; plannedDays: PlannedDay[] }>({ commentary: '', commentaryDone: false, plannedDays: [] });
+  const [builtRoutine, setBuiltRoutine] = useState<Routine | null>(null);
   const [showTemplateChooser, setShowTemplateChooser] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const toast = useToast();
+  const aiGate = useAIGate();
 
   const addExercise = usePulsarStore(s => s.addExercise);
   const addRoutine = usePulsarStore(s => s.addRoutine);
@@ -37,14 +46,18 @@ export const WorkoutSetup: React.FC = () => {
     setResponses((prev) => prev.map((r, i) => (i === index ? value : r)));
   };
 
-  const addRoutineAndNavigate = async (
-    routine: Routine,
-  ) => {
+  const saveRoutine = async (routine: Routine) => {
     // Only set active if there are no active routines
     const hasActive = routines.some((r: Routine) => r.active);
     const routineToAdd = hasActive ? { ...routine, active: false } : { ...routine, active: true };
     await addRoutine(routineToAdd);
-    navigate(`/workout/routine/${routine.id}`, { replace: true });
+  };
+
+  const openRoutine = (routine: Routine) => navigate(`/workout/routine/${routine.id}`, { replace: true });
+
+  const addRoutineAndNavigate = async (routine: Routine) => {
+    await saveRoutine(routine);
+    openRoutine(routine);
   };
 
   const handleTemplateSelect = async (template: RoutineTemplate) => {
@@ -59,15 +72,46 @@ export const WorkoutSetup: React.FC = () => {
     if (step < workoutPrompts.length) {
       setStep(step + 1);
     } else {
-      setIsLoading(true);
-      const { routine } = await generateRoutine(responses, exercises, addExercise);
-      await addRoutineAndNavigate(routine);
-      setIsLoading(false);
+      aiGate.requireAI(generateWithAI, {
+        reason: 'Building a routine from your answers uses Pulsar AI.',
+        alternative: { label: 'Create from a template instead', onClick: () => setShowTemplateChooser(true) },
+      });
+    }
+  };
+
+  const generateWithAI = async () => {
+    setIsGeneratingWithAI(true);
+    setBuild({ commentary: '', commentaryDone: false, plannedDays: [] });
+    try {
+      const { routine } = await generateRoutine(responses, exercises, addExercise, {
+        onCommentary: (commentary, commentaryDone) => setBuild(b => ({ ...b, commentary, commentaryDone })),
+        onScheduleDays: (plannedDays) => setBuild(b => ({ ...b, plannedDays })),
+      });
+      await saveRoutine(routine);
+      // Show the finished week and let the user open it, rather than jumping away mid-read.
+      setBuild(b => ({
+        ...b,
+        commentary: b.commentary || routine.chatHistory[routine.chatHistory.length - 1]?.message || '',
+        commentaryDone: true,
+        plannedDays: routine.dailySchedule.map(d => ({ day: d.day, kind: d.kind })),
+      }));
+      setBuiltRoutine(routine);
+    } catch (e) {
+      setIsGeneratingWithAI(false);
+      // Stay on the last step with the answers intact so the user can retry or pick a template.
+      toast({
+        title: "Couldn't build your routine",
+        description: e instanceof AIError ? e.message : 'Something went wrong talking to the AI. Try again.',
+        status: 'error',
+        duration: 6000,
+        isClosable: true,
+      });
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
+      e.preventDefault();
       handleNext();
     }
   };
@@ -78,15 +122,24 @@ export const WorkoutSetup: React.FC = () => {
     }
   }, [step]);
 
+  if (isGeneratingWithAI) {
+    return (
+      <RoutineBuildProgress
+        commentary={build.commentary}
+        commentaryDone={build.commentaryDone}
+        plannedDays={build.plannedDays}
+        ready={builtRoutine ? { name: builtRoutine.name, onOpen: () => openRoutine(builtRoutine) } : undefined}
+      />
+    );
+  }
+
   if (isLoading) {
     return (
       <Flex direction="column" align="center" justify="center" height="100%" width="100%">
-        <Spinner size="xl" color="cyan.500" mb={4} />
-        <Text fontSize="lg" color="gray.600" mb={4}>
-          Building your customized routine based on your answers.
-        </Text>
+        <Box mb={4}>
+          <ThinkingIndicator size="lg" labels={['Setting up your routine']} />
+        </Box>
         <VStack spacing={4} align="stretch" width="80%">
-          <Skeleton height="20px" />
           <Skeleton height="20px" />
           <Skeleton height="20px" />
           <Skeleton height="20px" />
@@ -153,6 +206,7 @@ export const WorkoutSetup: React.FC = () => {
           >
             Choose from a template...
           </Button>
+          {aiGate.gate}
         </Box>
       )}
     </Flex>

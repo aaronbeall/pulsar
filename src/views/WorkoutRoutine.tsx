@@ -23,7 +23,7 @@ import {
   useColorModeValue,
   useDisclosure
 } from '@chakra-ui/react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FaChartBar, FaEdit, FaEllipsisV, FaInfoCircle, FaPlay, FaPlayCircle, FaPowerOff, FaStar, FaTimesCircle, FaTrash, FaFileExport } from 'react-icons/fa'; // Import icons
 import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
@@ -33,7 +33,11 @@ import { RoutineDisplayTable } from '../components/RoutineDisplayTable';
 import { RoutineEditor } from '../components/RoutineEditor';
 import SwitchRoutineDialog from '../components/SwitchRoutineDialog';
 import { ExportRoutineDialog } from '../components/ExportRoutineDialog';
-import type { Routine, RoutineChatMessage } from '../models/types';
+import { DescriptionProposalPanel } from '../components/RoutineChangeDiff';
+import { useRoutineChangeActions } from '../hooks/useRoutineChangeActions';
+import type { Routine } from '../models/types';
+import { getPendingProposals, summarizeRoutineEdit } from '../utils/routineChangeUtils';
+import { v4 as uuidv4 } from 'uuid';
 import { useExercises, usePulsarStore, useRoutine, useRoutines, useWorkouts } from '../store/pulsarStore';
 import { PortalMenuList } from '../components/PortalMenuList';
 
@@ -49,18 +53,18 @@ const WorkoutRoutine: React.FC = () => {
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const addRoutine = usePulsarStore(s => s.addRoutine);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
-  const [newResponses, setNewResponses] = useState<RoutineChatMessage[]>([]);
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [chatHistory, setChatHistory] = useState<RoutineChatMessage[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
-  const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
+  const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
-  const cancelRef = React.useRef(null);
+  const cancelRef = useRef(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const decideChange = useRoutineChangeActions(routineId || '');
+  const proposals = useMemo(() => getPendingProposals({ changes: routine?.changes }), [routine?.changes]);
 
   // Deep-link support: ?activity=1 (e.g. from the History view) opens the Activity drawer on arrival.
   useEffect(() => {
@@ -73,18 +77,10 @@ const WorkoutRoutine: React.FC = () => {
     }
   }, [searchParams, onOpen, setSearchParams]);
 
-  useEffect(() => {
-    if (routine) {
-      setChatHistory(routine.chatHistory);
-      setNewResponses(routine.chatHistory.filter(m => m.role === 'ai' && !m.dismissed));
-    }
-  }, [routine]);
-
   const dismissResponse = async (id: string) => {
     if (!routine) return;
     const updatedChatHistory = routine.chatHistory.map(m => m.id === id ? { ...m, dismissed: true } : m);
     await updateRoutine({ ...routine, chatHistory: updatedChatHistory });
-    setNewResponses((prev) => prev.filter(m => m.id !== id));
   };
 
   // Remove old activeRoutines usage in toggleActiveState
@@ -112,8 +108,21 @@ const WorkoutRoutine: React.FC = () => {
   const handleDeactivateCancel = () => setShowDeactivateConfirm(false);
 
   // Save changes from EditableRoutine
+  // Only the fields the editor owns are taken from the draft; everything else (chat, AI
+  // suggestions and decisions made while editing) comes from the latest stored routine, so
+  // saving never rolls those back. The edit is logged in the routine's history.
   const handleSave = async (edited: Routine) => {
-    updateRoutine(edited);
+    const latest = usePulsarStore.getState().routines.find(r => r.id === edited.id) ?? edited;
+    const summary = summarizeRoutineEdit(latest, edited);
+    updateRoutine({
+      ...latest,
+      name: edited.name,
+      description: edited.description,
+      dailySchedule: edited.dailySchedule,
+      revisions: summary
+        ? [...(latest.revisions || []), { id: uuidv4(), date: Date.now(), source: 'manual', summary }]
+        : latest.revisions,
+    });
     setIsEditing(false);
   };
 
@@ -154,7 +163,7 @@ const WorkoutRoutine: React.FC = () => {
         </BreadcrumbItem>
       </Breadcrumb>
       {/* AI Chat Interface */}
-      <RoutineChat chatHistory={chatHistory} setChatHistory={setChatHistory} />
+      <RoutineChat routine={routine} onEditManually={() => setIsEditing(true)} />
       <Box width="100%" maxWidth="1200px">
         {/* Minimalistic routine status banner — hidden while editing, RoutineEditor's SaveBar takes over as the header */}
         {!isEditing && routine.active && (
@@ -272,7 +281,16 @@ const WorkoutRoutine: React.FC = () => {
             </Menu>
           </Flex>
         </Flex>
-        {routine.description && (
+        {proposals.description ? (
+          <Box mt={3}>
+            <DescriptionProposalPanel
+              current={routine.description}
+              proposed={proposals.description.text}
+              onAccept={() => decideChange(proposals.description!.change.id, ['description'], 'accepted')}
+              onReject={() => decideChange(proposals.description!.change.id, ['description'], 'rejected')}
+            />
+          </Box>
+        ) : routine.description && (
           <Text fontSize="sm" color={mutedColor} fontStyle="italic" mt={3}>
             {routine.description}
           </Text>
@@ -289,6 +307,8 @@ const WorkoutRoutine: React.FC = () => {
               routine={routine}
               exercises={exercises}
               onShowExerciseDetails={setDisplayExerciseId}
+              proposals={proposals}
+              onDecide={decideChange}
             />
             {displayExerciseId && (
               <ExerciseDetailsDialog
@@ -305,6 +325,8 @@ const WorkoutRoutine: React.FC = () => {
             onSave={handleSave}
             onSaveAs={handleSaveAs}
             onRevert={handleRevert}
+            proposals={proposals}
+            onDecide={decideChange}
           />
         )}
       </Box>

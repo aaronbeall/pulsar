@@ -23,14 +23,17 @@ at best. All design and layout work going forward must be mobile-first-friendly:
 
 ## Things to keep in mind while developing
 
-- **The "AI" features are currently mocked, not a small gap.** `RoutineChat.tsx` echoes
-  the user's message back on a timer; `routineBuilderService.ts: generateRoutine` collects
-  real goals/equipment/howMuch/additionalInfo input (see `constants/prompts.ts`) and stores
-  it as the routine's initial `chatHistory` (unified 2026-07-31 — see `NOTES.md`), but then
-  ignores it entirely when picking exercises, choosing random templates instead. Don't
-  assume any AI call is real without checking — and don't quietly "finish" the mock without
-  flagging it, since replacing it is a deliberate, staged effort (see
-  `PLAN-ai-subscription.md`), not a drop-in fix.
+- **Import React hooks directly** (`import { useState } from 'react'`) and call them as
+  `useState(...)`, never `React.useState(...)`.
+- **AI is bring-your-own-key only.** With a personal OpenAI key (Settings), routine
+  generation and routine chat call OpenAI directly from the browser through the
+  `services/ai` `AIProvider` interface. Without a key there is no AI and no mock: the
+  user is asked for AI access at the moment they use an AI feature (never an explicit
+  "turn on AI" step): wrap AI actions in `hooks/useAIGate.tsx`'s `requireAI`, which shows
+  `components/AIAccessDialog.tsx` and then continues the action. That gate is also where
+  premium subscriptions will be offered. The no-AI alternative for routine creation is the
+  keyword template search (`services/templateSearch.ts`). Don't reintroduce a fake "AI" fallback. Hosted AI behind login/subscription is a
+  later phase (see `PLAN-ai-subscription.md`).
 - **Never put a real API key behind a `VITE_`-prefixed env var again.** The existing
   Google CSE key is already public in the client bundle (acceptable for a free-tier image
   search) — that pattern must not be reused for an LLM key or anything metered/abusable.

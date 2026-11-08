@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
@@ -58,14 +58,14 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
     onOpen: onDeleteOpen,
     onClose: onDeleteClose
   } = useDisclosure();
-  const deleteCancelRef = React.useRef<HTMLButtonElement>(null);
+  const deleteCancelRef = useRef<HTMLButtonElement>(null);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const exercises = useExercises();
   const toast = useToast();
-  const [showSwitchConfirm, setShowSwitchConfirm] = React.useState(false);
-  const [showExportDialog, setShowExportDialog] = React.useState(false);
-  const [favoriteLoading, setFavoriteLoading] = React.useState(false);
+  const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
 
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -79,7 +79,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
 
   // Pick the first scheduled exercise with a resolved cover photo as a relevant, no-fetch
   // background image — same tinted-background treatment as the routine template cards.
-  const backgroundImageUrl = React.useMemo(() => {
+  const backgroundImageUrl = useMemo(() => {
     for (const day of routine.dailySchedule) {
       for (const ex of day.exercises) {
         const exercise = exercises.find(e => e.id === ex.exerciseId);

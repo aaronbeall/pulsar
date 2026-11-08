@@ -13,8 +13,8 @@ import {
   useColorModeValue
 } from '@chakra-ui/react';
 import { format } from 'date-fns'; // Import date-fns for formatting dates
-import React from 'react';
-import { FaCheckCircle, FaInfoCircle, FaPlay, FaPowerOff, FaTimes, FaTrophy } from 'react-icons/fa'; // Import icons
+import React, { useMemo } from 'react';
+import { FaCheckCircle, FaEdit, FaInfoCircle, FaPlay, FaPowerOff, FaRobot, FaTimes, FaTrophy } from 'react-icons/fa'; // Import icons
 import { Routine, Workout } from '../models/types';
 import { getRoutineStats } from '../utils/workoutUtils';
 import WeeklyActivityGraph from './WeeklyActivityGraph';
@@ -105,7 +105,7 @@ const ActivityTimeline: React.FC<{
   workouts: Workout[];
 }> = React.memo(({ routine, workouts }) => {
   // Compute timelineEvents inside the component
-  const timelineEvents = React.useMemo(() => [
+  const timelineEvents = useMemo(() => [
     ...workouts
       .filter(w => w.routineId === routine.id)
       .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
@@ -119,8 +119,19 @@ const ActivityTimeline: React.FC<{
           label: isPerfect ? 'Perfect' : isCompleted ? 'Completed' : 'Started',
           color: isPerfect ? 'yellow' : isCompleted ? 'green' : 'cyan',
           name: w.nickname || 'Workout',
+          detail: '',
         };
       }),
+    // Plan history: edits the user saved, and AI suggestions they accepted.
+    ...(routine.revisions || []).map(r => ({
+      type: 'revision',
+      id: r.id,
+      date: r.date,
+      label: r.source === 'ai' ? 'AI change' : 'Edited',
+      color: r.source === 'ai' ? 'purple' : 'blue',
+      name: '',
+      detail: r.summary,
+    })),
     {
       type: 'created',
       id: 'created',
@@ -128,20 +139,25 @@ const ActivityTimeline: React.FC<{
       label: 'Created',
       color: 'gray',
       name: '',
+      detail: '',
     }
-  ], [workouts, routine]);
+  ].sort((a, b) => b.date - a.date), [workouts, routine]);
 
   const eventTypeIcon = {
     Perfect: <FaTrophy style={{ verticalAlign: 'middle' }} />,
     Completed: <FaCheckCircle style={{ verticalAlign: 'middle' }} />,
     Started: <FaPlay style={{ verticalAlign: 'middle' }} />,
     Created: <FaPowerOff style={{ verticalAlign: 'middle' }} />,
+    'AI change': <FaRobot style={{ verticalAlign: 'middle' }} />,
+    Edited: <FaEdit style={{ verticalAlign: 'middle' }} />,
   };
   const eventTypeColorScheme = {
     Perfect: 'yellow',
     Completed: 'green',
     Started: 'cyan',
     Created: 'gray',
+    'AI change': 'purple',
+    Edited: 'blue',
   };
   return (
     <Flex align="flex-start" w="100%" direction="column" gap={0}>
@@ -150,12 +166,11 @@ const ActivityTimeline: React.FC<{
         const badgeIcon = eventTypeIcon[badgeLabel as keyof typeof eventTypeIcon] || <FaInfoCircle />;
         const badgeColor = eventTypeColorScheme[badgeLabel as keyof typeof eventTypeColorScheme] || 'gray';
         return (
-          <Flex key={event.id} direction="row" align="center" h={24} position="relative">
+          <Flex key={event.id} direction="row" align="stretch" minH={24} position="relative">
             {/* Left border and dot */}
             <Box
               minW={5}
               maxW={5}
-              h="100%"
               display="flex"
               flexDirection="column"
               alignItems="center"
@@ -172,14 +187,14 @@ const ActivityTimeline: React.FC<{
                 width={4}
                 height={4}
                 borderRadius="full"
-                bg={event.color === 'yellow' ? '#facc15' : event.color === 'green' ? '#22c55e' : event.color === 'cyan' ? '#06b6d4' : 'gray.400'}
+                bg={event.color === 'yellow' ? '#facc15' : event.color === 'green' ? '#22c55e' : event.color === 'cyan' ? '#06b6d4' : event.color === 'purple' ? '#a855f7' : event.color === 'blue' ? '#3b82f6' : 'gray.400'}
                 border={event.color === 'gray' ? '2px solid #a0aec0' : 'none'}
                 boxShadow={event.color !== 'gray' ? `0 0 0 2px ${useColorModeValue('#fff', '#1a202c')}` : undefined}
                 zIndex={1}
               />
             </Box>
             {/* Text area: badge, date, name stacked vertically */}
-            <Box flex={1} ml={2} display="flex" flexDirection="column" justifyContent="center">
+            <Box flex={1} ml={2} py={3} display="flex" flexDirection="column" justifyContent="center">
               <Badge
                 colorScheme={badgeColor}
                 px={2}
@@ -204,6 +219,11 @@ const ActivityTimeline: React.FC<{
               {event.name && (
                 <Text fontSize="md" color="gray.700" _dark={{ color: 'gray.200' }} mt={0.5}>
                   "{event.name}"
+                </Text>
+              )}
+              {event.detail && (
+                <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.300' }} mt={0.5}>
+                  {event.detail}
                 </Text>
               )}
             </Box>

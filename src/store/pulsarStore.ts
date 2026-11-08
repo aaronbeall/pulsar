@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect } from 'react';
 import { create } from 'zustand';
 import { Exercise, Routine, RoutineDay, Workout } from '../models/types';
 import * as db from '../db/indexedDb';
@@ -107,7 +107,7 @@ export const usePulsarLoading = () => usePulsarStore(s => s.loading);
 // Call this in your app root to load all data on startup
 export const usePulsarStoreInit = () => {
   const loadAll = usePulsarStore(s => s.loadAll);
-  React.useEffect(() => {
+  useEffect(() => {
     loadAll();
     // eslint-disable-next-line
   }, [loadAll]);

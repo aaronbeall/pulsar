@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -27,7 +27,7 @@ interface ExportRoutineDialogProps {
 }
 
 export const ExportRoutineDialog: React.FC<ExportRoutineDialogProps> = ({ isOpen, onClose, routine }) => {
-  const [format, setFormat] = React.useState<'pdf' | 'csv' | 'json'>('pdf');
+  const [format, setFormat] = useState<'pdf' | 'csv' | 'json'>('pdf');
   const exercises = useExercises();
 
   const boxBg = useColorModeValue('cyan.50', 'cyan.900');

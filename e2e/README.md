@@ -14,8 +14,11 @@ you can keep `npx vite preview --port 4173` open between runs (rebuild after app
 
 ## What's covered
 
-- `first-run.spec.ts`: welcome screen, creating a routine from a template (and it
-  surviving a reload), and the "Make my routine!" path.
+- `first-run.spec.ts`: welcome screen, and creating a routine from a template (and it
+  surviving a reload).
+- `ai.spec.ts`: "Make my routine!" asking for a key and then building the routine with
+  (mocked) AI, the key prompt's non-AI alternatives, and the routine chat proposing a
+  change that is accepted.
 - `workout.spec.ts`: completing every set of a workout and seeing it on Home and in
   History, resuming a workout after a reload, and finishing a workout early.
 - `data-safety.spec.ts`: a timed set catching up after a simulated screen lock and

@@ -30,6 +30,51 @@ export interface RoutineChatMessage {
   message: string;
   date: number;
   dismissed?: boolean; // 'ai' messages not yet acknowledged (e.g. a "new update" indicator)
+  pendingChangeId?: string; // links an 'ai' message to a RoutineChange it's proposing
+}
+
+// A change to a routine's schedule/description proposed by the AI in chat, reviewed by the
+// user before it's applied. Per-day ops (not a full-schedule replace) so the diff UI can
+// show exactly which days changed instead of an opaque "routine updated." Each day (and the
+// description) is its own reviewable item: the user can accept Monday and reject Friday.
+export type RoutineChangeOp =
+  | { op: 'setDay'; day: DayOfWeek; kind: string; exercises: ScheduledExercise[] }
+  | { op: 'clearDay'; day: DayOfWeek }; // turn into a rest day
+
+// One reviewable piece of a RoutineChange: a day of the week, or the routine description.
+export type RoutineChangeItemKey = DayOfWeek | 'description';
+
+export interface RoutineChangeDecision {
+  status: 'accepted' | 'rejected';
+  date: number;
+  // What the item looked like right before an accept was applied, so history and the review
+  // view can still show what was replaced after the fact. null = it was a rest day.
+  previousDay?: RoutineDay | null;
+  previousDescription?: string;
+  superseded?: boolean; // auto-rejected because a newer suggestion changed the same item
+}
+
+export interface RoutineChange {
+  id: string;
+  // Derived from decisions: pending while any item is undecided, 'partial' when some items
+  // were accepted and others rejected.
+  status: 'pending' | 'accepted' | 'rejected' | 'partial';
+  createdAt?: number;
+  patch: {
+    dailySchedule?: RoutineChangeOp[];
+    description?: string;
+  };
+  decisions?: Partial<Record<RoutineChangeItemKey, RoutineChangeDecision>>;
+}
+
+// An entry in a routine's change history (shown in the Activity timeline): an edit saved by
+// the user, or AI-suggested items they accepted.
+export interface RoutineRevision {
+  id: string;
+  date: number;
+  source: 'ai' | 'manual';
+  summary: string;
+  changeId?: string; // for 'ai' revisions, the RoutineChange the accepted items came from
 }
 
 export interface Routine {
@@ -40,6 +85,8 @@ export interface Routine {
   createdAt: number;
   dailySchedule: Array<RoutineDay>;
   chatHistory: RoutineChatMessage[];
+  changes?: RoutineChange[]; // all AI-proposed changes, any status — pending ones await a decision
+  revisions?: RoutineRevision[]; // change history, oldest first
   liked?: boolean;
   disliked?: boolean;
   favorite?: boolean;

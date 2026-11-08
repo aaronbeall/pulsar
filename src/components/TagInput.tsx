@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { HStack, Tag, TagLabel, TagCloseButton, Input } from "@chakra-ui/react";
 
 interface TagInputProps {
@@ -8,7 +8,7 @@ interface TagInputProps {
 }
 
 const TagInput: React.FC<TagInputProps> = ({ tags, onChange, placeholder }) => {
-  const [input, setInput] = React.useState("");
+  const [input, setInput] = useState("");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);

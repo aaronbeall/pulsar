@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect } from 'react';
 import { create } from 'zustand';
 
 // Chrome/Edge/Android-only event, not part of the standard DOM lib types.
@@ -66,7 +66,7 @@ export const useInstallPromptStore = create<InstallPromptState>()((set, get) => 
 // as possible — the browser only fires it once, and only if we've called
 // preventDefault() before it would otherwise show its own mini-infobar.
 export const useInstallPromptInit = () => {
-  React.useEffect(() => {
+  useEffect(() => {
     useInstallPromptStore.setState({
       isInstalled: detectStandalone(),
       isIOS: detectIOS(),
