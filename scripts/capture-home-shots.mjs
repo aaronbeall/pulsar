@@ -83,8 +83,9 @@ async function shot(page, name) {
 
 
 const browser = await chromium.launch();
+let page;
 try {
-  const page = await newPage(browser);
+  page = await newPage(browser);
   await mockAI(page, ROUTINE);
   await page.goto(`${BASE}/workout/setup`);
   await answerSetup(page, ['get stronger without hurting my knees', 'dumbbells and a mat', '3-4 days, 40 minutes', 'bad knees, no jumping']);
@@ -95,6 +96,7 @@ try {
   await shot(page, 'build');
   await progress.getByRole('button', { name: /See my routine/ }).click();
   await page.waitForURL(/\/workout\/routine\//);
+  const routineUrl = page.url();
 
   await mockAI(page, CHANGE);
   const input = page.getByPlaceholder('Suggest changes or ask a question...');
@@ -105,6 +107,16 @@ try {
   await page.locator('#routine-day-Friday').scrollIntoViewIfNeeded();
   await page.evaluate(() => window.scrollBy(0, -120));
   await shot(page, 'review');
+
+  // The routine editor, for the "do it yourself" step.
+  await page.goto(routineUrl);
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  await page.getByText('Dumbbell Bench Press').first().waitFor();
+  await page.waitForTimeout(800);
+  // Monday's card just below the editor's sticky Save bar.
+  await page.getByText('Dumbbell Bench Press').first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await page.evaluate(() => window.scrollBy(0, -175));
+  await shot(page, 'editor');
 
   // Today's workout: mid-set, then finished.
   await page.goto(`${BASE}/`);
@@ -117,16 +129,21 @@ try {
   for (let i = 0; i < 5; i++) {
     await startSet.or(completeSet).first().waitFor();
     if (await completeSet.isVisible()) await completeSet.click(); else await startSet.click();
-    await page.clock.fastForward(i % 2 ? '01:25' : '00:48');
+    await page.clock.runFor(i % 2 ? '01:25' : '00:48');
   }
   await page.waitForTimeout(1200);
   await completeSet.evaluate((el) => el.scrollIntoView({ block: 'center' }));
   await page.evaluate(() => window.scrollBy(0, 60));
   await shot(page, 'workout-set');
   for (let guard = 0; guard < 200; guard++) {
-    await startSet.or(completeSet).or(done).first().waitFor();
-    if (await done.isVisible()) break;
-    if (await completeSet.isVisible()) await completeSet.click(); else await startSet.click();
+    // The celebration covers the session as soon as the last set is done.
+    const celebration = done.or(page.getByRole('dialog'));
+    await startSet.or(completeSet).or(celebration).first().waitFor();
+    if (await celebration.count()) break;
+    // Between sets the buttons can be mid-transition; only click one that's there.
+    if (await completeSet.isVisible()) await completeSet.click({ timeout: 2000 }).catch(() => {});
+    else if (await startSet.isVisible()) await startSet.click({ timeout: 2000 }).catch(() => {});
+    else await page.waitForTimeout(200);
   }
   await page.waitForTimeout(1500);
 
@@ -142,6 +159,10 @@ try {
   await page.getByText('day streak').scrollIntoViewIfNeeded();
   await page.evaluate(() => window.scrollBy(0, 330));
   await shot(page, 'streak');
+
+} catch (err) {
+  await page?.screenshot({ path: `${OUT}/_failure.png` }).catch(() => {});
+  throw err;
 } finally {
   await browser.close();
 }

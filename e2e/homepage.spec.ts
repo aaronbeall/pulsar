@@ -5,7 +5,7 @@ import { test, expect } from './fixtures';
 test('the homepage shows the product and links into the app', async ({ page }) => {
   await page.goto('/home/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Routines built');
-  for (const heading of ['Say what you want.', 'Approve every change.', 'Keep the streak.']) {
+  for (const heading of ['Say what you want.', 'Your call, every time.', 'Or do it yourself.', 'Keep the streak.']) {
     await expect(page.getByRole('heading', { name: heading })).toBeAttached();
   }
   // No sideways scrolling at phone width.
