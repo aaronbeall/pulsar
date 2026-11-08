@@ -77,9 +77,10 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   PWA scope and start URL all point there). The homepage is plain HTML/CSS/TS in `index.html` +
   `home/`, with no React; see `home/README.md`. Links into the app from outside it must include
   `app/`.
-- **GitHub Pages hosting is provisional.** Once any backend piece lands (auth, billing, AI
-  proxy), the static frontend should move to Cloudflare Pages rather than keeping GitHub
-  Pages alongside a separate API origin — see `PLAN-ai-subscription.md` for why.
+- **Hosting is moving to Cloudflare.** One Worker (`wrangler.jsonc`, `worker/`) serves the
+  homepage, the app and the API from the same origin, so login cookies need no CORS. Static
+  files are served before the Worker runs; API routes go under `/api/`. GitHub Pages
+  workflows stay only until the Cloudflare deploy is confirmed live. See README "Deploying".
 - Login/subscription must stay **optional** — the app should remain fully useful with
   zero account, local-only data, and template-based (non-AI) routines. Real AI requires
   *either* a personal API key (free, bring-your-own-key) *or* login + an active

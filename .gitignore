@@ -33,3 +33,7 @@ workbox-config.js
 test-results/
 playwright-report/
 blob-report/
+
+# Cloudflare Wrangler local state
+.wrangler/
+.dev.vars
