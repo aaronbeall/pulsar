@@ -16,7 +16,6 @@ import {
   Text,
   Textarea,
   useBreakpointValue,
-  useDisclosure,
   VStack,
   Modal,
   ModalOverlay,
@@ -47,6 +46,7 @@ import { getAddedExercise, normalizeExerciseName, searchExerciseSuggestions } fr
 import { exerciseTemplates, ExerciseTemplate } from '../services/exerciseTemplates';
 import { useExercise, usePulsarStore } from '../store/pulsarStore';
 import { useNavigate } from 'react-router-dom';
+import { useUrlModal } from '../hooks/useUrlModal';
 import { v4 as uuidv4 } from 'uuid';
 
 // Helper to ensure all days are present in the schedule
@@ -307,9 +307,8 @@ const SaveBar = React.memo<{
   onSaveAs: (saveAsName: string) => void;
   onRevert: () => void;
 }>(({ editName, onChangeName: onChange, editChanged, onSave, onSaveAs, onRevert }) => {
-  const [showSaveAs, setShowSaveAs] = useState(false);
+  const saveAs = useUrlModal('saveAs');
   const [saveAsName, setSaveAsName] = useState(editName);
-  const saveAsDisclosure = useDisclosure();
 
   return (
     <>
@@ -386,7 +385,7 @@ const SaveBar = React.memo<{
                 </MenuButton>
                 <PortalMenuList>
                   <MenuItem icon={<FaCheck />} onClick={onSave} isDisabled={!editChanged}>Save</MenuItem>
-                  <MenuItem icon={<FaEdit />} onClick={() => { setSaveAsName(editName); setShowSaveAs(true); saveAsDisclosure.onOpen(); }}>Save As...</MenuItem>
+                  <MenuItem icon={<FaEdit />} onClick={() => { setSaveAsName(editName); saveAs.open(); }}>Save As...</MenuItem>
                 </PortalMenuList>
               </Menu>
             </Flex>
@@ -395,7 +394,7 @@ const SaveBar = React.memo<{
       </Box>
       
       {/* Save As Modal */}
-      <Modal isOpen={showSaveAs} onClose={() => { setShowSaveAs(false); saveAsDisclosure.onClose(); }} isCentered>
+      <Modal isOpen={saveAs.isOpen} onClose={saveAs.close} isCentered>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Save Routine As...</ModalHeader>
@@ -410,10 +409,10 @@ const SaveBar = React.memo<{
             />
           </ModalBody>
           <ModalFooter>
-            <Button onClick={() => { setShowSaveAs(false); saveAsDisclosure.onClose(); }} mr={3} leftIcon={<FaTimes />} variant="ghost">
+            <Button onClick={saveAs.close} mr={3} leftIcon={<FaTimes />} variant="ghost">
               Cancel
             </Button>
-            <Button colorScheme="green" onClick={() => { onSaveAs(saveAsName); saveAsDisclosure.onClose(); }} isDisabled={!saveAsName.trim()} leftIcon={<FaCheck />} fontWeight="bold">
+            <Button colorScheme="green" onClick={async () => { await saveAs.close(); onSaveAs(saveAsName); }} isDisabled={!saveAsName.trim()} leftIcon={<FaCheck />} fontWeight="bold">
               Create
             </Button>
           </ModalFooter>
@@ -436,8 +435,7 @@ const ExerciseScheduleEditor = React.memo<{
 }>(({ dailySchedule, onChangeDay, onEditDayKind, onEditExercise, onAddExercise, onDragExercise, proposals, onDecide }) => {
 
   // Add state and handler for exercise details dialog
-  const [exerciseDetailsId, setExerciseDetailsId] = useState<string | null>(null);
-  const closeExerciseDetails = () => setExerciseDetailsId(null);
+  const exerciseDetails = useUrlModal('exercise');
 
   const isMdOrLarger = useBreakpointValue({ base: false, md: true });
 
@@ -454,7 +452,7 @@ const ExerciseScheduleEditor = React.memo<{
             onEditDayKind={onEditDayKind}
             onEditExercise={onEditExercise}
             onAddExercise={onAddExercise}
-            onOpenExerciseDetails={setExerciseDetailsId}
+            onOpenExerciseDetails={exerciseDetails.open}
             isMdOrLarger={isMdOrLarger}
             proposal={proposals?.days[schedule.day]}
             onDecide={onDecide}
@@ -462,10 +460,10 @@ const ExerciseScheduleEditor = React.memo<{
         ))}
       </VStack>
       {/* Exercise details dialog */}
-      {exerciseDetailsId && (
+      {exerciseDetails.value && (
         <ExerciseDetailsDialog
-          exerciseId={exerciseDetailsId}
-          onClose={closeExerciseDetails}
+          exerciseId={exerciseDetails.value}
+          onClose={exerciseDetails.close}
           mode="edit"
         />
       )}
@@ -489,19 +487,20 @@ const ExerciseDayEditor = React.memo<{
   // Add state and handler for editing kind
   const [editKind, setEditKind] = useState(false);
   const [editKindValue, setEditKindValue] = useState('');
-  // State for remove all confirmation
-  const [showRemoveAllConfirm, setShowRemoveAllConfirm] = useState(false);
-  // State for paste confirmation
-  const [showPasteConfirm, setShowPasteConfirm] = useState(false);
-  // State for template chooser
-  const [showTemplateChooser, setShowTemplateChooser] = useState(false);
-  // State for pending template selection that requires confirmation
-  const [pendingTemplate, setPendingTemplate] = useState<RoutineDay | null>(null);
-  const [showTemplateApplyConfirm, setShowTemplateApplyConfirm] = useState(false);
-  // Import toast and store
   const toast = useToast();
   const setCopiedRoutineDay = usePulsarStore(s => s.setCopiedRoutineDay);
   const copiedRoutineDay = usePulsarStore(s => s.copiedRoutineDay);
+  // This day's dialogs live in the URL, keyed by day, so Back closes them.
+  const removeAllDialog = useUrlModal('removeAll');
+  const pasteDialog = useUrlModal('paste', { isStale: day => day === schedule.day && !copiedRoutineDay });
+  const templateChooser = useUrlModal('dayTemplates');
+  // The picked template only lives in memory, so after a reload its confirmation can't be shown.
+  const [pendingTemplate, setPendingTemplate] = useState<RoutineDay | null>(null);
+  const templateApplyDialog = useUrlModal('applyTemplate', { isStale: day => day === schedule.day && !pendingTemplate });
+  const showRemoveAllConfirm = removeAllDialog.isOpenFor(schedule.day);
+  const showPasteConfirm = pasteDialog.isOpenFor(schedule.day);
+  const showTemplateChooser = templateChooser.isOpenFor(schedule.day);
+  const showTemplateApplyConfirm = templateApplyDialog.isOpenFor(schedule.day);
 
   // Handler for selecting a template
   const handleSelectTemplate = useCallback((template: RoutineDay) => {
@@ -510,7 +509,7 @@ const ExerciseDayEditor = React.memo<{
       onEditDayKind(dayIdx, template.kind);
       schedule.exercises.forEach((_, exIdx) => onEditExercise(dayIdx, 0, null));
       template.exercises.forEach(ex => onAddExercise(dayIdx, ex));
-      setShowTemplateChooser(false);
+      templateChooser.close();
       toast({
         title: `Template applied to ${schedule.day}`,
         status: 'success',
@@ -521,29 +520,27 @@ const ExerciseDayEditor = React.memo<{
     }
     // Otherwise store pending template and show confirmation modal
     setPendingTemplate(template);
-    setShowTemplateApplyConfirm(true);
-  }, [dayIdx, schedule, onEditDayKind, onEditExercise, onAddExercise, toast]);
+    templateApplyDialog.open(schedule.day);
+  }, [dayIdx, schedule, onEditDayKind, onEditExercise, onAddExercise, toast, templateChooser.close, templateApplyDialog.open]);
 
   const confirmApplyTemplate = useCallback(() => {
     if (!pendingTemplate) return;
     onEditDayKind(dayIdx, pendingTemplate.kind);
     schedule.exercises.forEach((_, exIdx) => onEditExercise(dayIdx, 0, null));
     pendingTemplate.exercises.forEach(ex => onAddExercise(dayIdx, ex));
-    setShowTemplateApplyConfirm(false);
-    setShowTemplateChooser(false);
-    setPendingTemplate(null);
+    // Closing the chooser also closes the confirmation stacked on it.
+    templateChooser.close().then(() => setPendingTemplate(null));
     toast({
       title: `Template applied to ${schedule.day}`,
       status: 'success',
       duration: 2000,
       isClosable: true,
     });
-  }, [pendingTemplate, dayIdx, schedule, onEditDayKind, onEditExercise, onAddExercise, toast]);
+  }, [pendingTemplate, dayIdx, schedule, onEditDayKind, onEditExercise, onAddExercise, toast, templateChooser.close]);
 
   const cancelApplyTemplate = useCallback(() => {
-    setPendingTemplate(null);
-    setShowTemplateApplyConfirm(false);
-  }, []);
+    templateApplyDialog.close().then(() => setPendingTemplate(null));
+  }, [templateApplyDialog.close]);
 
   const handleAddExercise = useCallback((exercise: Exercise) => onAddExercise(dayIdx, exercise), [dayIdx, onAddExercise]);
 
@@ -573,16 +570,16 @@ const ExerciseDayEditor = React.memo<{
         isClosable: true,
       });
     } else {
-      setShowPasteConfirm(true);
+      pasteDialog.open(schedule.day);
     }
-  }, [copiedRoutineDay, schedule, dayIdx, onAddExercise, toast]);
+  }, [copiedRoutineDay, schedule, dayIdx, onAddExercise, toast, pasteDialog.open]);
 
   // Confirm paste handler
   const confirmPaste = useCallback(() => {
     if (!copiedRoutineDay) return;
     schedule.exercises.forEach((_, exIdx) => onEditExercise(dayIdx, 0, null));
     copiedRoutineDay.exercises.forEach(ex => onAddExercise(dayIdx, ex));
-    setShowPasteConfirm(false);
+    pasteDialog.close();
     toast({
       title: `Pasted to ${schedule.day}`,
       description: 'Exercises have been replaced.',
@@ -590,7 +587,7 @@ const ExerciseDayEditor = React.memo<{
       duration: 2000,
       isClosable: true,
     });
-  }, [copiedRoutineDay, schedule, dayIdx, onEditExercise, onAddExercise, toast]);
+  }, [copiedRoutineDay, schedule, dayIdx, onEditExercise, onAddExercise, toast, pasteDialog.close]);
 
   return (
     <Box
@@ -688,7 +685,7 @@ const ExerciseDayEditor = React.memo<{
             <PortalMenuList bg="white" _dark={{ bg: 'gray.800', borderColor: 'gray.700' }} borderColor="gray.200">
               <MenuItem
                 icon={<FaBook style={{ color: 'var(--chakra-colors-cyan-400)' }} />}
-                onClick={() => setShowTemplateChooser(true)}
+                onClick={() => templateChooser.open(schedule.day)}
                 bg="white"
                 _dark={{ bg: 'gray.800', color: 'gray.100', _hover: { bg: 'gray.700' } }}
               >
@@ -715,7 +712,7 @@ const ExerciseDayEditor = React.memo<{
               <Box as="hr" my={2} borderColor="gray.200" _dark={{ borderColor: 'gray.700' }} />
               <MenuItem
                 icon={<FaTimes style={{ color: 'var(--chakra-colors-red-400)' }} />}
-                onClick={() => setShowRemoveAllConfirm(true)}
+                onClick={() => removeAllDialog.open(schedule.day)}
                 isDisabled={schedule.exercises.length === 0}
                 bg="white"
                 _dark={{ bg: 'gray.800', color: 'red.300', _hover: { bg: 'gray.700' } }}
@@ -726,7 +723,7 @@ const ExerciseDayEditor = React.memo<{
           </Menu>
         </Box>
         {/* Paste confirmation modal */}
-        <Modal isOpen={showPasteConfirm} onClose={() => setShowPasteConfirm(false)} isCentered>
+        <Modal isOpen={showPasteConfirm} onClose={pasteDialog.close} isCentered>
           <ModalOverlay />
           <ModalContent>
             <ModalHeader>Overwrite all exercises?</ModalHeader>
@@ -742,7 +739,7 @@ const ExerciseDayEditor = React.memo<{
               </Box>
             </ModalBody>
             <ModalFooter>
-              <Button onClick={() => setShowPasteConfirm(false)} mr={3} leftIcon={<FaTimes />} variant="ghost">
+              <Button onClick={pasteDialog.close} mr={3} leftIcon={<FaTimes />} variant="ghost">
                 Cancel
               </Button>
               <Button colorScheme="cyan" onClick={confirmPaste} leftIcon={<FaPaste />} fontWeight="bold">
@@ -752,7 +749,7 @@ const ExerciseDayEditor = React.memo<{
           </ModalContent>
         </Modal>
         {/* Remove all confirmation modal */}
-        <Modal isOpen={showRemoveAllConfirm} onClose={() => setShowRemoveAllConfirm(false)} isCentered>
+        <Modal isOpen={showRemoveAllConfirm} onClose={removeAllDialog.close} isCentered>
           <ModalOverlay />
           <ModalContent>
             <ModalHeader>Remove all exercises?</ModalHeader>
@@ -761,12 +758,12 @@ const ExerciseDayEditor = React.memo<{
               Are you sure you want to remove all exercises from {schedule.day}?
             </ModalBody>
             <ModalFooter>
-              <Button onClick={() => setShowRemoveAllConfirm(false)} mr={3} leftIcon={<FaTimes />} variant="ghost">
+              <Button onClick={removeAllDialog.close} mr={3} leftIcon={<FaTimes />} variant="ghost">
                 Cancel
               </Button>
               <Button colorScheme="red" onClick={() => {
                 schedule.exercises.forEach((_, exIdx) => onEditExercise(dayIdx, 0, null));
-                setShowRemoveAllConfirm(false);
+                removeAllDialog.close();
                 toast({
                   title: `Removed all exercises from ${schedule.day}`,
                   status: 'info',
@@ -780,7 +777,7 @@ const ExerciseDayEditor = React.memo<{
           </ModalContent>
         </Modal>
         {/* Template chooser modal */}
-        <Modal isOpen={showTemplateChooser} onClose={() => setShowTemplateChooser(false)} isCentered>
+        <Modal isOpen={showTemplateChooser} onClose={templateChooser.close} isCentered>
           <ModalOverlay />
           <ModalContent maxW="3xl">
             <ModalHeader>Select a Routine Template</ModalHeader>
@@ -791,7 +788,7 @@ const ExerciseDayEditor = React.memo<{
                 exercises={usePulsarStore(s => s.exercises)}
                 addExercise={usePulsarStore(s => s.addExercise)}
                 onSelect={handleSelectTemplate}
-                onCancel={() => setShowTemplateChooser(false)}
+                onCancel={templateChooser.close}
               />
             </ModalBody>
           </ModalContent>
