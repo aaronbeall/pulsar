@@ -52,6 +52,10 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   state via `usePulsarStore.getState()` instead of the reactive hook — see `NOTES.md` for
   the full writeup. If a similar double-fire bug shows up elsewhere, this is the pattern to
   reach for.
+- **Testing-only features live behind dev mode** (`src/utils/devMode.ts`: always on under
+  `npm run dev`, toggled in any build with `?dev=1` / `?dev=0`). See `DEV-FEATURES.md` for the
+  list. Gate any new debug/testing tool with `isDevMode()` and add it to that doc; never ship
+  one to regular users ungated.
 - **Vitest is set up** (`npm test`, config in `vitest.config.ts`, Node environment — no
   jsdom yet). Coverage is pure-logic modules (`src/utils/*.ts`, `src/services/
   freeExerciseDb.ts`, `src/assets/homeBackgrounds.ts`) — no components yet. When adding new
