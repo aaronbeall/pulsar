@@ -21,22 +21,48 @@ import {
 import React from 'react';
 import { FaDumbbell, FaPlayCircle, FaRegCalendarAlt } from 'react-icons/fa'; // Import icons
 import { DAYS_OF_WEEK } from '../constants/days'; // Import DAYS_OF_WEEK
-import { Exercise, Routine } from '../models/types';
+import { Exercise, Routine, RoutineChangeItemKey } from '../models/types';
+import type { PendingProposals } from '../utils/routineChangeUtils';
 import DayKindBadge from './DayKindBadge';
+import { DayProposalPanel } from './RoutineChangeDiff';
 
 // Routine display table (read-only)
 export const RoutineDisplayTable: React.FC<{
   routine: Routine;
   exercises: Exercise[];
   onShowExerciseDetails: (exerciseId: string) => void;
-}> = ({ routine, exercises, onShowExerciseDetails }) => {
+  /** AI suggestions still waiting for review, rendered in place of the day they'd change. */
+  proposals?: PendingProposals;
+  onDecide?: (changeId: string, keys: RoutineChangeItemKey[], status: 'accepted' | 'rejected') => void;
+}> = ({ routine, exercises, onShowExerciseDetails, proposals, onDecide }) => {
   return (
     <VStack align="start" spacing={4}>
       {DAYS_OF_WEEK.map((day) => {
         const scheduleForDay = routine.dailySchedule.find((schedule) => schedule.day === day);
+        const proposal = proposals?.days[day];
+        if (proposal && onDecide) {
+          return (
+            <Card key={day} id={`routine-day-${day}`} width="100%" variant="elevated" borderRadius="md" scrollMarginTop="80px">
+              <CardBody p={{ base: 3, sm: 5 }}>
+                <Flex align="center" gap={2} mb={3}>
+                  <Box as={scheduleForDay ? FaDumbbell : FaRegCalendarAlt} color="cyan.400" fontSize="lg" />
+                  <Heading size="sm" bgGradient="linear(to-r, cyan.400, blue.500)" bgClip="text">
+                    {day}
+                  </Heading>
+                </Flex>
+                <DayProposalPanel
+                  current={scheduleForDay ?? null}
+                  op={proposal.op}
+                  onAccept={() => onDecide(proposal.change.id, [day], 'accepted')}
+                  onReject={() => onDecide(proposal.change.id, [day], 'rejected')}
+                />
+              </CardBody>
+            </Card>
+          );
+        }
         if (!scheduleForDay) {
           return (
-            <Card key={day} width="100%" variant="outline" borderRadius="md" bg="gray.50" _dark={{ bg: 'gray.900', borderColor: 'gray.700' }} borderColor="gray.200">
+            <Card key={day} id={`routine-day-${day}`} width="100%" variant="outline" borderRadius="md" bg="gray.50" _dark={{ bg: 'gray.900', borderColor: 'gray.700' }} borderColor="gray.200">
               <CardBody>
                 <Flex justify="space-between" align="center">
                   <Flex align="center" gap={2}>
@@ -59,7 +85,7 @@ export const RoutineDisplayTable: React.FC<{
           ? "Reps"
           : "Duration";
         return (
-          <Card key={day} width="100%" variant="elevated" borderRadius="md">
+          <Card key={day} id={`routine-day-${day}`} width="100%" variant="elevated" borderRadius="md">
             <CardHeader>
               <Flex justify="space-between" align="center">
                 <Flex align="center" gap={2}>

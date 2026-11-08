@@ -7,9 +7,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { Routine, RoutineChange, RoutineChatMessage } from '../models/types';
 import { useExercises, usePulsarStore } from '../store/pulsarStore';
 import { AIError, getActiveAIProvider } from '../services/ai';
-import { applyRoutineChange } from '../utils/routineChangeUtils';
+import { supersedePendingItems } from '../utils/routineChangeUtils';
 import { resolveAIExercises } from '../services/routineBuilderService';
+import { scrollToRoutineDay, useRoutineChangeActions } from '../hooks/useRoutineChangeActions';
 import RoutineChangeCard from './RoutineChangeCard';
+import RoutineChangeReviewModal from './RoutineChangeReviewModal';
 import ThinkingIndicator from './ThinkingIndicator';
 
 const blink = keyframes`
@@ -41,6 +43,8 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
   const [savingReplyId, setSavingReplyId] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const aiGate = useAIGate();
+  const decide = useRoutineChangeActions(routine.id);
+  const [reviewChangeId, setReviewChangeId] = useState<string | null>(null);
 
   const chatHistory = routine.chatHistory;
   const changes = routine.changes || [];
@@ -117,6 +121,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
         newChange = {
           id: uuidv4(),
           status: 'pending',
+          createdAt: Date.now(),
           patch: { dailySchedule: resolvedOps, description: response.patch.description },
         };
       }
@@ -135,7 +140,10 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
       await updateRoutine({
         ...latest,
         chatHistory: [...latest.chatHistory, aiMessage],
-        changes: newChange ? [...(latest.changes || []), newChange] : latest.changes,
+        // A newer suggestion for a day replaces an older one still waiting on that day.
+        changes: newChange
+          ? [...supersedePendingItems(latest.changes || [], newChange), newChange]
+          : latest.changes,
       });
     } catch (e) {
       toast({
@@ -150,19 +158,6 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
       setStreaming(null);
       setSavingReplyId(null);
     }
-  };
-
-  const handleAcceptChange = async (change: RoutineChange) => {
-    const latest = getLatestRoutine();
-    const { dailySchedule, description } = applyRoutineChange(latest, change);
-    const updatedChanges = (latest.changes || []).map(c => c.id === change.id ? { ...c, status: 'accepted' as const } : c);
-    await updateRoutine({ ...latest, dailySchedule, description, changes: updatedChanges });
-  };
-
-  const handleRejectChange = async (change: RoutineChange) => {
-    const latest = getLatestRoutine();
-    const updatedChanges = (latest.changes || []).map(c => c.id === change.id ? { ...c, status: 'rejected' as const } : c);
-    await updateRoutine({ ...latest, changes: updatedChanges });
   };
 
   return (
@@ -184,7 +179,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
         <VStack
           align="stretch"
           spacing={3}
-          maxH="300px"
+          maxH={{ base: "35vh", md: "360px" }}
           overflowY="auto"
           ref={chatContainerRef}
         >
@@ -209,11 +204,13 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
                   <span style={{ marginTop: 0 }}>{msg.message}</span>
                 </Box>
                 {change && (
-                  <Box maxW="80%" w="100%">
+                  <Box maxW="95%" w="100%">
                     <RoutineChangeCard
                       change={change}
-                      onAccept={() => handleAcceptChange(change)}
-                      onReject={() => handleRejectChange(change)}
+                      routine={routine}
+                      onDecide={(keys, status) => decide(change.id, keys, status)}
+                      onReview={() => setReviewChangeId(change.id)}
+                      onJumpToDay={scrollToRoutineDay}
                     />
                   </Box>
                 )}
@@ -276,6 +273,12 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
         </Flex>
         {aiGate.gate}
       </Collapse>
+      <RoutineChangeReviewModal
+        routine={routine}
+        change={changes.find(c => c.id === reviewChangeId)}
+        onClose={() => setReviewChangeId(null)}
+        onDecide={(keys, status) => reviewChangeId && decide(reviewChangeId, keys, status)}
+      />
     </Box>
   );
 };
