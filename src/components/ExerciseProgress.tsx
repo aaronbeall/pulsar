@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useUrlModal } from '../hooks/useUrlModal';
 import { 
   Box, 
   Button, 
@@ -129,7 +130,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
   const [restStartedAt, setRestStartedAt] = useState<number | null>(null);
   const isRestPeriod = !isActive && restStartedAt !== null;
   const [now, setNow] = useState(() => Date.now());
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const detailsDialog = useUrlModal('exercise');
   const cueRef = useRef<ScheduledCue | null>(null);
   const completedForRef = useRef<number | null>(null);
 
@@ -282,7 +283,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
             variant="ghost"
             aria-label="Exercise Info"
             icon={<FaInfoCircle />}
-            onClick={() => setIsDetailsOpen(true)}
+            onClick={() => exerciseDetail && detailsDialog.open(exerciseDetail.id)}
             bg="rgba(255,255,255,0.7)"
             _dark={{ bg: 'rgba(26,32,44,0.7)' }}
             _hover={{ bg: 'rgba(56,189,248,0.8)', opacity: 1 }}
@@ -311,9 +312,9 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
           />
         )}
       </Box>
-      {isDetailsOpen && exerciseDetail && (
+      {exerciseDetail && detailsDialog.isOpenFor(exerciseDetail.id) && (
         <ExerciseDetailsDialog
-          onClose={() => setIsDetailsOpen(false)}
+          onClose={detailsDialog.close}
           exerciseId={exerciseDetail.id}
           mode="view"
         />

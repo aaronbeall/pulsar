@@ -7,6 +7,7 @@ import { FaFlagCheckered, FaInfoCircle, FaTimesCircle } from 'react-icons/fa';
 import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { CongratulatoryInterstitial } from '../components/CongratulatoryInterstitial';
+import { useUrlModal } from '../hooks/useUrlModal';
 import ExerciseProgress from '../components/ExerciseProgress';
 import TimeElapsed from '../components/TimeElapsed';
 import WorkoutTimeline from '../components/WorkoutTimeline';
@@ -30,9 +31,10 @@ export const WorkoutSession: React.FC = () => {
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [routine, setRoutine] = useState<Routine | null>(null);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null);
-  const [finishDialogOpen, setFinishDialogOpen] = useState(false);
+  // The finish confirmation and the celebration live in the URL so Back closes them.
+  const finishDialog = useUrlModal('finish');
+  const celebration = useUrlModal('celebrate');
   const finishCancelRef = useRef<HTMLButtonElement>(null);
-  const [showInterstitial, setShowInterstitial] = useState(false);
   const toast = useToast();
 
   // A day only counts as started once its first set is started: opening a day shows a
@@ -176,10 +178,10 @@ export const WorkoutSession: React.FC = () => {
     // Set workout.completedAt if all exercises are complete
     if (exercisesAfter.every(ex => ex.completedAt) && !updatedWorkout.completedAt) {
       updatedWorkout.completedAt = now;
-      setShowInterstitial(true);
     }
     await updateWorkout(updatedWorkout);
     setWorkout(updatedWorkout);
+    if (updatedWorkout.completedAt && !current.completedAt) celebration.open();
     // If the exercise is now completed, auto-advance to the first incomplete exercise (if any)
     if (exercise.completedAt) {
       const firstIncompleteIdx = exercisesAfter.findIndex(ex => !ex.completedAt);
@@ -292,7 +294,7 @@ export const WorkoutSession: React.FC = () => {
   const currentSetIndex = currentExercise ? (currentExercise.completedSets || 0) : 0;
   const workoutTiming = getWorkoutTiming(workout);
 
-  if (showInterstitial) {
+  if (celebration.isOpen) {
     const isPerfect = workout.completedAt && workout.exercises.every(ex => ex.completedAt);
     const totalWorkouts = workouts.filter(w => w.completedAt).length;
     // Find the RoutineDay for the completed workout's day
@@ -305,7 +307,7 @@ export const WorkoutSession: React.FC = () => {
         streakType={streakType}
         isPerfect={!!isPerfect}
         totalWorkouts={totalWorkouts}
-        onDismiss={() => setShowInterstitial(false)}
+        onDismiss={celebration.close}
         nickname={workout.nickname}
         kind={kind}
         completedExercises={completedExercises}
@@ -402,16 +404,16 @@ export const WorkoutSession: React.FC = () => {
               colorScheme="red"
               variant="ghost"
               mt={4}
-              onClick={() => setFinishDialogOpen(true)}
+              onClick={() => finishDialog.open()}
               alignSelf="center"
               leftIcon={<Box as={FaFlagCheckered} fontSize="1.2em" />}
             >
               Finish
             </Button>
             <AlertDialog
-              isOpen={finishDialogOpen}
+              isOpen={finishDialog.isOpen}
               leastDestructiveRef={finishCancelRef}
-              onClose={() => setFinishDialogOpen(false)}
+              onClose={finishDialog.close}
               isCentered
             >
               <AlertDialogOverlay>
@@ -424,7 +426,7 @@ export const WorkoutSession: React.FC = () => {
                     Are you sure you're done?
                   </AlertDialogBody>
                   <AlertDialogFooter>
-                    <Button ref={finishCancelRef} onClick={() => setFinishDialogOpen(false)} leftIcon={<FaTimesCircle />} variant="ghost">
+                    <Button ref={finishCancelRef} onClick={finishDialog.close} leftIcon={<FaTimesCircle />} variant="ghost">
                       Cancel
                     </Button>
                     <Button colorScheme="blue" ml={3} onClick={async () => {
@@ -432,8 +434,7 @@ export const WorkoutSession: React.FC = () => {
                       const updatedWorkout = { ...workout, completedAt: Date.now() };
                       await updateWorkout(updatedWorkout);
                       setWorkout(updatedWorkout);
-                      setFinishDialogOpen(false);
-                      setShowInterstitial(true);
+                      celebration.open('1', { replaces: 'finish' });
                     }} leftIcon={<FaFlagCheckered />}>
                       Finish
                     </Button>

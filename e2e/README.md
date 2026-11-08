@@ -24,6 +24,8 @@ you can keep `npx vite preview --port 4173` open between runs (rebuild after app
 - `data-safety.spec.ts`: a timed set catching up after a simulated screen lock and
   surviving a reload mid-set, backup → wipe → restore, and rejecting a non-backup file.
 - `navigation.spec.ts`: bottom nav and menu reach every screen, and dark mode persists.
+- `back-button.spec.ts`: Back closes modals (menu, routine dialogs, Activity drawer deep link,
+  stacked day-template dialogs, finish confirmation, setup's template chooser, AI key prompt).
 
 ## How tests are kept deterministic
 

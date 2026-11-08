@@ -3,6 +3,7 @@ import { Box, VStack, Text, Flex, Button, Collapse, IconButton, Input, useToast 
 import { keyframes } from '@emotion/react';
 import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useAIGate } from '../hooks/useAIGate';
+import { useUrlModal } from '../hooks/useUrlModal';
 import { v4 as uuidv4 } from 'uuid';
 import { Routine, RoutineChange, RoutineChatMessage } from '../models/types';
 import { useExercises, usePulsarStore } from '../store/pulsarStore';
@@ -44,7 +45,9 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const aiGate = useAIGate();
   const decide = useRoutineChangeActions(routine.id);
-  const [reviewChangeId, setReviewChangeId] = useState<string | null>(null);
+  // ?review=<change id>, so Back closes the review.
+  const reviewDialog = useUrlModal('review', { isStale: id => !(routine.changes || []).some(c => c.id === id) });
+  const reviewChangeId = reviewDialog.value;
 
   const chatHistory = routine.chatHistory;
   const changes = routine.changes || [];
@@ -209,7 +212,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
                       change={change}
                       routine={routine}
                       onDecide={(keys, status) => decide(change.id, keys, status)}
-                      onReview={() => setReviewChangeId(change.id)}
+                      onReview={() => reviewDialog.open(change.id)}
                       onJumpToDay={scrollToRoutineDay}
                     />
                   </Box>
@@ -276,7 +279,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
       <RoutineChangeReviewModal
         routine={routine}
         change={changes.find(c => c.id === reviewChangeId)}
-        onClose={() => setReviewChangeId(null)}
+        onClose={reviewDialog.close}
         onDecide={(keys, status) => reviewChangeId && decide(reviewChangeId, keys, status)}
       />
     </Box>

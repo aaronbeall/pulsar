@@ -14,7 +14,6 @@ import {
   Heading,
   useColorMode,
   useColorModeValue,
-  useDisclosure,
   useToast,
   Image,
   Text,
@@ -23,7 +22,8 @@ import {
 } from '@chakra-ui/react';
 import { IconType } from 'react-icons';
 import { FaBars, FaSun, FaMoon, FaHome, FaDumbbell, FaCog, FaHistory, FaDownload, FaInfoCircle } from 'react-icons/fa';
-import { Routes, Route, Link, useLocation, useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useUrlModal } from './hooks/useUrlModal';
+import { Routes, Route, Link, useLocation, Link as RouterLink } from 'react-router-dom';
 import Home from './views/Home';
 import Workout from './views/Workout';
 import Settings from './views/Settings';
@@ -44,9 +44,9 @@ const App: React.FC = () => {
     return localStorage.getItem('colorScheme') || 'red';
   });
   const location = useLocation();
-  const navigate = useNavigate();
   const [headerBgColor] = useToken('colors', [`${colorScheme}.500`]);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  // The side menu lives in the URL (?menu=1) so Back closes it.
+  const menu = useUrlModal('menu');
   const toast = useToast();
   const { deferredPrompt, isInstalled, isIOS, promptInstall } = useInstallPromptStore();
   const canPromptInstall = !!deferredPrompt;
@@ -73,7 +73,7 @@ const App: React.FC = () => {
         isClosable: true,
       });
     }
-    onClose();
+    menu.close();
   };
 
   const navItems: { to: string; label: string; icon: IconType; isActive: (path: string) => boolean }[] = [
@@ -130,7 +130,7 @@ const App: React.FC = () => {
               <IconButton
                 aria-label="Open menu"
                 icon={<FaBars />}
-                onClick={onOpen}
+                onClick={() => menu.open()}
                 variant="ghost"
                 _hover={{ bg: 'whiteAlpha.300' }}
                 size="md"
@@ -221,7 +221,7 @@ const App: React.FC = () => {
         </Container>
       </Box>
 
-      <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="xs">
+      <Drawer isOpen={menu.isOpen} placement="right" onClose={menu.close} size="xs">
         <DrawerOverlay />
         <DrawerContent>
           <DrawerCloseButton />
@@ -273,7 +273,7 @@ const App: React.FC = () => {
               py={3}
               transition="background-color 0.2s"
               _hover={{ bg: menuItemHoverBg }}
-              onClick={() => { navigate('/settings'); onClose(); }}
+              onClick={() => menu.leaveTo('/settings')}
             >
               <Icon as={FaCog} boxSize={4} color="gray.500" />
               <Text fontSize="sm" fontWeight="medium">Settings</Text>
@@ -288,7 +288,7 @@ const App: React.FC = () => {
               py={3}
               transition="background-color 0.2s"
               _hover={{ bg: menuItemHoverBg }}
-              onClick={() => { navigate('/about'); onClose(); }}
+              onClick={() => menu.leaveTo('/about')}
             >
               <Icon as={FaInfoCircle} boxSize={4} color="gray.500" />
               <Text fontSize="sm" fontWeight="medium">About</Text>

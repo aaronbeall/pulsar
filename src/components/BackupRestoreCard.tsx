@@ -19,6 +19,7 @@ import {
 import { FaDatabase, FaDownload, FaUpload, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import { format, formatDistanceToNow } from 'date-fns';
 import { usePulsarStore } from '../store/pulsarStore';
+import { useUrlModal } from '../hooks/useUrlModal';
 import {
   BackupParseError,
   PulsarBackup,
@@ -85,6 +86,8 @@ const BackupRestoreCard: React.FC = () => {
   const [lastBackupAt, setLastBackupAt] = useState<number | null>(readLastBackup);
   const [persistence, setPersistence] = useState<PersistenceStatus | null>(null);
   const [pendingRestore, setPendingRestore] = useState<PulsarBackup | null>(null);
+  // ?restore=1 so Back cancels. The chosen file only lives in memory, so a reload drops it.
+  const restoreDialog = useUrlModal('restore', { isStale: () => !pendingRestore });
   // Compared once when a file is chosen, against what's on the device at that moment.
   const comparison = useMemo(
     () => (pendingRestore ? compareBackupToDevice(pendingRestore, usePulsarStore.getState()) : null),
@@ -143,6 +146,7 @@ const BackupRestoreCard: React.FC = () => {
     if (!file) return;
     try {
       setPendingRestore(parseBackup(await file.text()));
+      restoreDialog.open();
     } catch (err) {
       toast({
         title: 'Could not read backup',
@@ -166,6 +170,7 @@ const BackupRestoreCard: React.FC = () => {
         duration: 4000,
         isClosable: true,
       });
+      await restoreDialog.close();
       setPendingRestore(null);
     } catch (err) {
       toast({
@@ -236,9 +241,9 @@ const BackupRestoreCard: React.FC = () => {
       />
 
       <AlertDialog
-        isOpen={!!pendingRestore}
+        isOpen={restoreDialog.isOpen && !!pendingRestore}
         leastDestructiveRef={cancelRef}
-        onClose={() => !isRestoring && setPendingRestore(null)}
+        onClose={() => !isRestoring && restoreDialog.close()}
         isCentered
       >
         <AlertDialogOverlay>
@@ -272,7 +277,7 @@ const BackupRestoreCard: React.FC = () => {
               )}
             </AlertDialogBody>
             <AlertDialogFooter gap={3}>
-              <Button ref={cancelRef} onClick={() => setPendingRestore(null)} isDisabled={isRestoring}>
+              <Button ref={cancelRef} onClick={() => restoreDialog.close()} isDisabled={isRestoring}>
                 Cancel
               </Button>
               <Button colorScheme="red" onClick={handleConfirmRestore} isLoading={isRestoring}>
