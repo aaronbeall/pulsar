@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, ReactNode } from 'react';
-import { Box, Input, List, ListItem, ListIcon, Flex, IconButton, useOutsideClick } from '@chakra-ui/react';
+import { Box, Input, List, ListItem, ListIcon, Flex, IconButton, Portal, useOutsideClick, usePopper } from '@chakra-ui/react';
 import { FaPlus, FaCheck } from 'react-icons/fa';
 
 interface AutocompleteProps<T> {
@@ -41,9 +41,17 @@ export function Autocomplete<T>({
   const [highlightedIdx, setHighlightedIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
-  useOutsideClick({ ref: containerRef, handler: () => setIsOpen(false) });
+  // The suggestion list is portaled to <body> (see PortalMenuList for why), so it is no
+  // longer inside containerRef: a press on it must not count as an outside click.
+  useOutsideClick({
+    ref: containerRef,
+    handler: e => {
+      if (listRef.current && e.target instanceof Node && listRef.current.contains(e.target)) return;
+      setIsOpen(false);
+    },
+  });
 
   useEffect(() => {
     setInputValue(value);
@@ -54,6 +62,13 @@ export function Autocomplete<T>({
   const exactMatch = limited.find(item => getItemLabel(item).toLowerCase() === inputValue.toLowerCase());
   const showCreate = inputValue && !exactMatch;
   const suggestions = limited;
+  const isListOpen = isOpen && (suggestions.length > 0 || !!showCreate);
+  const { referenceRef, getPopperProps } = usePopper({
+    enabled: isListOpen,
+    placement: 'bottom-start',
+    matchWidth: true,
+    gutter: 4,
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -93,7 +108,14 @@ export function Autocomplete<T>({
   };
 
   return (
-    <Box ref={containerRef} position="relative" w="100%">
+    <Box
+      ref={node => {
+        containerRef.current = node;
+        referenceRef(node);
+      }}
+      position="relative"
+      w="100%"
+    >
       <Input
         ref={inputRef}
         value={inputValue}
@@ -107,18 +129,17 @@ export function Autocomplete<T>({
         aria-controls="autocomplete-list"
         aria-activedescendant={isOpen && suggestions[highlightedIdx] ? `autocomplete-item-${highlightedIdx}` : undefined}
       />
-      {isOpen && (suggestions.length > 0 || showCreate) && (
+      {isListOpen && (
+        <Portal>
+        <Box {...getPopperProps()} zIndex="dropdown">
         <List
           ref={listRef}
           id="autocomplete-list"
-          position="absolute"
-          zIndex={10}
           bg="white"
           _dark={{ bg: 'gray.800' }}
           borderWidth="1px"
           borderRadius="md"
           boxShadow="md"
-          mt={1}
           w="100%"
           maxH="220px"
           overflowY="auto"
@@ -159,6 +180,8 @@ export function Autocomplete<T>({
             </ListItem>
           )}
         </List>
+        </Box>
+        </Portal>
       )}
     </Box>
   );

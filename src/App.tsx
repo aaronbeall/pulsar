@@ -172,7 +172,7 @@ const App: React.FC = () => {
         left={0}
         right={0}
         bottom={0}
-        zIndex={100}
+        zIndex="docked"
         boxShadow="0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06)"
       >
         <Container maxW="container.lg">
