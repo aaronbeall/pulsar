@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Button, Flex, Heading, Input, Text, Skeleton, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom';
 import { usePulsarStore, useExercises } from '../store/pulsarStore';
 import { generateRoutine, createRoutineFromTemplate } from '../services/routineBuilderService';
 import { workoutPrompts } from '../constants/prompts'; // Import reusable prompts
@@ -11,6 +10,7 @@ import { FaArrowRight, FaMagic, FaBook } from 'react-icons/fa';
 import { RoutineTemplateChooser } from '../components/RoutineTemplateChooser';
 import { AIError } from '../services/ai';
 import { useAIGate } from '../hooks/useAIGate';
+import { useUrlModal } from '../hooks/useUrlModal';
 import ThinkingIndicator from '../components/ThinkingIndicator';
 import RoutineBuildProgress, { PlannedDay } from '../components/RoutineBuildProgress';
 
@@ -25,9 +25,10 @@ export const WorkoutSetup: React.FC = () => {
   const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
   const [build, setBuild] = useState<{ commentary: string; commentaryDone: boolean; plannedDays: PlannedDay[] }>({ commentary: '', commentaryDone: false, plannedDays: [] });
   const [builtRoutine, setBuiltRoutine] = useState<Routine | null>(null);
-  const [showTemplateChooser, setShowTemplateChooser] = useState(false);
+  // The template chooser is a sheet over the questions: ?templates=1, so Back returns to them.
+  const templateChooser = useUrlModal('templates');
+  const showTemplateChooser = templateChooser.isOpen;
   const inputRef = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate();
   const toast = useToast();
   const aiGate = useAIGate();
 
@@ -53,7 +54,8 @@ export const WorkoutSetup: React.FC = () => {
     await addRoutine(routineToAdd);
   };
 
-  const openRoutine = (routine: Routine) => navigate(`/workout/routine/${routine.id}`, { replace: true });
+  // Replaces the setup screen (and the template chooser's entry, if open), so Back from the new routine skips setup.
+  const openRoutine = (routine: Routine) => templateChooser.leaveTo(`/workout/routine/${routine.id}`, { replace: true });
 
   const addRoutineAndNavigate = async (routine: Routine) => {
     await saveRoutine(routine);
@@ -65,7 +67,6 @@ export const WorkoutSetup: React.FC = () => {
     const { routine } = await createRoutineFromTemplate(template, exercises, addExercise);
     await addRoutineAndNavigate(routine);
     setIsLoading(false);
-    setShowTemplateChooser(false);
   };
 
   const handleNext = async () => {
@@ -74,7 +75,7 @@ export const WorkoutSetup: React.FC = () => {
     } else {
       aiGate.requireAI(generateWithAI, {
         reason: 'Building a routine from your answers uses Pulsar AI.',
-        alternative: { label: 'Create from a template instead', onClick: () => setShowTemplateChooser(true) },
+        alternative: { label: 'Create from a template instead', onClick: () => templateChooser.open() },
       });
     }
   };
@@ -153,9 +154,9 @@ export const WorkoutSetup: React.FC = () => {
       <RoutineTemplateChooser
         userInput={responses.join(' ')}
         onSelect={handleTemplateSelect}
-        onBack={() => setShowTemplateChooser(false)}
+        onBack={templateChooser.close}
         onStartOver={() => {
-          setShowTemplateChooser(false);
+          templateChooser.close();
           setStep(1);
           setResponses(emptyResponses());
         }}
@@ -197,7 +198,7 @@ export const WorkoutSetup: React.FC = () => {
           <Button
             variant="ghost"
             colorScheme={chooseBtnColor}
-            onClick={() => setShowTemplateChooser(true)}
+            onClick={() => templateChooser.open()}
             fontWeight="normal"
             fontSize="sm"
             leftIcon={<FaBook style={{marginRight:4}} />}

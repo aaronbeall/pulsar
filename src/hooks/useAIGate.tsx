@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import AIAccessDialog, { AIAccessAlternative } from '../components/AIAccessDialog';
 import { hasActiveAIProvider } from '../services/ai';
+import { useUrlModal } from './useUrlModal';
 
 interface GateRequest {
   reason?: string;
@@ -17,6 +18,9 @@ interface GateRequest {
 export function useAIGate() {
   const [request, setRequest] = useState<GateRequest | null>(null);
   const pendingAction = useRef<(() => void) | null>(null);
+  // Open state lives in the URL (?ai=...) so Back closes the dialog. 'action' means an AI
+  // action is waiting to continue; that can't survive a reload, so the param is dropped then.
+  const modal = useUrlModal('ai', { isStale: (value) => value === 'action' && !pendingAction.current });
 
   const requireAI = useCallback((action: () => void, options: GateRequest = {}) => {
     if (hasActiveAIProvider()) {
@@ -25,38 +29,42 @@ export function useAIGate() {
     }
     pendingAction.current = action;
     setRequest(options);
-  }, []);
+    modal.open('action');
+  }, [modal.open]);
 
   /** Open the dialog with nothing to continue afterwards (e.g. adding or changing a key from Settings). */
   const openKeySetup = useCallback((options: GateRequest = {}) => {
     pendingAction.current = null;
     setRequest(options);
-  }, []);
+    modal.open('key');
+  }, [modal.open]);
 
-  const close = useCallback(() => {
+  const close = useCallback(async () => {
+    await modal.close();
     pendingAction.current = null;
     setRequest(null);
-  }, []);
+  }, [modal.close]);
 
-  const handleUnlocked = useCallback(() => {
+  // Close first and wait for the URL to settle, so whatever the action does next (open
+  // another modal, navigate) happens on top of the page rather than the dialog's entry.
+  const handleUnlocked = useCallback(async () => {
     const action = pendingAction.current;
-    pendingAction.current = null;
-    setRequest(null);
+    await close();
     action?.();
-  }, []);
+  }, [close]);
 
   const alternative = request?.alternative && {
     label: request.alternative.label,
-    onClick: () => {
+    onClick: async () => {
       const run = request.alternative!.onClick;
-      close();
+      await close();
       run();
     },
   };
 
   const gate = (
     <AIAccessDialog
-      isOpen={!!request}
+      isOpen={modal.isOpen}
       reason={request?.reason}
       alternative={alternative}
       onUnlocked={handleUnlocked}

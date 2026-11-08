@@ -13,7 +13,6 @@ import {
   Menu,
   MenuButton,
   MenuItem,
-  useDisclosure,
   AlertDialog,
   AlertDialogBody,
   AlertDialogFooter,
@@ -46,6 +45,7 @@ import { useExercises, usePulsarStore } from '../store/pulsarStore';
 import SwitchRoutineDialog from './SwitchRoutineDialog';
 import { ExportRoutineDialog } from './ExportRoutineDialog';
 import { PortalMenuList } from './PortalMenuList';
+import { useUrlModal } from '../hooks/useUrlModal';
 
 interface RoutineCardProps {
   routine: Routine;
@@ -53,18 +53,15 @@ interface RoutineCardProps {
 
 const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
   const navigate = useNavigate();
-  const {
-    isOpen: isDeleteOpen,
-    onOpen: onDeleteOpen,
-    onClose: onDeleteClose
-  } = useDisclosure();
+  // Dialogs live in the URL, keyed by routine id since there's a card per routine, so Back closes them.
+  const deleteDialog = useUrlModal('deleteRoutine');
+  const switchDialog = useUrlModal('switchRoutine');
+  const exportDialog = useUrlModal('export');
   const deleteCancelRef = useRef<HTMLButtonElement>(null);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const exercises = useExercises();
   const toast = useToast();
-  const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
-  const [showExportDialog, setShowExportDialog] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
 
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -90,6 +87,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
   }, [routine, exercises]);
 
   const handleDelete = async () => {
+    await deleteDialog.close();
     await removeRoutine(routine.id);
     toast({
       title: 'Routine deleted',
@@ -98,7 +96,6 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
       duration: 2000,
       isClosable: true,
     });
-    onDeleteClose();
   };
 
   return (
@@ -227,7 +224,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                     color="cyan.500"
                     _hover={{ bg: 'cyan.50' }}
                     _dark={{ _hover: { bg: 'cyan.900' } }}
-                    onClick={() => setShowSwitchConfirm(true)}
+                    onClick={() => switchDialog.open(routine.id)}
                   >
                     Switch to this routine
                   </MenuItem>
@@ -258,7 +255,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                   icon={<FaFileExport />}
                   _hover={{ bg: 'gray.50' }}
                   _dark={{ _hover: { bg: 'gray.700' } }}
-                  onClick={() => setShowExportDialog(true)}
+                  onClick={() => exportDialog.open(routine.id)}
                 >
                   Export...
                 </MenuItem>
@@ -267,7 +264,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                   color="red.500"
                   _hover={{ bg: 'red.50' }}
                   _dark={{ _hover: { bg: 'red.900' } }}
-                  onClick={onDeleteOpen}
+                  onClick={() => deleteDialog.open(routine.id)}
                 >
                   Delete routine
                 </MenuItem>
@@ -339,9 +336,9 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
         </VStack>
 
         <AlertDialog
-          isOpen={isDeleteOpen}
+          isOpen={deleteDialog.isOpenFor(routine.id)}
           leastDestructiveRef={deleteCancelRef}
-          onClose={onDeleteClose}
+          onClose={deleteDialog.close}
           isCentered
         >
           <AlertDialogOverlay>
@@ -353,7 +350,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                 Are you sure you want to delete {routine.name}? This action cannot be undone.
               </AlertDialogBody>
               <AlertDialogFooter>
-                <Button ref={deleteCancelRef} onClick={onDeleteClose} leftIcon={<FaTimesCircle />} variant="ghost">
+                <Button ref={deleteCancelRef} onClick={deleteDialog.close} leftIcon={<FaTimesCircle />} variant="ghost">
                   Cancel
                 </Button>
                 <Button colorScheme="red" ml={3} onClick={handleDelete} leftIcon={<FaTrash />}>
@@ -365,14 +362,14 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
         </AlertDialog>
         {/* Switch routine confirmation dialog */}
         <SwitchRoutineDialog
-          isOpen={showSwitchConfirm}
-          onClose={() => setShowSwitchConfirm(false)}
+          isOpen={switchDialog.isOpenFor(routine.id)}
+          onClose={switchDialog.close}
           routine={routine}
         />
-        {showExportDialog && (
+        {exportDialog.isOpenFor(routine.id) && (
           <ExportRoutineDialog
-            isOpen={showExportDialog}
-            onClose={() => setShowExportDialog(false)}
+            isOpen
+            onClose={exportDialog.close}
             routine={routine}
           />
         )}

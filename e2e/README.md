@@ -26,6 +26,8 @@ you can keep `npx vite preview --port 4173` open between runs (rebuild after app
 - `navigation.spec.ts`: bottom nav and menu reach every screen, and dark mode persists.
 - `homepage.spec.ts`: the marketing homepage (`home/`) renders, fits a phone width, works with
   reduced motion, and its "Open the app" link lands in the app.
+- `back-button.spec.ts`: Back closes modals (menu, routine dialogs, Activity drawer deep link,
+  stacked day-template dialogs, finish confirmation, setup's template chooser, AI key prompt).
 
 ## How tests are kept deterministic
 

@@ -21,11 +21,11 @@ import {
   Tag,
   Text,
   useColorModeValue,
-  useDisclosure
 } from '@chakra-ui/react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { FaChartBar, FaEdit, FaEllipsisV, FaInfoCircle, FaPlay, FaPlayCircle, FaPowerOff, FaStar, FaTimesCircle, FaTrash, FaFileExport } from 'react-icons/fa'; // Import icons
-import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { useUrlModal } from '../hooks/useUrlModal';
 import ExerciseDetailsDialog from '../components/ExerciseDetailsDialog'; // Import ExerciseDetailsDialog
 import { RoutineActivityDrawer } from '../components/RoutineActivityDrawer';
 import RoutineChat from '../components/RoutineChat';
@@ -53,29 +53,19 @@ const WorkoutRoutine: React.FC = () => {
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const addRoutine = usePulsarStore(s => s.addRoutine);
   const removeRoutine = usePulsarStore(s => s.removeRoutine);
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const [isEditing, setIsEditing] = useState(false);
-  const [displayExerciseId, setDisplayExerciseId] = useState<string | null>(null);
-  const [showSwitchConfirm, setShowSwitchConfirm] = useState(false);
-  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showExportDialog, setShowExportDialog] = useState(false);
+  // Every overlay on this page lives in the URL so Back closes it. ?activity=1 also works as a
+  // deep link (e.g. from the History view).
+  const activity = useUrlModal('activity');
+  const exerciseDetails = useUrlModal('exercise');
+  const switchDialog = useUrlModal('switchRoutine');
+  const deactivateDialog = useUrlModal('deactivate');
+  const deleteDialog = useUrlModal('deleteRoutine');
+  const exportDialog = useUrlModal('export');
   const cancelRef = useRef(null);
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const decideChange = useRoutineChangeActions(routineId || '');
   const proposals = useMemo(() => getPendingProposals({ changes: routine?.changes }), [routine?.changes]);
-
-  // Deep-link support: ?activity=1 (e.g. from the History view) opens the Activity drawer on arrival.
-  useEffect(() => {
-    if (searchParams.get('activity')) {
-      onOpen();
-      setSearchParams((prev) => {
-        prev.delete('activity');
-        return prev;
-      }, { replace: true });
-    }
-  }, [searchParams, onOpen, setSearchParams]);
 
   const dismissResponse = async (id: string) => {
     if (!routine) return;
@@ -88,11 +78,11 @@ const WorkoutRoutine: React.FC = () => {
     if (!routine) return;
     // Only show confirmation dialog if enabling and there is another active routine
     if (!routine.active && routines.some(r => r.active && r.id !== routine.id)) {
-      setShowSwitchConfirm(true);
+      switchDialog.open(routine.id);
       return;
     }
     if (routine.active && routines.filter(r => r.active).length === 1) {
-      setShowDeactivateConfirm(true);
+      deactivateDialog.open();
       return;
     }
     const updatedRoutine = { ...routine, active: !routine.active };
@@ -103,9 +93,9 @@ const WorkoutRoutine: React.FC = () => {
     if (!routine) return;
     const updatedRoutine = { ...routine, active: false };
     updateRoutine(updatedRoutine);
-    setShowDeactivateConfirm(false);
+    deactivateDialog.close();
   };
-  const handleDeactivateCancel = () => setShowDeactivateConfirm(false);
+  const handleDeactivateCancel = () => deactivateDialog.close();
 
   // Save changes from EditableRoutine
   // Only the fields the editor owns are taken from the draft; everything else (chat, AI
@@ -137,8 +127,6 @@ const WorkoutRoutine: React.FC = () => {
   const handleRevert = () => {
     setIsEditing(false);
   };
-
-  const handleSwitchDialogClose = () => setShowSwitchConfirm(false);
 
   if (!routine) {
     return (
@@ -240,7 +228,7 @@ const WorkoutRoutine: React.FC = () => {
               colorScheme="cyan"
               variant="outline"
               size="sm"
-              onClick={onOpen}
+              onClick={() => activity.open()}
             >
               Activity
             </Button>
@@ -258,7 +246,7 @@ const WorkoutRoutine: React.FC = () => {
               <PortalMenuList shadow="lg">
                 <MenuItem
                   icon={<FaFileExport />} // Use export icon
-                  onClick={() => setShowExportDialog(true)}
+                  onClick={() => exportDialog.open(routine.id)}
                 >
                   Export...
                 </MenuItem>
@@ -273,7 +261,7 @@ const WorkoutRoutine: React.FC = () => {
                 <MenuItem
                   icon={<FaTrash />}
                   color="red.500"
-                  onClick={() => setShowDeleteConfirm(true)}
+                  onClick={() => deleteDialog.open(routine.id)}
                 >
                   Delete
                 </MenuItem>
@@ -297,8 +285,8 @@ const WorkoutRoutine: React.FC = () => {
         )}
         </Box>
         )}
-        {isOpen && (
-          <RoutineActivityDrawer routine={routine} workouts={workouts} isOpen={isOpen} onClose={onClose} />
+        {activity.isOpen && (
+          <RoutineActivityDrawer routine={routine} workouts={workouts} isOpen onClose={activity.close} />
         )}
         {/* Routine display table and editable routine */}
         {!isEditing && (
@@ -306,14 +294,14 @@ const WorkoutRoutine: React.FC = () => {
             <RoutineDisplayTable
               routine={routine}
               exercises={exercises}
-              onShowExerciseDetails={setDisplayExerciseId}
+              onShowExerciseDetails={exerciseDetails.open}
               proposals={proposals}
               onDecide={decideChange}
             />
-            {displayExerciseId && (
+            {exerciseDetails.value && (
               <ExerciseDetailsDialog
-                exerciseId={displayExerciseId}
-                onClose={() => setDisplayExerciseId(null)}
+                exerciseId={exerciseDetails.value}
+                onClose={exerciseDetails.close}
                 mode="view"
               />
             )}
@@ -331,13 +319,13 @@ const WorkoutRoutine: React.FC = () => {
         )}
       </Box>
       <SwitchRoutineDialog
-        isOpen={showSwitchConfirm}
-        onClose={handleSwitchDialogClose}
+        isOpen={switchDialog.isOpenFor(routine.id)}
+        onClose={switchDialog.close}
         routine={routine}
       />
       {/* Deactivate only active routine confirmation dialog */}
       <AlertDialog
-        isOpen={showDeactivateConfirm}
+        isOpen={deactivateDialog.isOpen}
         leastDestructiveRef={cancelRef}
         onClose={handleDeactivateCancel}
         isCentered
@@ -364,9 +352,9 @@ const WorkoutRoutine: React.FC = () => {
       </AlertDialog>
       {/* Delete routine confirmation dialog */}
       <AlertDialog
-        isOpen={showDeleteConfirm}
+        isOpen={deleteDialog.isOpenFor(routine.id)}
         leastDestructiveRef={cancelRef}
-        onClose={() => setShowDeleteConfirm(false)}
+        onClose={deleteDialog.close}
         isCentered
       >
         <AlertDialogOverlay>
@@ -378,10 +366,10 @@ const WorkoutRoutine: React.FC = () => {
               Are you sure you want to delete {routine.name}? This action cannot be undone.
             </AlertDialogBody>
             <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={() => setShowDeleteConfirm(false)} leftIcon={<FaTimesCircle />} variant="ghost">
+              <Button ref={cancelRef} onClick={deleteDialog.close} leftIcon={<FaTimesCircle />} variant="ghost">
                 Cancel
               </Button>
-              <Button colorScheme="red" ml={3} onClick={async () => { await removeRoutine(routine.id); setShowDeleteConfirm(false); }} leftIcon={<FaTrash />}>
+              <Button colorScheme="red" ml={3} onClick={async () => { await deleteDialog.leaveTo('/workout', { replace: true }); await removeRoutine(routine.id); }} leftIcon={<FaTrash />}>
                 Delete
               </Button>
             </AlertDialogFooter>
@@ -389,8 +377,8 @@ const WorkoutRoutine: React.FC = () => {
         </AlertDialogOverlay>
       </AlertDialog>
       <ExportRoutineDialog
-        isOpen={showExportDialog}
-        onClose={() => setShowExportDialog(false)}
+        isOpen={exportDialog.isOpenFor(routine.id)}
+        onClose={exportDialog.close}
         routine={routine}
       />
     </Flex>

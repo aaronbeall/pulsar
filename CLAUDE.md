@@ -52,6 +52,14 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   state via `usePulsarStore.getState()` instead of the reactive hook — see `NOTES.md` for
   the full writeup. If a similar double-fire bug shows up elsewhere, this is the pattern to
   reach for.
+- **Every modal, dialog, drawer and sheet keeps its open state in the URL** via
+  `hooks/useUrlModal.ts` (`useUrlModal('key')` → `isOpen`/`value`/`open`/`close`/`leaveTo`), so
+  the phone's Back button closes it instead of leaving the page. Don't drive a new overlay
+  with `useState`/`useDisclosure`: add its param to `UrlModalKey` in `utils/urlModal.ts` and
+  put its context (routine id, day...) in the value. Context that can't go in a URL stays in
+  state, with `isStale` dropping the param after a reload. After closing, `await close()`
+  before opening something else or navigating; to navigate away from inside a modal use
+  `leaveTo` so Back from the destination doesn't reopen it.
 - **Testing-only features live behind dev mode** (`src/utils/devMode.ts`: always on under
   `npm run dev`, toggled in any build with `?dev=1` / `?dev=0`). See `DEV-FEATURES.md` for the
   list. Gate any new debug/testing tool with `isDevMode()` and add it to that doc; never ship
