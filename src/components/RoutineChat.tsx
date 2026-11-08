@@ -40,6 +40,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
   const [isOpen, setIsOpen] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [streaming, setStreaming] = useState<StreamingReply | null>(null);
+  const [savingReplyId, setSavingReplyId] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const aiGate = useAIGate();
   const decide = useRoutineChangeActions(routine.id);
@@ -133,6 +134,9 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
         ...(newChange ? { pendingChangeId: newChange.id } : {}),
       };
       const latest = getLatestRoutine();
+      // The streaming bubble hides itself as soon as this reply is in the stored history,
+      // so the reply never shows twice between the save and the end of this function.
+      setSavingReplyId(aiMessage.id);
       await updateRoutine({
         ...latest,
         chatHistory: [...latest.chatHistory, aiMessage],
@@ -152,6 +156,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
     } finally {
       setIsSending(false);
       setStreaming(null);
+      setSavingReplyId(null);
     }
   };
 
@@ -212,7 +217,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
               </Flex>
             );
           })}
-          {isSending && (
+          {isSending && !chatHistory.some(m => m.id === savingReplyId) && (
             // The reply being written: a thinking cue until the first words arrive, then the
             // text as it streams in, then a quieter cue while any routine change is drafted.
             <Flex direction="column" gap={1} align="flex-start" data-testid="ai-streaming-reply">
