@@ -13,6 +13,9 @@ import type {
   Workout,
   WorkoutExercise,
 } from '../models/types';
+import { generateRandomName } from './nameUtils';
+import { generateRandomRoutineName } from '../services/routineBuilderService';
+import { routineTemplates } from '../services/routineTemplates';
 
 // Preset data sets for manual testing (dev mode only, see DEV-FEATURES.md). Each preset
 // builds a full app data set relative to `now`, so streaks and "today" always line up with
@@ -122,6 +125,17 @@ function schedule(plan: Partial<Record<DayOfWeek, keyof typeof DAY_PLANS>>): Rou
   });
 }
 
+/**
+ * Names the way the real flows make them: a routine from a template takes the template's name
+ * or one of its nickname suggestions (RoutineTemplateChooser), and an AI or randomized routine
+ * gets generateRandomRoutineName(). Workouts get generateRandomName(), like WorkoutSession.
+ * These are random on purpose, so names vary between loads like they do for real users.
+ */
+function templateNickname(templateName: string): string {
+  const nicknames = routineTemplates.find(t => t.name === templateName)?.nicknames ?? [];
+  return nicknames.length ? nicknames[Math.floor(Math.random() * nicknames.length)] : templateName;
+}
+
 const daysOf = (s: RoutineDay[]): DayOfWeek[] => DAYS_OF_WEEK.filter(d => s.some(x => x.day === d));
 
 function routine(
@@ -153,7 +167,6 @@ interface WorkoutOptions {
   skipLast?: boolean;
   /** Override the weekday, for a workout logged on a routine's rest day (a "bonus" workout). */
   bonus?: { kind: string; exercises: ScheduledExercise[] };
-  nickname?: string;
 }
 
 function workout(r: Routine, date: Date, seq: number, opts: WorkoutOptions = {}): Workout {
@@ -192,7 +205,7 @@ function workout(r: Routine, date: Date, seq: number, opts: WorkoutOptions = {})
   });
   return {
     id: `w-${r.id}-${seq}`,
-    nickname: opts.nickname ?? `${plan.kind} #${seq + 1}`,
+    nickname: generateRandomName(), // what WorkoutSession names a new workout
     routineId: r.id,
     day,
     startedAt,
@@ -239,7 +252,7 @@ const dateAgo = (now: number, n: number) => addDays(startOfDay(now), -n);
 function bonusWorkout(r: Routine, now: number, n: number, seq: number, plan: keyof typeof DAY_PLANS): Workout[] {
   const date = dateAgo(now, n);
   if (r.dailySchedule.some(d => d.day === DAYS_OF_WEEK[date.getDay()])) return [];
-  return [workout(r, date, seq, { bonus: DAY_PLANS[plan], nickname: `Bonus ${DAY_PLANS[plan].kind}` })];
+  return [workout(r, date, seq, { bonus: DAY_PLANS[plan] })];
 }
 
 const STRENGTH_DESC = 'Three days a week: upper body, lower body and a full-body finisher.';
@@ -351,7 +364,7 @@ const presets: TestPreset[] = [
     build: (now = Date.now()) => {
       const s = strengthSchedule();
       const created = now - 60_000;
-      const r = routine('r-strength', 'Starter Strength', STRENGTH_DESC, s, created, [{ start: created, days: daysOf(s) }]);
+      const r = routine('r-strength', templateNickname('Strength Builder'), STRENGTH_DESC, s, created, [{ start: created, days: daysOf(s) }]);
       return { exercises: exercisesFor([r]), routines: [r], workouts: [] };
     },
   },
@@ -362,7 +375,7 @@ const presets: TestPreset[] = [
     build: (now = Date.now()) => {
       const s = strengthSchedule();
       const created = weeksAgo(now, 26);
-      const r = routine('r-strength', 'Iron Habit', STRENGTH_DESC, s, created, [{ start: created, days: daysOf(s) }]);
+      const r = routine('r-strength', generateRandomRoutineName(), STRENGTH_DESC, s, created, [{ start: created, days: daysOf(s) }]);
       const workouts = logWorkouts(r, now, { from: created, to: startOfDay(now).getTime() });
       [6, 20, 34, 55, 90].forEach((n, i) => workouts.push(...bonusWorkout(r, now, n, 900 + i, 'cardio')));
       return { exercises: exercisesFor([r], workouts), routines: [r], workouts };
@@ -375,7 +388,7 @@ const presets: TestPreset[] = [
     build: (now = Date.now()) => {
       const s = strengthSchedule();
       const created = weeksAgo(now, 16);
-      const r = routine('r-strength', 'Comeback Plan', STRENGTH_DESC, s, created, [{ start: created, days: daysOf(s) }]);
+      const r = routine('r-strength', templateNickname('Upper/Lower Split'), STRENGTH_DESC, s, created, [{ start: created, days: daysOf(s) }]);
       // Which offsets are scheduled depends on today's weekday, so pick misses from the real dates.
       const scheduledAgo = (min: number, max: number) => {
         const out: number[] = [];
@@ -402,7 +415,7 @@ const presets: TestPreset[] = [
     build: (now = Date.now()) => {
       const s = strengthSchedule();
       const created = weeksAgo(now, 13);
-      const r = routine('r-strength', 'Summer Shape-up', STRENGTH_DESC, s, created, [{ start: created, days: daysOf(s) }]);
+      const r = routine('r-strength', 'Full Body Beginner', STRENGTH_DESC, s, created, [{ start: created, days: daysOf(s) }]);
       const workouts = logWorkouts(r, now, { from: created, to: daysAgo(now, 21, 0) });
       return { exercises: exercisesFor([r], workouts), routines: [r], workouts };
     },
@@ -416,8 +429,8 @@ const presets: TestPreset[] = [
       const s2 = schedule({ Tuesday: 'cardio', Thursday: 'core' });
       const c1 = weeksAgo(now, 8);
       const c2 = weeksAgo(now, 7) + 3600_000;
-      const r1 = routine('r-strength', 'Strength Days', STRENGTH_DESC, s1, c1, [{ start: c1, days: daysOf(s1) }]);
-      const r2 = routine('r-cardio', 'Cardio & Core', 'Tuesday runs and a Thursday core session.', s2, c2, [{ start: c2, days: daysOf(s2) }]);
+      const r1 = routine('r-strength', templateNickname('Strength Builder'), STRENGTH_DESC, s1, c1, [{ start: c1, days: daysOf(s1) }]);
+      const r2 = routine('r-cardio', generateRandomRoutineName(), 'Tuesday runs and a Thursday core session.', s2, c2, [{ start: c2, days: daysOf(s2) }]);
       const today = startOfDay(now).getTime();
       const workouts = [
         ...logWorkouts(r1, now, { from: c1, to: today, missedDaysAgo: [16, 17, 18, 19, 20, 21] }),
@@ -443,13 +456,13 @@ const presets: TestPreset[] = [
       const edited = weeksAgo(now, 12);
       const switched = weeksAgo(now, 6);
       // The stored schedule is the last one it had; the log remembers the earlier days.
-      const bw = routine('r-bodyweight', 'Living Room Circuit', 'No equipment, anywhere.', bwNew, created, [
+      const bw = routine('r-bodyweight', templateNickname('Bodyweight Only'), 'No equipment, anywhere.', bwNew, created, [
         { start: created, end: edited, days: daysOf(bwOld) },
         { start: edited, end: switched, days: daysOf(bwNew) },
       ]);
       const s = strengthSchedule();
-      const st = routine('r-strength', 'Gym Strength', STRENGTH_DESC, s, switched - 3600_000, [{ start: switched, days: daysOf(s) }]);
-      const unused = routine('r-unused', 'Marathon Prep (draft)', 'Never activated.', schedule({ Tuesday: 'cardio', Thursday: 'cardio', Sunday: 'cardio' }), weeksAgo(now, 3), []);
+      const st = routine('r-strength', generateRandomRoutineName(), STRENGTH_DESC, s, switched - 3600_000, [{ start: switched, days: daysOf(s) }]);
+      const unused = routine('r-unused', templateNickname('Endurance Athlete'), 'Never activated.', schedule({ Tuesday: 'cardio', Thursday: 'cardio', Sunday: 'cardio' }), weeksAgo(now, 3), []);
       // Workouts under the first schedule used its old days, which the stored schedule no
       // longer has, so log them against a copy that still does.
       const bwAsOld = { ...bw, dailySchedule: [...bwOld, ...bwNew.filter(d => !bwOld.some(o => o.day === d.day))] };
@@ -471,7 +484,7 @@ const presets: TestPreset[] = [
       s.find(d => d.day === 'Friday')!.exercises.push(timed('ex-climber', 3, 30));
       const created = weeksAgo(now, 7);
       const coreAdded = daysAgo(now, 25, 20);
-      const r = routine('r-ai', 'AI Strength Plan', 'Strength three days a week, plus a core day on Tuesday.', s, created, [
+      const r = routine('r-ai', generateRandomRoutineName(), 'Strength three days a week, plus a core day on Tuesday.', s, created, [
         { start: created, end: coreAdded, days: ['Monday', 'Wednesday', 'Friday'] },
         { start: coreAdded, days: daysOf(s) },
       ], aiHistory(now, created));
@@ -489,7 +502,7 @@ const presets: TestPreset[] = [
         Thursday: 'core', Friday: 'full', Saturday: 'conditioning',
       });
       const created = weeksAgo(now, 3);
-      const r = routine('r-daily', 'Every Day', 'Something every day of the week.', s, created, [{ start: created, days: daysOf(s) }]);
+      const r = routine('r-daily', generateRandomRoutineName(), 'Something every day of the week.', s, created, [{ start: created, days: daysOf(s) }]);
       const workouts = logWorkouts(r, now, { from: created, to: startOfDay(now).getTime(), missedDaysAgo: [4] });
       // Started 45 minutes ago, or at midnight if that's sooner (it has to be today's).
       const startAt = Math.max(now - 45 * 60_000, startOfDay(now).getTime());

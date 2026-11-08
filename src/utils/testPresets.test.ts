@@ -3,6 +3,7 @@ import { TEST_PRESETS, getTestPreset } from './testPresets';
 import { createBackup, parseBackup } from './backup';
 import { getScheduledDate, getStreakInfo } from './workoutUtils';
 import { getPendingProposals } from './routineChangeUtils';
+import { routineTemplates } from '../services/routineTemplates';
 
 // A week of "nows", one per weekday and at awkward times of day, since which days are
 // scheduled (and so which days get a workout) depends on today's weekday.
@@ -62,6 +63,16 @@ describe('test presets', () => {
       });
     });
   }
+
+  it('names routines and workouts like the real flows do', () => {
+    const routineTemplateNames = new Set(routineTemplates.flatMap(t => [t.name, ...(t.nicknames ?? [])]));
+    for (const preset of TEST_PRESETS) {
+      const { routines, workouts } = preset.build(NOWS[0].getTime());
+      // A template's name or nickname, or generateRandomRoutineName()'s three words.
+      routines.forEach(r => expect(routineTemplateNames.has(r.name) || r.name.split(' ').length === 3, r.name).toBe(true));
+      workouts.forEach(w => expect(w.nickname).toMatch(/^\S+ \S+$/)); // generateRandomName(): adjective noun
+    }
+  });
 
   it('empty has no data', () => {
     const data = build('empty', NOWS[0]);
