@@ -1,0 +1,19 @@
+// Cloudflare Worker that serves the whole site: the homepage at /, the app at /app/, and
+// (later) the API at /api/. Static files come from the Vite build in dist/; the Worker only
+// runs for requests that don't match a file. See README.md "Deploying".
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pulsar",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Missing paths fall through to the Worker, which serves the app's page for app routes.
+    "not_found_handling": "none"
+  },
+  // workers.dev URL plus a preview URL per uploaded version (used for PR previews).
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": { "enabled": true }
+}
