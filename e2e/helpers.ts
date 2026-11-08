@@ -55,10 +55,11 @@ export async function completeAllSets(page: Page) {
     if (await done.isVisible()) return;
     // Check again right before clicking: finishing the last set swaps the buttons for the
     // celebration, which can land between the wait above and these checks.
+    // A click can still lose that race, so a vanished button just goes round the loop again.
     if (await completeSet.isVisible()) {
-      await completeSet.click();
+      await completeSet.click({ timeout: 2000 }).catch(() => {});
     } else if (await startSet.isVisible()) {
-      await startSet.click();
+      await startSet.click({ timeout: 2000 }).catch(() => {});
     }
   }
   throw new Error('Workout never completed');
