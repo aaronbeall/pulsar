@@ -12,7 +12,6 @@ import {
   IconButton,
   Menu,
   MenuButton,
-  MenuList,
   MenuItem,
   useDisclosure,
   AlertDialog,
@@ -46,6 +45,7 @@ import {
 import { useExercises, usePulsarStore } from '../store/pulsarStore';
 import SwitchRoutineDialog from './SwitchRoutineDialog';
 import { ExportRoutineDialog } from './ExportRoutineDialog';
+import { PortalMenuList } from './PortalMenuList';
 
 interface RoutineCardProps {
   routine: Routine;
@@ -133,7 +133,9 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
       role="group"
       aria-label={`View details for ${routine.name}`}
       onKeyDown={e => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        // Only when the card itself has focus: keys pressed in its (portaled) menu or
+        // buttons still bubble here through the React tree.
+        if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
           navigate(`/workout/routine/${routine.id}`);
         }
       }}
@@ -209,7 +211,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                 _hover={{ bg: 'gray.100', color: 'cyan.500' }}
                 _dark={{ _hover: { bg: 'gray.700' } }}
               />
-              <MenuList shadow="lg">
+              <PortalMenuList shadow="lg">
                 <MenuItem
                   icon={<FaArrowRight />}
                   color="cyan.500"
@@ -269,7 +271,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                 >
                   Delete routine
                 </MenuItem>
-              </MenuList>
+              </PortalMenuList>
             </Menu>
           </Flex>
 

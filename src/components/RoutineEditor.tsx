@@ -13,7 +13,6 @@ import {
   Menu, // Import Menu components
   MenuButton,
   MenuItem,
-  MenuList,
   Text,
   Textarea,
   useBreakpointValue,
@@ -41,6 +40,7 @@ import type { DayOfWeek, Exercise, Routine, RoutineDay, ScheduledExercise, Worko
 import DayKindBadge from './DayKindBadge';
 import DayKindEditor from './DayKindBadgeEditor';
 import { Autocomplete } from './Autocomplete';
+import { PortalMenuList } from './PortalMenuList';
 import { getAddedExercise, normalizeExerciseName, searchExerciseSuggestions } from '../services/routineBuilderService';
 import { exerciseTemplates, ExerciseTemplate } from '../services/exerciseTemplates';
 import { useExercise, usePulsarStore } from '../store/pulsarStore';
@@ -329,10 +329,10 @@ const SaveBar = React.memo<{
                 >
                   <Box as={FaChevronDown} />
                 </MenuButton>
-                <MenuList>
+                <PortalMenuList>
                   <MenuItem icon={<FaCheck />} onClick={onSave} isDisabled={!editChanged}>Save</MenuItem>
                   <MenuItem icon={<FaEdit />} onClick={() => { setSaveAsName(editName); setShowSaveAs(true); saveAsDisclosure.onOpen(); }}>Save As...</MenuItem>
-                </MenuList>
+                </PortalMenuList>
               </Menu>
             </Flex>
           </Flex>
@@ -563,7 +563,7 @@ const ExerciseDayEditor = React.memo<{
           >
             {schedule.day}
           </MenuButton>
-          <MenuList
+          <PortalMenuList
             bg="white"
             _dark={{ bg: 'gray.800', borderColor: 'gray.700' }}
             borderColor="gray.200"
@@ -596,7 +596,7 @@ const ExerciseDayEditor = React.memo<{
                 </MenuItem>
               );
             })}
-          </MenuList>
+          </PortalMenuList>
         </Menu>
         {/* Kind label remains immediately after the day button */}
         {editKind ? (
@@ -623,7 +623,7 @@ const ExerciseDayEditor = React.memo<{
         <Box ml="auto">
           <Menu>
             <MenuButton as={IconButton} aria-label="Day actions" icon={<FaEllipsisV />} size="sm" variant="ghost" />
-            <MenuList bg="white" _dark={{ bg: 'gray.800', borderColor: 'gray.700' }} borderColor="gray.200">
+            <PortalMenuList bg="white" _dark={{ bg: 'gray.800', borderColor: 'gray.700' }} borderColor="gray.200">
               <MenuItem
                 icon={<FaBook style={{ color: 'var(--chakra-colors-cyan-400)' }} />}
                 onClick={() => setShowTemplateChooser(true)}
@@ -660,7 +660,7 @@ const ExerciseDayEditor = React.memo<{
               >
                 Remove all exercises
               </MenuItem>
-            </MenuList>
+            </PortalMenuList>
           </Menu>
         </Box>
         {/* Paste confirmation modal */}
@@ -889,7 +889,7 @@ const DraggableExerciseEditorRow = React.memo<{
           variant="ghost"
           flexShrink={0}
         />
-        <MenuList>
+        <PortalMenuList>
           <MenuItem
           icon={<FaTimes color="#E53E3E" />} // Red X icon
           onClick={() => onEditExercise(dayIdx, exIdx, null)}
@@ -920,7 +920,7 @@ const DraggableExerciseEditorRow = React.memo<{
             </Flex>
           )}
           </MenuItem>
-        </MenuList>
+        </PortalMenuList>
         </Menu>
       </Flex>
       {/* Steppers get their own line, indented past the drag handle, and wrap instead of overflowing */}

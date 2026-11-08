@@ -16,7 +16,6 @@ import {
   Menu,
   MenuButton,
   MenuItem,
-  MenuList,
   Spinner,
   Switch,
   Tag,
@@ -36,6 +35,7 @@ import SwitchRoutineDialog from '../components/SwitchRoutineDialog';
 import { ExportRoutineDialog } from '../components/ExportRoutineDialog';
 import type { Routine, RoutineChatMessage } from '../models/types';
 import { useExercises, usePulsarStore, useRoutine, useRoutines, useWorkouts } from '../store/pulsarStore';
+import { PortalMenuList } from '../components/PortalMenuList';
 
 const WorkoutRoutine: React.FC = () => {
   const { routineId } = useParams<{ routineId: string }>();
@@ -246,7 +246,7 @@ const WorkoutRoutine: React.FC = () => {
                 top={{ base: 4, sm: 0 }}
                 right={{ base: 4, sm: 0 }}
               />
-              <MenuList shadow="lg">
+              <PortalMenuList shadow="lg">
                 <MenuItem
                   icon={<FaFileExport />} // Use export icon
                   onClick={() => setShowExportDialog(true)}
@@ -268,7 +268,7 @@ const WorkoutRoutine: React.FC = () => {
                 >
                   Delete
                 </MenuItem>
-              </MenuList>
+              </PortalMenuList>
             </Menu>
           </Flex>
         </Flex>
