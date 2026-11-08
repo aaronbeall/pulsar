@@ -35,12 +35,20 @@ export const WorkoutSession: React.FC = () => {
   const [showInterstitial, setShowInterstitial] = useState(false);
   const toast = useToast();
 
-  // Find-or-create a workout for a given routine/day. Reads fresh store state via
-  // getState() (not the reactive hook values) so the mutation itself never becomes a
-  // dependency that re-triggers the effect below.
-  const findOrCreateWorkoutMutation = useMutation({
+  // A day only counts as started once its first set is started: opening a day shows a
+  // draft workout that lives only in this component, and nothing is saved until then.
+  // While the draft is shown the URL stays on ?routineId=&day=, so the Workout and Home
+  // screens never see a phantom "in progress" workout for a day you only looked at.
+  const [isDraft, setIsDraft] = useState(false);
+  // The first set's save, so a set that completes right after it started waits for it.
+  const pendingStartRef = useRef<Promise<void> | null>(null);
+
+  // Find an existing workout for the routine/day, or build an unsaved draft. Reads fresh
+  // store state via getState() (not the reactive hook values) so the mutation itself never
+  // becomes a dependency that re-triggers the effect below.
+  const findOrDraftWorkoutMutation = useMutation({
     mutationFn: async ({ routineId, day }: { routineId: string; day: DayOfWeek | null }) => {
-      const { routines: currentRoutines, workouts: currentWorkouts, addWorkout: addWorkoutToStore } = usePulsarStore.getState();
+      const { routines: currentRoutines, workouts: currentWorkouts } = usePulsarStore.getState();
       const targetRoutine = currentRoutines.find(r => r.id === routineId);
       if (!targetRoutine) {
         return { redirectTo: '/workout' };
@@ -51,12 +59,12 @@ export const WorkoutSession: React.FC = () => {
         return { redirectTo: `/workout/session/${existingWorkoutForDay.id}` };
       }
       const scheduledExercises = findExercisesForDay(targetRoutine, workoutDay);
-      const newWorkout: Workout = {
+      const draft: Workout = {
         id: uuidv4(),
         day: workoutDay,
         nickname: generateRandomName(),
         routineId: targetRoutine.id,
-        startedAt: Date.now(),
+        startedAt: Date.now(), // replaced by the first set's start time when it's saved
         exercises: scheduledExercises.map(exercise => ({
           ...exercise,
           completedSets: 0,
@@ -66,15 +74,20 @@ export const WorkoutSession: React.FC = () => {
           skipped: false
         }))
       };
-      await addWorkoutToStore(newWorkout);
-      return { redirectTo: `/workout/session/${newWorkout.id}` };
+      return { draft, routine: targetRoutine };
     },
-    onSuccess: ({ redirectTo }) => {
-      navigate(redirectTo, { replace: true });
+    onSuccess: (result) => {
+      if ('redirectTo' in result) {
+        navigate(result.redirectTo as string, { replace: true });
+        return;
+      }
+      setIsDraft(true);
+      setWorkout(result.draft);
+      setRoutine(result.routine);
     },
     onError: (error) => {
       toast({
-        title: 'Could not start workout',
+        title: 'Could not open workout',
         description: error instanceof Error ? error.message : undefined,
         status: 'error',
         duration: 5000,
@@ -107,7 +120,7 @@ export const WorkoutSession: React.FC = () => {
     }
     hasTriggeredCreateRef.current = true;
     const dayParam = searchParams.get('day') as DayOfWeek | null;
-    findOrCreateWorkoutMutation.mutate({ routineId, day: dayParam });
+    findOrDraftWorkoutMutation.mutate({ routineId, day: dayParam });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, searchParams]);
 
@@ -153,6 +166,7 @@ export const WorkoutSession: React.FC = () => {
     workout ? usePulsarStore.getState().workouts.find(w => w.id === workout.id) ?? workout : null;
 
   const handleCompleteSet = async (exerciseIndex: number, durationDoneSec?: number, endedAt?: number) => {
+    if (pendingStartRef.current) await pendingStartRef.current;
     const current = getFreshWorkout();
     if (!current) return;
     const now = endedAt ?? Date.now();
@@ -180,10 +194,22 @@ export const WorkoutSession: React.FC = () => {
       ...current,
       exercises: current.exercises.map((ex, i) => (i === exerciseIndex ? startSet(ex, startedAt) : ex)),
     };
-    // Persisted (not just local state) so a running timer survives a reload or the OS
-    // killing the backgrounded app.
-    await updateWorkout(updatedWorkout);
     setWorkout(updatedWorkout);
+    // Persisted (not just local state) so a running timer survives a reload or the OS
+    // killing the backgrounded app. The first set of a draft is what starts the workout.
+    if (isDraft) {
+      setIsDraft(false);
+      const started: Workout = { ...updatedWorkout, startedAt };
+      setWorkout(started);
+      pendingStartRef.current = addWorkout(started);
+      await pendingStartRef.current;
+      pendingStartRef.current = null;
+      navigate(`/workout/session/${started.id}`, { replace: true });
+      return;
+    }
+    pendingStartRef.current = updateWorkout(updatedWorkout);
+    await pendingStartRef.current;
+    pendingStartRef.current = null;
   };
 
   const getCurrentExercise = () => {
@@ -247,10 +273,10 @@ export const WorkoutSession: React.FC = () => {
         skipped: false
       }))
     };
-    updateWorkout(resetWorkout);
+    if (!isDraft) updateWorkout(resetWorkout);
     setWorkout(resetWorkout);
     setSelectedExerciseIndex(0);
-  }, [routine, workout, updateWorkout]);
+  }, [routine, workout, updateWorkout, isDraft]);
 
   if (!routine || !workout) {
     return (
@@ -333,12 +359,16 @@ export const WorkoutSession: React.FC = () => {
             "{workout.nickname}"
           </Heading>
         </Box>
-        <TimeElapsed
-          startTime={workout.startedAt}
-          endTime={workout.completedAt}
-          exerciseSec={workoutTiming.activeSec}
-          restSec={workoutTiming.restSec}
-        />
+        {isDraft ? (
+          <NotStartedYet />
+        ) : (
+          <TimeElapsed
+            startTime={workout.startedAt}
+            endTime={workout.completedAt}
+            exerciseSec={workoutTiming.activeSec}
+            restSec={workoutTiming.restSec}
+          />
+        )}
       </Flex>
 
       <VStack spacing={6} align="stretch">
@@ -935,3 +965,20 @@ const RoutineUpdatedBanner: React.FC<{ onRestart: () => void }> = ({ onRestart }
     </SlideFade>
   );
 };
+// Shown in place of the elapsed-time box until the first set is started.
+const NotStartedYet: React.FC = () => (
+  <Box
+    p={3}
+    borderRadius="lg"
+    borderWidth="1px"
+    borderColor="gray.200"
+    _dark={{ borderColor: 'gray.700' }}
+  >
+    <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.400' }} mb={1}>
+      Not started yet
+    </Text>
+    <Text fontSize="sm" color="gray.500">
+      The clock starts with your first set.
+    </Text>
+  </Box>
+);

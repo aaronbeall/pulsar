@@ -4,6 +4,7 @@ import { WorkoutSetup } from './WorkoutSetup';
 import { WorkoutLanding } from './WorkoutLanding';
 import { WorkoutSession } from './WorkoutSession';
 import WorkoutRoutine from './WorkoutRoutine'; // Import WorkoutRoutine
+import RestDay from './RestDay';
 
 const Workout: React.FC = () => {
   return (
@@ -12,6 +13,7 @@ const Workout: React.FC = () => {
       <Route path="setup" element={<WorkoutSetup />} />
       <Route path="routine/:routineId" element={<WorkoutRoutine />} />
       <Route path="session/:sessionId?" element={<WorkoutSession />} />
+      <Route path="rest/:day?" element={<RestDay />} />
     </Routes>
   );
 };

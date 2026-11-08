@@ -24,10 +24,15 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
   const navigate = useNavigate();
 
   const handleDayClick = (index: number, hasWorkout: boolean, isPastDay: boolean, isToday: boolean) => {
-    // Allow clicking if it's a workout day and either it's in the past or it's today
-    if (!hasWorkout || (!isPastDay && !isToday)) return;
-    
     const dayOfWeek = DAYS_OF_WEEK[index];
+    // Any rest day opens the rest day screen.
+    if (!hasWorkout) {
+      navigate(`/workout/rest/${dayOfWeek}`);
+      return;
+    }
+    // A workout day can be opened if it's in the past or it's today
+    if (!isPastDay && !isToday) return;
+
     const routineForDay = findRoutineForDay(activeRoutines, dayOfWeek);
     if (!routineForDay) return;
 
@@ -94,6 +99,7 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
           const isToday = index === today;
           const isPastDay = index < today;
           const isFutureDay = index > today;
+          const isClickable = !hasWorkout || isPastDay || isToday;
 
           const status = hasWorkout 
             ? getWorkoutStatusForDay(workouts, activeRoutines, day)
@@ -105,7 +111,7 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
                 bg: 'cyan.500',
                 transform: 'scale(1.75)',
                 animation: `${pulseAnimation} 2s infinite ease-in-out`,
-                cursor: hasWorkout ? 'pointer' : 'default'
+                cursor: 'pointer'
               };
             }
             if (status === 'completed') {
@@ -140,13 +146,15 @@ const Timeline: React.FC<TimelineProps> = ({ activeRoutines, workouts }) => {
                 mb={2}
                 transition="all 0.2s"
                 zIndex={isToday ? 2 : 1}
-                _hover={hasWorkout && (isPastDay || isToday) ? {
+                _hover={isClickable ? {
                   transform: isToday ? 'scale(1.75)' : 'scale(1.1)',
                 } : undefined}
               >
                 <Circle
                   size="40px"
-                  cursor={hasWorkout && (isPastDay || isToday) ? 'pointer' : 'default'}
+                  as={isClickable ? 'button' : undefined}
+                  aria-label={isClickable ? (hasWorkout ? `Open ${day} workout` : `Open ${day} rest day`) : undefined}
+                  cursor={isClickable ? 'pointer' : 'default'}
                   onClick={() => handleDayClick(index, hasWorkout, isPastDay, isToday)}
                   boxShadow={isToday ? '0 0 12px rgba(0, 200, 255, 0.5)' : undefined}
                   transition="all 0.3s"
