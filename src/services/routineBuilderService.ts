@@ -10,7 +10,7 @@ import { routineTemplates, RoutineTemplate } from './routineTemplates';
 import { dailyWorkoutTemplates } from './dailyWorkoutTemplates';
 import { findFreeExerciseDbEntry, getFreeExerciseDbImageUrls, isTimedCategory } from './freeExerciseDb';
 import { workoutPrompts } from '../constants/prompts';
-import { getActiveAIProvider, AIProvider, AIError } from './ai';
+import { getActiveAIProvider, AIProvider, AIError, StreamOptions } from './ai';
 
 /**
  * Create a new Exercise from a template (ExerciseTemplate).
@@ -319,9 +319,10 @@ async function generateRoutineWithAI(
   provider: AIProvider,
   responses: string[],
   exercises: Exercise[],
-  addExercise: (ex: Exercise) => Promise<void>
+  addExercise: (ex: Exercise) => Promise<void>,
+  options?: StreamOptions
 ): Promise<{ routine: Routine, exercises: Exercise[] }> {
-  const plan = await provider.generateRoutine(zipWizardAnswers(responses));
+  const plan = await provider.generateRoutine(zipWizardAnswers(responses), options);
 
   let known = [...exercises];
   const allNewExercises: Exercise[] = [];
@@ -359,11 +360,12 @@ async function generateRoutineWithAI(
 export const generateRoutine = async (
   responses: string[],
   exercises: Exercise[],
-  addExercise: (ex: Exercise) => Promise<void>
+  addExercise: (ex: Exercise) => Promise<void>,
+  options?: StreamOptions
 ): Promise<{ routine: Routine, exercises: Exercise[] }> => {
   const provider = getActiveAIProvider();
   if (!provider) throw new AIError('no_key', 'Add your OpenAI API key in Settings to use AI.');
-  return generateRoutineWithAI(provider, responses, exercises, addExercise);
+  return generateRoutineWithAI(provider, responses, exercises, addExercise, options);
 };
 
 /**

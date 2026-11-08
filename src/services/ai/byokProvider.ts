@@ -2,7 +2,8 @@ import { Routine } from '../../models/types';
 import { getOpenAiApiKey, getOpenAiModel } from '../../store/aiSettingsStore';
 import { exerciseTemplates } from '../exerciseTemplates';
 import { normalizeChangeResponse, normalizeRoutineResponse } from './normalize';
-import { AIChangeResponse, AIError, AIProvider, AIRoutineResponse, ChatTurn, ScheduleForPrompt, WizardAnswer } from './types';
+import { extractPartialJsonString, extractScheduleDays, SSEParser } from './streaming';
+import { AIChangeResponse, AIError, AIProvider, AIRoutineResponse, ChatTurn, ScheduleForPrompt, StreamOptions, WizardAnswer } from './types';
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 const MAX_HISTORY_TURNS = 12;
@@ -74,7 +75,54 @@ async function readOpenAIError(res: Response): Promise<{ message?: string; code?
   }
 }
 
-async function callOpenAI(messages: OpenAIMessage[]): Promise<unknown> {
+/**
+ * Read a streamed completion (`stream: true`), calling `onContent` with everything received
+ * so far after each chunk. Returns the full message content.
+ */
+async function readStreamedContent(res: Response, onContent: (content: string) => void): Promise<string> {
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  const parser = new SSEParser();
+  let content = '';
+  const handle = (payloads: string[]) => {
+    let changed = false;
+    for (const payload of payloads) {
+      if (payload === '[DONE]') continue;
+      let event: { choices?: Array<{ delta?: { content?: string } }>; error?: { message?: string } };
+      try {
+        event = JSON.parse(payload);
+      } catch {
+        continue;
+      }
+      if (event.error) throw new AIError('network', `OpenAI stopped mid-reply${event.error.message ? `: ${event.error.message}` : '.'}`);
+      const delta = event.choices?.[0]?.delta?.content;
+      if (delta) {
+        content += delta;
+        changed = true;
+      }
+    }
+    if (changed) onContent(content);
+  };
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      handle(parser.push(decoder.decode(value, { stream: true })));
+    }
+  } catch (e) {
+    if (e instanceof AIError) throw e;
+    throw new AIError('network', 'The connection to OpenAI dropped mid-reply. Try again.');
+  }
+  handle(parser.push(decoder.decode()));
+  handle(parser.flush());
+  return content;
+}
+
+/**
+ * Send a chat completion and return the parsed JSON reply. With `onContent`, the reply is
+ * streamed and `onContent` gets the partial JSON text as it arrives (see streaming.ts).
+ */
+async function callOpenAI(messages: OpenAIMessage[], onContent?: (content: string) => void): Promise<unknown> {
   const apiKey = getOpenAiApiKey();
   if (!apiKey) throw new AIError('no_key', 'Add your OpenAI API key in Settings to use AI.');
   const model = getOpenAiModel();
@@ -91,6 +139,7 @@ async function callOpenAI(messages: OpenAIMessage[]): Promise<unknown> {
         model,
         response_format: { type: 'json_object' },
         messages,
+        ...(onContent ? { stream: true } : {}),
         ...(isReasoningModel(model) ? { reasoning_effort: 'low' } : {}),
       }),
     });
@@ -111,8 +160,13 @@ async function callOpenAI(messages: OpenAIMessage[]): Promise<unknown> {
     throw new AIError('network', `OpenAI request failed (${res.status})${err.message ? `: ${err.message}` : '.'}`);
   }
 
-  const data = await res.json().catch(() => null);
-  const content = data?.choices?.[0]?.message?.content;
+  let content: string | undefined;
+  if (onContent && res.body && res.headers.get('content-type')?.includes('text/event-stream')) {
+    content = await readStreamedContent(res, onContent);
+  } else {
+    const data = await res.json().catch(() => null);
+    content = data?.choices?.[0]?.message?.content;
+  }
   if (!content) throw new AIError('empty_response', 'OpenAI returned an empty response. Try again.');
 
   try {
@@ -155,18 +209,42 @@ export function buildChangeMessages(
   ];
 }
 
+/** Turns StreamOptions callbacks into a raw-content callback, firing each only when its value changes. */
+function commentaryStreamer(options?: StreamOptions): ((content: string) => void) | undefined {
+  const { onCommentary, onScheduleDays } = options || {};
+  if (!onCommentary && !onScheduleDays) return undefined;
+  let last = '';
+  let lastDone = false;
+  let dayCount = 0;
+  return (content) => {
+    const partial = onCommentary && extractPartialJsonString(content, 'commentary');
+    if (partial && (partial.text !== last || partial.done !== lastDone)) {
+      last = partial.text;
+      lastDone = partial.done;
+      onCommentary!(partial.text, partial.done);
+    }
+    if (onScheduleDays) {
+      const days = extractScheduleDays(content);
+      if (days.length !== dayCount) {
+        dayCount = days.length;
+        onScheduleDays(days);
+      }
+    }
+  };
+}
+
 export const byokProvider: AIProvider = {
-  async generateRoutine(qa: WizardAnswer[]): Promise<AIRoutineResponse> {
+  async generateRoutine(qa: WizardAnswer[], options?: StreamOptions): Promise<AIRoutineResponse> {
     const userPrompt = qa.map(({ question, answer }) => `${question}\n${answer}`).join('\n\n');
     const raw = await callOpenAI([
       { role: 'system', content: ROUTINE_SYSTEM_PROMPT },
       { role: 'user', content: userPrompt },
-    ]);
+    ], commentaryStreamer(options));
     return normalizeRoutineResponse(raw);
   },
 
-  async suggestRoutineChange(routine, scheduleForPrompt, history, userMessage): Promise<AIChangeResponse> {
-    const raw = await callOpenAI(buildChangeMessages(routine, scheduleForPrompt, history, userMessage));
+  async suggestRoutineChange(routine, scheduleForPrompt, history, userMessage, options?: StreamOptions): Promise<AIChangeResponse> {
+    const raw = await callOpenAI(buildChangeMessages(routine, scheduleForPrompt, history, userMessage), commentaryStreamer(options));
     return normalizeChangeResponse(raw);
   },
 };

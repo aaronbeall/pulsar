@@ -31,7 +31,13 @@ test('"Make my routine!" asks for a key, then builds the routine with AI', async
   await prompt.getByPlaceholder('sk-...').fill('sk-test-key');
   await prompt.getByRole('button', { name: 'Continue' }).click();
 
-  // The routine is built without tapping "Make my routine!" again.
+  // The routine is built without tapping "Make my routine!" again. The build screen shows the
+  // coach's note and the planned week, then waits for the user to open the routine.
+  const progress = page.getByTestId('routine-build-progress');
+  await expect(progress.getByText('Your routine is ready')).toBeVisible();
+  await expect(progress.getByText('I kept it to dumbbells')).toBeVisible();
+  await expect(progress.getByText('Upper Pull')).toBeVisible();
+  await progress.getByRole('button', { name: 'See my routine' }).click();
   await expect(page).toHaveURL(/\/workout\/routine\/[\w-]+$/);
   await expect(page.getByText('Knee-Friendly Builder')).toBeVisible();
   await expect(page.getByText('I kept it to dumbbells')).toBeVisible();
@@ -55,10 +61,17 @@ test('the key prompt offers templates as the non-AI way forward', async ({ page 
 
 test('routine chat asks for a key, sends the message, and applies an accepted change', async ({ page }) => {
   await createRoutineFromTemplate(page, 'Strength Builder');
-  await mockOpenAI(page, () => ({
-    commentary: 'Done: Friday is now a rest day.',
-    patch: { dailySchedule: [{ op: 'clearDay', day: 'Friday' }] },
-  }));
+  // Hold the reply until the test has seen the thinking state.
+  let release!: () => void;
+  const replyReady = new Promise<void>((resolve) => { release = resolve; });
+  await mockOpenAI(page, async (body: any) => {
+    expect(body.stream).toBe(true);
+    await replyReady;
+    return {
+      commentary: 'Done: Friday is now a rest day.',
+      patch: { dailySchedule: [{ op: 'clearDay', day: 'Friday' }] },
+    };
+  });
 
   const input = page.getByPlaceholder('Suggest changes or ask a question...');
   await input.fill('make friday a rest day');
@@ -70,7 +83,10 @@ test('routine chat asks for a key, sends the message, and applies an accepted ch
   await prompt.getByRole('button', { name: 'Continue' }).click();
 
   await expect(page.getByText('make friday a rest day')).toBeVisible();
+  await expect(page.getByTestId('ai-thinking')).toBeVisible();
+  release();
   await expect(page.getByText('Done: Friday is now a rest day.')).toBeVisible();
+  await expect(page.getByTestId('ai-streaming-reply')).toHaveCount(0);
   // The suggestion also shows inline on the day it changes, until it's decided.
   await expect(page.locator('#routine-day-Friday').getByText('Suggested change')).toBeVisible();
   await page.getByRole('button', { name: 'Accept all' }).click();
