@@ -1,13 +1,12 @@
 import React, { useMemo } from 'react';
 import { Flex, Heading, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
-import { FaChartBar, FaClipboardList, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaTrophy } from 'react-icons/fa';
+import { FaChartBar, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaMedal, FaTrophy } from 'react-icons/fa';
 import { usePulsarLoading, useRoutines, useWorkouts } from '../store/pulsarStore';
-import { formatTotalDuration, getHistorySummaryStats, getHistoryTimeline, getRoutineTimeline } from '../utils/historyStats';
+import { formatTotalDuration, getHistorySummaryStats, getRoutineStints } from '../utils/historyStats';
 import YearActivityCalendar from '../components/YearActivityCalendar';
 import StatCard from '../components/StatCard';
 import SectionCard from '../components/SectionCard';
-import RoutineHistoryList from '../components/RoutineHistoryList';
-import WorkoutHistoryList from '../components/WorkoutHistoryList';
+import HistoryTimeline from '../components/HistoryTimeline';
 import WeeklyActivityGraph from '../components/WeeklyActivityGraph';
 
 const History: React.FC = () => {
@@ -22,13 +21,8 @@ const History: React.FC = () => {
     [workouts, routines]
   );
 
-  const routineTimeline = useMemo(
-    () => (routines && workouts ? getRoutineTimeline(routines, workouts) : []),
-    [routines, workouts]
-  );
-
-  const historyTimeline = useMemo(
-    () => (routines && workouts ? getHistoryTimeline(workouts, routines) : []),
+  const stints = useMemo(
+    () => (routines && workouts ? getRoutineStints(workouts, routines) : []),
     [workouts, routines]
   );
 
@@ -56,7 +50,7 @@ const History: React.FC = () => {
         <StatCard icon={FaFire} label="Day streak" value={summary.streak} color="orange.400" />
         <StatCard icon={FaDumbbell} label="Workouts done" value={summary.totalCompleted} color="cyan.500" />
         <StatCard icon={FaTrophy} label="Perfect workouts" value={summary.perfectWorkouts} color="yellow.400" />
-        <StatCard icon={FaClipboardList} label="Active routines" value={summary.activeRoutineCount} color="green.400" />
+        <StatCard icon={FaMedal} label="Best streak" value={summary.bestStreak} color="green.400" />
         <StatCard icon={FaClock} label="Total workout time" value={formatTotalDuration(summary.totalWorkoutTimeMs)} color="purple.400" />
         <StatCard icon={FaLayerGroup} label="Exercises done" value={summary.uniqueExercisesDone} color="pink.400" />
       </SimpleGrid>
@@ -67,12 +61,8 @@ const History: React.FC = () => {
         <WeeklyActivityGraph workouts={workouts} />
       </SectionCard>
 
-      <SectionCard icon={FaClipboardList} title="Routine History">
-        <RoutineHistoryList entries={routineTimeline} />
-      </SectionCard>
-
-      <SectionCard icon={FaHistory} title="Workout History">
-        <WorkoutHistoryList items={historyTimeline} routines={routines} />
+      <SectionCard icon={FaHistory} title="Timeline">
+        <HistoryTimeline stints={stints} routines={routines} />
       </SectionCard>
     </Flex>
   );

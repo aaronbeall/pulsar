@@ -22,7 +22,7 @@ The production e2e build (`vite preview`) runs with dev mode off, like a real us
 
 | Feature | Where | What it does |
 | --- | --- | --- |
-| Tap a calendar day to log it | Home, streak calendar (`src/components/StreakCalendar.tsx`) | Tapping a past day or today in the month you're viewing, when the active routine has exercises that weekday and there's no workout for it that week yet, saves a completed workout named "Manual Entry" (midnight to 23:59, no sets marked done) and reloads the page. There's no confirmation and no undo, and there's no UI to delete a single workout. Use it to fake streak and history data. |
+| Log a day as done | Day sheet (`src/components/DaySheet.tsx`), opened by tapping a day on the Home streak calendar or the History year grid | A "Log as done (dev)" button on a past day or today with no finished workout, when the current routine has exercises that weekday. It saves a completed workout named "Manual Entry" (midnight to 23:59, no sets marked done). There's no confirmation and no undo, and there's no UI to delete a single workout. Use it to fake streak and history data. |
 | OpenAI model override | Settings › Developer (`src/views/Settings.tsx`) | Free-text model name used for AI calls instead of the default (`DEFAULT_OPENAI_MODEL` in `src/store/aiSettingsStore.ts`). Outside dev mode the default is always used, even if an override was saved earlier. |
 | Clear All Settings | Settings › Developer | After a confirmation, runs `localStorage.clear()` and reloads. That removes the OpenAI key, model, color scheme, install-prompt dismissal, last-backup time, cached image lookups and the dev mode flag. Workout data in IndexedDB is kept. |
 

@@ -53,16 +53,16 @@ test('developer tools are hidden until dev mode is turned on with ?dev=1', async
   await expect(page.getByTestId('developer-settings')).toHaveCount(0);
 });
 
-test('tapping a calendar day logs it only in dev mode', async ({ page }) => {
+test('the day sheet offers to log a day only in dev mode', async ({ page }) => {
   await seedSundayRoutine(page);
   await page.goto('/app/');
-  const sunday = page.getByTitle('Nov 1', { exact: true });
-  await sunday.click();
-  await page.waitForTimeout(300);
-  expect(await workoutCount(page)).toBe(1);
+  await page.getByTitle('Nov 1', { exact: true }).click();
+  await expect(page.getByText('Sunday, November 1')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Log as done (dev)' })).toHaveCount(0);
 
   await page.goto('/app/?dev=1');
-  // Logging a day reloads the page.
-  await Promise.all([page.waitForEvent('load'), page.getByTitle('Nov 1', { exact: true }).click()]);
+  await page.getByTitle('Nov 1', { exact: true }).click();
+  await page.getByRole('button', { name: 'Log as done (dev)' }).click();
+  await expect(page.getByRole('dialog').getByText('Manual Entry')).toBeVisible();
   expect(await workoutCount(page)).toBe(2);
 });

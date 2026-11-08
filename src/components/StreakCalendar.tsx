@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Box, Flex, IconButton, Text, useColorModeValue, useToken } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
+import { Link as RouterLink } from 'react-router-dom';
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { FaTimes, FaExclamationTriangle } from 'react-icons/fa';
 import {
@@ -15,11 +16,9 @@ import {
   subMonths,
 } from 'date-fns';
 import { Workout, Routine } from '../models/types';
-import { getStreakInfo, StreakDay, getDayOfWeek, findRoutineForDay, findExercisesForDay, findWorkoutForDay } from '../utils/workoutUtils';
+import { getStreakInfo, getDayStatuses, StreakDay } from '../utils/workoutUtils';
 import { DAYS_OF_WEEK } from '../constants/days';
-import { usePulsarStore } from '../store/pulsarStore';
-import { v4 as uuidv4 } from 'uuid';
-import { isDevMode } from '../utils/devMode';
+import DaySheet, { useDaySheet } from './DaySheet';
 
 interface StreakCalendarProps {
   workouts: Workout[];
@@ -28,7 +27,7 @@ interface StreakCalendarProps {
 
 const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) => {
   // All routines, not just active ones: past days are judged by each routine's schedule history.
-  const { days, streak, status } = useMemo(() => getStreakInfo(workouts, routines), [workouts, routines]);
+  const { days, streak, best, status } = useMemo(() => getStreakInfo(workouts, routines), [workouts, routines]);
   const isGrayed = status !== 'up_to_date';
   const isPending = status === 'pending';
   const flameColor = isGrayed ? 'gray.400' : 'orange.400';
@@ -60,14 +59,25 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 });
   const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
 
-  const calendarDays: { date: Date; isCurrentMonth: boolean; streakDay: StreakDay | null }[] = useMemo(
+  // Future days come from the shared day model too, so upcoming workout days can be marked.
+  const gridStatuses = useMemo(
+    () => getDayStatuses(gridStart, gridEnd, workouts, routines),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [viewDate, workouts, routines]
+  );
+  const calendarDays: { date: Date; isCurrentMonth: boolean; streakDay: StreakDay | null; planned: boolean }[] = useMemo(
     () =>
-      eachDayOfInterval({ start: gridStart, end: gridEnd }).map((date) => ({
-        date,
-        isCurrentMonth: isSameMonth(date, viewDate),
-        streakDay: days[date.toDateString()] || null,
-      })),
-    [gridStart, gridEnd, viewDate, days]
+      eachDayOfInterval({ start: gridStart, end: gridEnd }).map((date) => {
+        const key = date.toDateString();
+        return {
+          date,
+          isCurrentMonth: isSameMonth(date, viewDate),
+          streakDay: days[key] || null,
+          planned: !!gridStatuses[key]?.future && gridStatuses[key].scheduled,
+        };
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [viewDate, days, gridStatuses]
   );
 
   // Group into weeks
@@ -79,39 +89,8 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
   // Find today's date string for highlight
   const todayStr = today.toDateString();
 
-  const addWorkout = usePulsarStore(s => s.addWorkout);
-
-  // Dev-mode only (see DEV-FEATURES.md): tapping a past day logs a completed "Manual Entry"
-  // workout for it, to fake streak/history data while testing.
-  const devMode = isDevMode();
-
-  const handleDayClick = async (date: Date, isCurrentMonth: boolean) => {
-    if (!devMode) return;
-    // Only allow for days in the viewed month that are past or today
-    if (!isCurrentMonth) return;
-    if (date > today) return;
-    // Use findRoutineForDay and findExercisesForDay from workoutUtils
-    const dayOfWeek = getDayOfWeek(date);
-    const routine = findRoutineForDay(routines, dayOfWeek);
-    if (!routine) return;
-    const exercises = findExercisesForDay(routine, dayOfWeek);
-    if (!exercises.length) return;
-    // Check if a workout already exists for this day
-    const existing = findWorkoutForDay(workouts, [routine], dayOfWeek, date);
-    if (existing) return;
-    // Create a completed workout object
-    const workout = {
-      id: uuidv4(),
-      nickname: 'Manual Entry',
-      routineId: routine.id,
-      day: dayOfWeek,
-      startedAt: new Date(date.setHours(0,0,0,0)).getTime(),
-      completedAt: new Date(date.setHours(23,59,59,999)).getTime(),
-      exercises: exercises.map(ex => ({ ...ex })),
-    };
-    await addWorkout(workout);
-    location.reload(); // Reload to reflect changes
-  };
+  const daySheet = useDaySheet();
+  const plannedBorder = useColorModeValue('orange.300', 'orange.400');
 
   // Add pulsate animation keyframes
   const pulsate = keyframes`
@@ -122,7 +101,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
 
   return (
     <Box mt={6} mb={2}>
-      <Flex align="center" justify="center" mb={2} alignItems='center'>
+      <Flex as={RouterLink} to="/history" aria-label="Open history" align="center" justify="center" mb={2} alignItems='center'>
         <Text
           fontSize="2xl"
           fontWeight="bold"
@@ -171,6 +150,11 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
           }}>{streak}</span>
         </Text>
         <Text color={streakTextColor} fontWeight="medium">day streak</Text>
+        {best > streak && (
+          <Text ml={3} fontSize="sm" color="gray.500" fontWeight="semibold">
+            Best {best}
+          </Text>
+        )}
         {isPending && (
           <Flex align="center" ml={3} color={useColorModeValue('#E53E3E', '#F56565')} fontWeight="semibold" fontSize="sm">
             <FaExclamationTriangle style={{ marginRight: 4 }} />
@@ -232,7 +216,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
         </Flex>
         {weeks.map((week, weekIdx) => (
           <Flex key={weekIdx} mb={0.5} gap={0}>
-            {week.map(({ date, isCurrentMonth, streakDay }, dayIdx) => {
+            {week.map(({ date, isCurrentMonth, streakDay, planned }, dayIdx) => {
               const isToday = date.toDateString() === todayStr;
               const isFuture = date > today;
               const isStreak = streakDay?.inStreak;
@@ -266,7 +250,6 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                 if (prevIsStreak) borderLeft = 'none';
                 if (nextIsStreak) borderRight = 'none';
               }
-              const canLog = devMode && isCurrentMonth && !!findRoutineForDay(routines, getDayOfWeek(date));
               // Outer box: no margin between days
               return (
                 <Box
@@ -278,8 +261,10 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                   justifyContent="center"
                   opacity={isCurrentMonth ? 1 : 0.35}
                   title={date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  onClick={devMode ? () => handleDayClick(date, isCurrentMonth) : undefined}
-                  cursor={canLog ? 'pointer' : undefined}
+                  as="button"
+                  aria-label={date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+                  onClick={() => daySheet.openDay(date)}
+                  cursor="pointer"
                 >
                   {/* Inner pill/dot for all days, style toggled by state */}
                   {(!isCompleted && !isTodayPendingCell && !isFuture && streakDay && !streakDay.rest) ? (
@@ -305,16 +290,17 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
                       alignItems="center"
                       justifyContent="center"
                       borderRadius={borderRadius}
-                      bg={bg}
+                      bg={isFuture && planned ? 'transparent' : bg}
                       borderLeft={borderLeft}
                       borderRight={borderRight}
                       borderTop={border}
                       borderBottom={border}
+                      {...(isFuture && planned ? { border: '2px solid', borderColor: plannedBorder } : {})}
                       color={bgColor}
                       fontWeight="bold"
                       fontSize="md"
                       boxShadow={isStreak && !isFuture ? 'md' : undefined}
-                      opacity={isFuture ? 0.3 : 1}
+                      opacity={isFuture ? (planned ? 0.8 : 0.3) : 1}
                       position="relative"
                       zIndex={isStreak && isCompleted ? 1 : 0}
                     >
@@ -350,6 +336,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
           </Flex>
         ))}
       </Box>
+      <DaySheet workouts={workouts} routines={routines} />
     </Box>
   );
 };

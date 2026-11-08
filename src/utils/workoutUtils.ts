@@ -120,8 +120,8 @@ export interface DayStatus {
   missed: boolean;
 }
 
-// Helper to get the scheduled date for a workout (week from startedAt, day from w.day)
-function getScheduledDate(workout: Workout): Date {
+/** The calendar day a workout belongs to: its scheduled weekday in the week it was started. */
+export function getScheduledDate(workout: Workout): Date {
   const startedAt = new Date(workout.startedAt);
   const weekStart = startOfWeek(startedAt, { weekStartsOn: 0 }); // Sunday
   const dayIdx = DAYS_OF_WEEK.indexOf(workout.day);
