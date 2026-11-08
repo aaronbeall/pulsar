@@ -23,6 +23,7 @@ import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
 import { DEFAULT_OPENAI_MODEL, useOpenAiApiKey, useOpenAiModel } from '../store/aiSettingsStore';
 import { testApiKey } from '../services/ai';
 import BackupRestoreCard from '../components/BackupRestoreCard';
+import AccountCard from '../components/AccountCard';
 import { DB_NAME } from '../db/indexedDb';
 import { isDevMode, setDevMode } from '../utils/devMode';
 
@@ -140,6 +141,8 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
           </Flex>
         </VStack>
       </Box>
+
+      <AccountCard />
 
       <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
         <Flex align="center" gap={2} mb={3}>

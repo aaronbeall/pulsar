@@ -81,6 +81,11 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   homepage, the app and the API from the same origin, so login cookies need no CORS. Static
   files are served before the Worker runs; API routes go under `/api/`. GitHub Pages
   workflows stay only until the Cloudflare deploy is confirmed live. See README "Deploying".
+- **Accounts are Google sign-in via Better Auth in the Worker** (`worker/auth.ts`, D1
+  migrations in `worker/migrations/`). The app reads `/api/me` through
+  `hooks/useAccount.ts` (`services/account.ts`); where there's no API it behaves as if
+  sign-in doesn't exist. The server stores identity, plan and AI usage only, never workout
+  data or prompt text. Previews hide sign-in (`AUTH_ORIGINS`).
 - Login/subscription must stay **optional** — the app should remain fully useful with
   zero account, local-only data, and template-based (non-AI) routines. Real AI requires
   *either* a personal API key (free, bring-your-own-key) *or* login + an active

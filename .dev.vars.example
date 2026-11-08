@@ -1,0 +1,9 @@
+# Copy to .dev.vars for `npm run cf:dev`. Never commit .dev.vars.
+# Any long random string; `openssl rand -base64 32` makes one.
+BETTER_AUTH_SECRET=change-me-to-a-long-random-string
+# A Google OAuth "Web application" client with the redirect URI
+# http://localhost:8787/api/auth/callback/google. Leave empty to run without sign-in.
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+# Mirrors the AUTH_ORIGINS var in wrangler.jsonc (localhost is always allowed).
+AUTH_ORIGINS=https://pulsarfit.app
