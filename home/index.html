@@ -110,9 +110,26 @@
     </main>
 
     <footer class="footer">
-      <span>© Pulsar</span>
-      <a href="../about">About</a>
-      <a href="https://github.com/aaronbeall/pulsar">GitHub</a>
+      <div class="footer-brand">
+        <svg viewBox="0 0 100 100" fill="none" aria-hidden="true">
+          <circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="6" />
+          <circle cx="50" cy="50" r="28" fill="currentColor" />
+          <path d="M 4 96 L 96 4" stroke="currentColor" stroke-width="10" stroke-linecap="round" />
+        </svg>
+        <div>
+          <strong>PULSAR</strong>
+          <span>Routines built around you.</span>
+        </div>
+      </div>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="../">Open the app</a>
+        <a href="../about">About</a>
+        <a href="https://github.com/aaronbeall/pulsar">GitHub</a>
+      </nav>
+      <p class="credit">
+        Made with <span role="img" aria-label="love">❤️</span> and <span role="img" aria-label="bananas">🍌</span> by
+        <a href="https://metamodernmonkey.com">Meta Modern Monkey</a>
+      </p>
     </footer>
 
     <script type="module" src="./main.ts"></script>
