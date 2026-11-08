@@ -31,7 +31,13 @@ test('"Make my routine!" asks for a key, then builds the routine with AI', async
   await prompt.getByPlaceholder('sk-...').fill('sk-test-key');
   await prompt.getByRole('button', { name: 'Continue' }).click();
 
-  // The routine is built without tapping "Make my routine!" again.
+  // The routine is built without tapping "Make my routine!" again. The build screen shows the
+  // coach's note and the planned week, then waits for the user to open the routine.
+  const progress = page.getByTestId('routine-build-progress');
+  await expect(progress.getByText('Your routine is ready')).toBeVisible();
+  await expect(progress.getByText('I kept it to dumbbells')).toBeVisible();
+  await expect(progress.getByText('Upper Pull')).toBeVisible();
+  await progress.getByRole('button', { name: 'See my routine' }).click();
   await expect(page).toHaveURL(/\/workout\/routine\/[\w-]+$/);
   await expect(page.getByText('Knee-Friendly Builder')).toBeVisible();
   await expect(page.getByText('I kept it to dumbbells')).toBeVisible();

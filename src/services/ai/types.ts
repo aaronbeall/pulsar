@@ -81,4 +81,6 @@ export interface StreamOptions {
   /** Called as the reply's commentary is written: the text so far, and whether it's finished.
    *  The full response (routine or change) still only arrives when the promise resolves. */
   onCommentary?: (text: string, done: boolean) => void;
+  /** Routine generation only: the schedule's days as each one is written ("Monday", "Upper Push"). */
+  onScheduleDays?: (days: Array<{ day: string; kind: string }>) => void;
 }

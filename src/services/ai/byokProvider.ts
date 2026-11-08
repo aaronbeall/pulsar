@@ -2,7 +2,7 @@ import { Routine } from '../../models/types';
 import { getOpenAiApiKey, getOpenAiModel } from '../../store/aiSettingsStore';
 import { exerciseTemplates } from '../exerciseTemplates';
 import { normalizeChangeResponse, normalizeRoutineResponse } from './normalize';
-import { extractPartialJsonString, SSEParser } from './streaming';
+import { extractPartialJsonString, extractScheduleDays, SSEParser } from './streaming';
 import { AIChangeResponse, AIError, AIProvider, AIRoutineResponse, ChatTurn, ScheduleForPrompt, StreamOptions, WizardAnswer } from './types';
 
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
@@ -209,18 +209,27 @@ export function buildChangeMessages(
   ];
 }
 
-/** Turns StreamOptions.onCommentary into a raw-content callback, firing only when the commentary changes. */
+/** Turns StreamOptions callbacks into a raw-content callback, firing each only when its value changes. */
 function commentaryStreamer(options?: StreamOptions): ((content: string) => void) | undefined {
-  const onCommentary = options?.onCommentary;
-  if (!onCommentary) return undefined;
+  const { onCommentary, onScheduleDays } = options || {};
+  if (!onCommentary && !onScheduleDays) return undefined;
   let last = '';
   let lastDone = false;
+  let dayCount = 0;
   return (content) => {
-    const partial = extractPartialJsonString(content, 'commentary');
-    if (!partial || (partial.text === last && partial.done === lastDone)) return;
-    last = partial.text;
-    lastDone = partial.done;
-    onCommentary(partial.text, partial.done);
+    const partial = onCommentary && extractPartialJsonString(content, 'commentary');
+    if (partial && (partial.text !== last || partial.done !== lastDone)) {
+      last = partial.text;
+      lastDone = partial.done;
+      onCommentary!(partial.text, partial.done);
+    }
+    if (onScheduleDays) {
+      const days = extractScheduleDays(content);
+      if (days.length !== dayCount) {
+        dayCount = days.length;
+        onScheduleDays(days);
+      }
+    }
   };
 }
 

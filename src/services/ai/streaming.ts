@@ -76,3 +76,24 @@ export class SSEParser {
     return rest.startsWith('data:') ? [rest.slice(5).trim()].filter(Boolean) : [];
   }
 }
+
+export interface PartialScheduleDay {
+  day: string;
+  kind: string;
+}
+
+/**
+ * The schedule days a partial routine response has written so far, each listed once its
+ * "kind" label is complete, so a progress view can fill in the week as the plan is written.
+ * Relies on the prompt's field order ("day" then "kind").
+ */
+export function extractScheduleDays(json: string): PartialScheduleDay[] {
+  const days: PartialScheduleDay[] = [];
+  const pattern = /"day"\s*:\s*"([^"\\]*)"\s*,\s*"kind"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(json))) {
+    const kind = extractPartialJsonString(`{"kind":"${match[2]}"}`, 'kind')?.text ?? match[2];
+    days.push({ day: match[1], kind });
+  }
+  return days;
+}

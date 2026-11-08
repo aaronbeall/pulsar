@@ -12,6 +12,7 @@ import { RoutineTemplateChooser } from '../components/RoutineTemplateChooser';
 import { AIError } from '../services/ai';
 import { useAIGate } from '../hooks/useAIGate';
 import ThinkingIndicator from '../components/ThinkingIndicator';
+import RoutineBuildProgress, { PlannedDay } from '../components/RoutineBuildProgress';
 
 // Positional, matching workoutPrompts by index — no need for named keys.
 const emptyResponses = () => Array(workoutPrompts.length).fill('');
@@ -21,8 +22,9 @@ export const WorkoutSetup: React.FC = () => {
   const [step, setStep] = useState<number>(1);
   const [responses, setResponses] = useState<string[]>(emptyResponses);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [streamedCommentary, setStreamedCommentary] = useState('');
   const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
+  const [build, setBuild] = useState<{ commentary: string; commentaryDone: boolean; plannedDays: PlannedDay[] }>({ commentary: '', commentaryDone: false, plannedDays: [] });
+  const [builtRoutine, setBuiltRoutine] = useState<Routine | null>(null);
   const [showTemplateChooser, setShowTemplateChooser] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -36,7 +38,6 @@ export const WorkoutSetup: React.FC = () => {
 
   // Hoist all useColorModeValue hooks
   const orTextColor = useColorModeValue('gray.300', 'gray.600');
-  const commentaryColor = useColorModeValue('gray.600', 'gray.300');
   const chooseBtnColor = useColorModeValue('gray', 'cyan');
   const chooseBtnOpacity = useColorModeValue(0.85, 0.95);
   const chooseBtnHoverBg = useColorModeValue('gray.100', 'cyan.900');
@@ -45,14 +46,18 @@ export const WorkoutSetup: React.FC = () => {
     setResponses((prev) => prev.map((r, i) => (i === index ? value : r)));
   };
 
-  const addRoutineAndNavigate = async (
-    routine: Routine,
-  ) => {
+  const saveRoutine = async (routine: Routine) => {
     // Only set active if there are no active routines
     const hasActive = routines.some((r: Routine) => r.active);
     const routineToAdd = hasActive ? { ...routine, active: false } : { ...routine, active: true };
     await addRoutine(routineToAdd);
-    navigate(`/workout/routine/${routine.id}`, { replace: true });
+  };
+
+  const openRoutine = (routine: Routine) => navigate(`/workout/routine/${routine.id}`, { replace: true });
+
+  const addRoutineAndNavigate = async (routine: Routine) => {
+    await saveRoutine(routine);
+    openRoutine(routine);
   };
 
   const handleTemplateSelect = async (template: RoutineTemplate) => {
@@ -75,15 +80,24 @@ export const WorkoutSetup: React.FC = () => {
   };
 
   const generateWithAI = async () => {
-    setIsLoading(true);
     setIsGeneratingWithAI(true);
-    setStreamedCommentary('');
+    setBuild({ commentary: '', commentaryDone: false, plannedDays: [] });
     try {
       const { routine } = await generateRoutine(responses, exercises, addExercise, {
-        onCommentary: (text) => setStreamedCommentary(text),
+        onCommentary: (commentary, commentaryDone) => setBuild(b => ({ ...b, commentary, commentaryDone })),
+        onScheduleDays: (plannedDays) => setBuild(b => ({ ...b, plannedDays })),
       });
-      await addRoutineAndNavigate(routine);
+      await saveRoutine(routine);
+      // Show the finished week and let the user open it, rather than jumping away mid-read.
+      setBuild(b => ({
+        ...b,
+        commentary: b.commentary || routine.chatHistory[routine.chatHistory.length - 1]?.message || '',
+        commentaryDone: true,
+        plannedDays: routine.dailySchedule.map(d => ({ day: d.day, kind: d.kind })),
+      }));
+      setBuiltRoutine(routine);
     } catch (e) {
+      setIsGeneratingWithAI(false);
       // Stay on the last step with the answers intact so the user can retry or pick a template.
       toast({
         title: "Couldn't build your routine",
@@ -92,9 +106,6 @@ export const WorkoutSetup: React.FC = () => {
         duration: 6000,
         isClosable: true,
       });
-    } finally {
-      setIsLoading(false);
-      setIsGeneratingWithAI(false);
     }
   };
 
@@ -111,27 +122,28 @@ export const WorkoutSetup: React.FC = () => {
     }
   }, [step]);
 
+  if (isGeneratingWithAI) {
+    return (
+      <RoutineBuildProgress
+        commentary={build.commentary}
+        commentaryDone={build.commentaryDone}
+        plannedDays={build.plannedDays}
+        ready={builtRoutine ? { name: builtRoutine.name, onOpen: () => openRoutine(builtRoutine) } : undefined}
+      />
+    );
+  }
+
   if (isLoading) {
     return (
       <Flex direction="column" align="center" justify="center" height="100%" width="100%">
         <Box mb={4}>
-          <ThinkingIndicator
-            size="lg"
-            labels={isGeneratingWithAI ? ['Reading your answers', 'Picking exercises', 'Balancing your week', 'Almost there'] : ['Setting up your routine']}
-          />
+          <ThinkingIndicator size="lg" labels={['Setting up your routine']} />
         </Box>
-        {streamedCommentary ? (
-          // The coach's note streams in while the schedule is still being written.
-          <Text fontSize="md" color={commentaryColor} width="85%" maxW="480px" whiteSpace="pre-wrap" data-testid="ai-streaming-commentary">
-            {streamedCommentary}
-          </Text>
-        ) : (
-          <VStack spacing={4} align="stretch" width="80%">
-            <Skeleton height="20px" />
-            <Skeleton height="20px" />
-            <Skeleton height="20px" />
-          </VStack>
-        )}
+        <VStack spacing={4} align="stretch" width="80%">
+          <Skeleton height="20px" />
+          <Skeleton height="20px" />
+          <Skeleton height="20px" />
+        </VStack>
       </Flex>
     );
   }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractPartialJsonString, SSEParser } from './streaming';
+import { extractPartialJsonString, extractScheduleDays, SSEParser } from './streaming';
 
 describe('extractPartialJsonString', () => {
   it('returns null until the value has started', () => {
@@ -42,5 +42,16 @@ describe('SSEParser', () => {
     const parser = new SSEParser();
     expect(parser.push('data: {"a":1}')).toEqual([]);
     expect(parser.flush()).toEqual(['{"a":1}']);
+  });
+});
+
+describe('extractScheduleDays', () => {
+  it('lists days whose kind is complete, skipping one still being written', () => {
+    const json = '{"name":"X","schedule":[{"day":"Monday","kind":"Upper \\"Push\\"","exercises":[{"name":"Push-up"}]},{"day":"Wednesday","kind":"Lo';
+    expect(extractScheduleDays(json)).toEqual([{ day: 'Monday', kind: 'Upper "Push"' }]);
+  });
+
+  it('returns nothing before the schedule starts', () => {
+    expect(extractScheduleDays('{"name":"X","commentary":"Monday is')).toEqual([]);
   });
 });
