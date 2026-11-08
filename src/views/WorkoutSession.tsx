@@ -178,10 +178,11 @@ export const WorkoutSession: React.FC = () => {
     // Set workout.completedAt if all exercises are complete
     if (exercisesAfter.every(ex => ex.completedAt) && !updatedWorkout.completedAt) {
       updatedWorkout.completedAt = now;
+      // Open before saving, so the session never flashes its next-set controls first.
+      celebration.open();
     }
     await updateWorkout(updatedWorkout);
     setWorkout(updatedWorkout);
-    if (updatedWorkout.completedAt && !current.completedAt) celebration.open();
     // If the exercise is now completed, auto-advance to the first incomplete exercise (if any)
     if (exercise.completedAt) {
       const firstIncompleteIdx = exercisesAfter.findIndex(ex => !ex.completedAt);
