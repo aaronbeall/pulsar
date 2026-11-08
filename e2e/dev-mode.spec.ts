@@ -66,3 +66,19 @@ test('the day sheet offers to log a day only in dev mode', async ({ page }) => {
   await expect(page.getByRole('dialog').getByText('Manual Entry')).toBeVisible();
   expect(await workoutCount(page)).toBe(2);
 });
+
+test('a test data preset replaces the data, only in dev mode', async ({ page }) => {
+  await seedSundayRoutine(page);
+  await page.goto('/app/settings');
+  await expect(page.getByTestId('test-presets')).toHaveCount(0);
+
+  await page.goto('/app/settings?dev=1');
+  await page.getByLabel('Test data preset').selectOption('long-streak');
+  await page.getByRole('button', { name: 'Load Test Data' }).click();
+  await expect(page).toHaveURL(/loadPreset=long-streak/);
+  await page.getByRole('button', { name: 'Replace & Load' }).click();
+
+  await expect(page).toHaveURL(/\/app\/$/); // lands on Home
+  await expect(page.getByText('day streak')).toBeVisible();
+  expect(await workoutCount(page)).toBeGreaterThan(70); // the seeded workout is gone, the preset's are in
+});
