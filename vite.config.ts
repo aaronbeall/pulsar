@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { resolve } from 'node:path';
 import { VitePWA } from 'vite-plugin-pwa';
 
 // Set only in PR preview builds (see .github/workflows/pr-preview.yml), which deploy to a
@@ -22,7 +23,12 @@ export default defineConfig({
         // The live app's service worker scope (/pulsar/) also covers the PR previews under
         // /pulsar/pr-<n>/, and its SPA navigation fallback would otherwise answer a preview
         // URL with the cached live index.html. Previews register their own, narrower worker.
-        navigateFallbackDenylist: previewPr ? [] : [/\/pr-\d+(\/|$)/],
+        // The marketing homepage (home/) is its own page, not an app route, so the app's SPA
+        // fallback must never answer for it.
+        navigateFallbackDenylist: previewPr ? [/\/home(\/|$)/] : [/\/pr-\d+(\/|$)/, /\/home(\/|$)/],
+        // The homepage and its screenshots aren't needed offline, so keep them out of the
+        // app's precache.
+        globIgnores: ['home/**', 'assets/landing-*'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/commons\.wikimedia\.org\/w\/api\.php/,
@@ -106,6 +112,14 @@ export default defineConfig({
     port: 9092
   },
   build: {
-    assetsInlineLimit: 0
+    assetsInlineLimit: 0,
+    rollupOptions: {
+      // Two pages: the app (index.html) and the marketing homepage (home/index.html, served
+      // at <base>home/). See home/README.md.
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        landing: resolve(__dirname, 'home/index.html'),
+      },
+    },
   }
 });

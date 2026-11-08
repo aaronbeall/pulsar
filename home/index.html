@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#07040f" />
+    <meta name="color-scheme" content="dark" />
+    <title>Pulsar · Routines built around you</title>
+    <meta name="description" content="A workout routine app that builds around what you want. AI drafts it, you approve every change. Free, no account, and your data stays on your phone." />
+    <meta property="og:title" content="Pulsar · Routines built around you" />
+    <meta property="og:description" content="AI drafts your routine. You approve every change. Free, no account, your data stays yours." />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg" />
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png" />
+    <link rel="stylesheet" href="./home.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Pulsar home">
+        <svg viewBox="0 0 100 100" fill="none" aria-hidden="true">
+          <circle cx="50" cy="50" r="46" stroke="currentColor" stroke-width="6" />
+          <circle cx="50" cy="50" r="28" fill="currentColor" />
+          <path d="M 4 96 L 96 4" stroke="currentColor" stroke-width="10" stroke-linecap="round" />
+        </svg>
+        <span>PULSAR</span>
+      </a>
+      <a class="btn btn-small" href="../">Open the app</a>
+    </header>
+
+    <main>
+      <section class="hero" id="hero">
+        <canvas id="pulsar" aria-hidden="true"></canvas>
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="hero-copy">
+          <h1>Routines built<br />around <em>you</em>.</h1>
+          <p class="lede">AI drafts it. You approve every change.</p>
+          <a class="btn btn-big" href="../">Open the app <span aria-hidden="true">→</span></a>
+          <ul class="facts" aria-label="Pulsar is">
+            <li>Free</li>
+            <li>No account</li>
+            <li>Your data stays on your phone</li>
+          </ul>
+        </div>
+        <a class="scroll-cue" href="#show" aria-label="See how it works"><span></span></a>
+      </section>
+
+      <div id="show" class="show">
+        <section class="step">
+          <div class="caption">
+            <span class="num">01</span>
+            <h2>Say what you want.</h2>
+            <p>Goals, gear, time, old injuries. In your own words.</p>
+          </div>
+          <figure class="phone"><img src="./shots/setup.jpg" alt="Pulsar asking 'Anything else I should know?' with the answer 'bad knees, no jumping' and a Make my routine button" width="390" height="844" loading="lazy" decoding="async" /></figure>
+        </section>
+
+        <section class="step">
+          <div class="caption">
+            <span class="num">02</span>
+            <h2>Get a week built around it.</h2>
+            <p>Pulsar AI drafts the plan and tells you why.</p>
+          </div>
+          <figure class="phone"><img src="./shots/build.jpg" alt="A finished routine: Pulsar AI explains it kept to dumbbells and skipped jumping, above the Monday, Wednesday, Friday and Saturday plan" width="390" height="844" loading="lazy" decoding="async" /></figure>
+        </section>
+
+        <section class="step">
+          <div class="caption">
+            <span class="num">03</span>
+            <h2>Approve every change.</h2>
+            <p>Ask for a tweak. Accept or reject it, day by day.</p>
+          </div>
+          <figure class="phone"><img src="./shots/review.jpg" alt="A suggested change to Friday shown as a diff, swapping Goblet Squat for Bulgarian Split Squat, with Accept and Reject buttons" width="390" height="844" loading="lazy" decoding="async" /></figure>
+        </section>
+
+        <section class="step">
+          <div class="caption">
+            <span class="num">04</span>
+            <h2>Train one-handed.</h2>
+            <p>Every set timed. Every rest tracked.</p>
+          </div>
+          <figure class="phone"><img src="./shots/workout-set.jpg" alt="A workout in progress: Dumbbell Row, set 3 of 4, a ring counting the set's time and a Complete 10 Reps button" width="390" height="844" loading="lazy" decoding="async" /></figure>
+        </section>
+
+        <section class="step">
+          <div class="caption">
+            <span class="num">05</span>
+            <h2>Keep the streak.</h2>
+            <p>Show up. Watch it grow.</p>
+          </div>
+          <figure class="phone"><img src="./shots/streak.jpg" alt="A 14 day streak shown on a November calendar with every workout day checked" width="390" height="844" loading="lazy" decoding="async" /></figure>
+        </section>
+      </div>
+
+      <section class="outro">
+        <div class="mini-pulsar" aria-hidden="true"><i></i></div>
+        <h2>Your routine. Your habit. Your data.</h2>
+        <p>Works offline, installs to your home screen, and backs up to a file you keep.</p>
+        <a class="btn btn-big" href="../">Open the app <span aria-hidden="true">→</span></a>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>© Pulsar</span>
+      <a href="../about">About</a>
+      <a href="https://github.com/aaronbeall/pulsar">GitHub</a>
+    </footer>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
