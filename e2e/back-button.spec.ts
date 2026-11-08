@@ -5,7 +5,7 @@ import { answerSetupQuestions, createRoutineFromTemplate, navTab } from './helpe
 // Back button closes the modal rather than leaving the page.
 
 test('Back closes the side menu, and leaving through it skips the menu on the way back', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/app/');
   await navTab(page, 'History').click();
   await expect(page).toHaveURL(/\/history$/);
 
@@ -27,7 +27,7 @@ test('Back closes the side menu, and leaving through it skips the menu on the wa
 });
 
 test('Back closes dialogs on a routine, and closing one in the app does not leave a Back step', async ({ page }) => {
-  await page.goto('/history');
+  await page.goto('/app/history');
   const routineId = await createRoutineFromTemplate(page, 'Strength Builder');
   const routineUrl = new RegExp(`/workout/routine/${routineId}$`);
 
@@ -58,7 +58,7 @@ test('Back closes dialogs on a routine, and closing one in the app does not leav
 
 test('a deep link opens the Activity drawer, and closing it stays on the routine', async ({ page }) => {
   const routineId = await createRoutineFromTemplate(page, 'Strength Builder');
-  await page.goto(`/workout/routine/${routineId}?activity=1`);
+  await page.goto(`/app/workout/routine/${routineId}?activity=1`);
   const activity = page.getByRole('dialog');
   await expect(activity).toBeVisible();
 
@@ -110,7 +110,7 @@ test('Back closes the finish confirmation without leaving the workout', async ({
 });
 
 test('Back from the template chooser in setup returns to the questions', async ({ page }) => {
-  await page.goto('/workout/setup');
+  await page.goto('/app/workout/setup');
   await answerSetupQuestions(page, ['strength', '', '', '']);
   await page.getByRole('button', { name: /Choose from a template/ }).click();
   await expect(page.getByRole('heading', { name: 'Choose a Routine Template' })).toBeVisible();
@@ -122,7 +122,7 @@ test('Back from the template chooser in setup returns to the questions', async (
 });
 
 test('Back closes the AI key prompt, and a reload drops a prompt whose action is gone', async ({ page }) => {
-  await page.goto('/workout/setup');
+  await page.goto('/app/workout/setup');
   await answerSetupQuestions(page, ['strength', '', '', '']);
   await page.getByRole('button', { name: 'Make my routine!' }).click();
   const prompt = page.getByRole('dialog');

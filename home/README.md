@@ -1,19 +1,26 @@
 # Marketing homepage
 
-A small static page, separate from the app, built as a second Vite entry
-(`rollupOptions.input` in `vite.config.ts`). It deploys with the app:
+The site root is the marketing homepage, and the app lives under `app/`. Both are Vite
+entries (`rollupOptions.input` in `vite.config.ts`) and deploy together:
 
-- Live: `https://aaronbeall.github.io/pulsar/home/`
-- PR previews: `https://aaronbeall.github.io/pulsar/pr-<n>/home/`
-- Local: `npm run dev`, then open `/home/`
+| | Homepage | App |
+| --- | --- | --- |
+| Live | `https://aaronbeall.github.io/pulsar/` | `https://aaronbeall.github.io/pulsar/app/` |
+| PR previews | `.../pulsar/pr-<n>/` | `.../pulsar/pr-<n>/app/` |
+| Local (`npm run dev`) | `/` | `/app/` |
 
-The app stays at the site root, so no app route or PWA behavior changes. Every
-"Open the app" link is relative (`../`), so it works on the live site, previews and a
-future custom domain. The app's service worker skips `home/` (it isn't precached, and the
-SPA navigation fallback never answers for it).
-
-When Pulsar moves to its own domain, the plan would be to swap these: homepage at `/`, app
-at `/app/`. That's a base-path change plus moving this folder, not a rewrite.
+- The homepage's page is the root `index.html`; its styles, script and images are in this
+  folder. The app's page is `app/index.html`, and its router basename is `<base>app/`
+  (`src/main.tsx`).
+- Static files in `public/` (icons, `free-exercise-db.json`) and built assets stay shared
+  at `<base>`.
+- The PWA's manifest `start_url` and `scope` and the service worker's scope are `<base>app/`,
+  so the installed app opens straight into the app and the homepage is never cached by it.
+- App deep links (`<base>app/workout/...`) are served the app's page by a small Vite plugin in
+  dev and preview, and by `404.html` on GitHub Pages (`scripts/make-pages-404.mjs`), which
+  sends any other missing path to the homepage.
+- With a custom domain, set `PAGES_BASE` to `/` and the same layout becomes
+  `pulsarfit.app/` and `pulsarfit.app/app/`.
 
 ## Files
 

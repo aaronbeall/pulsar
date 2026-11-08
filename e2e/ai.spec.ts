@@ -21,7 +21,7 @@ test('"Make my routine!" asks for a key, then builds the routine with AI', async
     return GENERATED_ROUTINE;
   });
 
-  await page.goto('/workout/setup');
+  await page.goto('/app/workout/setup');
   await answerSetupQuestions(page, ['get stronger', 'dumbbells only', '3 days a week', 'bad knees']);
   await page.getByRole('button', { name: 'Make my routine!' }).click();
 
@@ -46,7 +46,7 @@ test('"Make my routine!" asks for a key, then builds the routine with AI', async
 });
 
 test('the key prompt offers templates as the non-AI way forward', async ({ page }) => {
-  await page.goto('/workout/setup');
+  await page.goto('/app/workout/setup');
   await answerSetupQuestions(page, ['lose weight', 'treadmill', '', '']);
   await page.getByRole('button', { name: 'Make my routine!' }).click();
 

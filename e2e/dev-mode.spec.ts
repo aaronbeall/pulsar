@@ -3,7 +3,7 @@ import { test, expect } from './fixtures';
 
 /** A routine with Sunday exercises and one finished workout, so Home shows the streak calendar. */
 async function seedSundayRoutine(page: Page) {
-  await page.goto('/');
+  await page.goto('/app/');
   await page.evaluate(async () => {
     const req = indexedDB.open('PulsarDB', 1);
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -37,12 +37,12 @@ async function workoutCount(page: Page) {
 }
 
 test('developer tools are hidden until dev mode is turned on with ?dev=1', async ({ page }) => {
-  await page.goto('/settings');
+  await page.goto('/app/settings');
   await expect(page.getByRole('heading', { name: 'Danger Zone' })).toBeVisible();
   await expect(page.getByTestId('developer-settings')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Clear All Settings' })).toHaveCount(0);
 
-  await page.goto('/settings?dev=1');
+  await page.goto('/app/settings?dev=1');
   await expect(page.getByTestId('developer-settings')).toBeVisible();
   await expect(page).toHaveURL(/\/settings$/); // the param is removed from the address bar
   await page.reload();
@@ -55,13 +55,13 @@ test('developer tools are hidden until dev mode is turned on with ?dev=1', async
 
 test('tapping a calendar day logs it only in dev mode', async ({ page }) => {
   await seedSundayRoutine(page);
-  await page.goto('/');
+  await page.goto('/app/');
   const sunday = page.getByTitle('Nov 1', { exact: true });
   await sunday.click();
   await page.waitForTimeout(300);
   expect(await workoutCount(page)).toBe(1);
 
-  await page.goto('/?dev=1');
+  await page.goto('/app/?dev=1');
   // Logging a day reloads the page.
   await Promise.all([page.waitForEvent('load'), page.getByTitle('Nov 1', { exact: true }).click()]);
   expect(await workoutCount(page)).toBe(2);

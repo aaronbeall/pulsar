@@ -2,7 +2,7 @@ import { test, expect } from './fixtures';
 import { navTab } from './helpers';
 
 test('the bottom nav and menu reach every screen', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/app/');
 
   await navTab(page, 'History').click();
   await expect(page).toHaveURL(/\/history$/);
@@ -23,7 +23,7 @@ test('the bottom nav and menu reach every screen', async ({ page }) => {
 });
 
 test('switching to dark mode sticks after a reload', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/app/');
   await page.getByRole('button', { name: 'Open menu' }).click();
   await page.getByRole('button', { name: 'Dark' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');

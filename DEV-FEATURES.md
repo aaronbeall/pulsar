@@ -7,7 +7,7 @@ Pulsar has a few features that are only for testing. They're hidden from regular
 
 - **Local dev (`npm run dev`):** always on.
 - **Any build (production, PR previews, the installed PWA):** open the app with `?dev=1` on any
-  URL, for example `https://aaronbeall.github.io/pulsar/settings?dev=1`. The app removes the param
+  URL, for example `https://aaronbeall.github.io/pulsar/app/settings?dev=1`. The app removes the param
   from the address bar and remembers the choice in localStorage (`pulsar:devMode`), so it stays on
   across reloads. It's per device and per origin.
 - **To turn it off:** use **Turn off dev mode** in Settings › Developer, or open any URL with

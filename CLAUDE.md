@@ -73,6 +73,10 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   see `e2e/README.md`). They run at a phone viewport with a pinned clock, no outside network,
   and OpenAI calls blocked unless mocked with `mockOpenAI`. When a UI change breaks a flow
   they cover, update the spec in the same change; when adding a new main flow, add one.
+- **The site root is the marketing homepage; the app lives at `<base>app/`** (router basename,
+  PWA scope and start URL all point there). The homepage is plain HTML/CSS/TS in `index.html` +
+  `home/`, with no React; see `home/README.md`. Links into the app from outside it must include
+  `app/`.
 - **GitHub Pages hosting is provisional.** Once any backend piece lands (auth, billing, AI
   proxy), the static frontend should move to Cloudflare Pages rather than keeping GitHub
   Pages alongside a separate API origin — see `PLAN-ai-subscription.md` for why.
