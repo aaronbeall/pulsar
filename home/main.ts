@@ -7,6 +7,9 @@
 // like a lighthouse. The two jets fire along the magnetic axis, and each particle keeps the
 // direction it was fired in, so the beams curl into spirals as the star turns.
 //
+// On load it plays a short reveal: matter falls in, the core ignites with a flash and
+// shockwave rings, and the star starts spinning fast and settles to a slow, casual turn.
+//
 // With prefers-reduced-motion, one still frame is drawn and nothing animates. Without
 // WebGL, the page falls back to a CSS drawing (see .no-webgl in home.css).
 
@@ -15,11 +18,25 @@ const KIND_JET = 1;
 const KIND_DISK = 2;
 const KIND_STAR = 3;
 const KIND_GLOW = 4;
+const KIND_SHOCK = 5;
+
+// Reveal timing and spin speeds (seconds, radians per second).
+const IGNITE_AT = 0.8;
+const SPIN_FAST = 9;
+const SPIN_REST = 0.7;
+const SPIN_SETTLE = 1.4; // time constant of the spin slowing down after ignition
+const FLOW_REST = 0.24; // jet particles' lifecycles per second
+const FLOW_FAST = 0.6;
 
 const VERT = /* glsl */ `
 precision highp float;
 attribute vec4 aData; // x: kind, yzw: random seeds in [0, 1)
-uniform float uTime;
+uniform float uTime;    // seconds of animation so far
+uniform float uPhase;   // the star's spin angle (integrated, since the speed changes)
+uniform float uSpeed;   // current spin speed
+uniform float uFlow;    // jets' integrated flow
+uniform float uFlowRate;
+uniform float uIgnite;  // seconds since the core ignited (negative before)
 uniform mat4 uProj;
 uniform mat4 uView;
 uniform float uPx;    // point size scale: device pixels per unit at distance 1
@@ -28,15 +45,27 @@ varying float vAlpha;
 
 const float PI = 3.14159265;
 const float TAU = 6.2831853;
-const float SPIN = 1.7;        // radians per second
+const float LAG = 1.6;         // seconds a jet particle has been flying at the end of its life
 const float TILT = 0.62;       // magnetic axis angle off the spin axis
 const float CORE_R = 0.2;
+const float IGNITE_AT_S = ${IGNITE_AT.toFixed(2)};
 
 vec3 S = normalize(vec3(0.12, 1.0, 0.18));
 
-vec3 magAxis(float t, vec3 U, vec3 V) {
-  return cos(TILT) * S + sin(TILT) * (cos(t * SPIN) * U + sin(t * SPIN) * V);
+vec3 magAxis(float phase, vec3 U, vec3 V) {
+  return cos(TILT) * S + sin(TILT) * (cos(phase) * U + sin(phase) * V);
 }
+
+// Offset shades of purple, so particles fall into streaks of slightly different color.
+vec3 purpleShade(float h) {
+  h = fract(h);
+  if (h < 0.25) return vec3(0.42, 0.24, 1.0);  // electric indigo
+  if (h < 0.5) return vec3(0.8, 0.6, 1.0);     // lavender
+  if (h < 0.75) return vec3(0.98, 0.38, 0.88); // orchid
+  return vec3(0.62, 0.14, 0.9);                // deep purple
+}
+
+float easeOut(float x) { x = clamp(x, 0.0, 1.0); return 1.0 - (1.0 - x) * (1.0 - x) * (1.0 - x); }
 
 vec3 rotateAround(vec3 v, vec3 axis, float a) {
   float c = cos(a), s = sin(a);
@@ -51,7 +80,10 @@ void main() {
   vec3 pos;
   float size;
   // The pulse: the star flares when a beam swings toward the viewer.
-  float flash = pow(abs(dot(magAxis(uTime, U, V), normalize(vec3(0.0, 0.1, 1.0)))), 6.0);
+  float flash = pow(abs(dot(magAxis(uPhase, U, V), normalize(vec3(0.0, 0.1, 1.0)))), 6.0);
+  // The ignition: a bright burst that fades over a second or so.
+  float burst = uIgnite > 0.0 ? exp(-uIgnite * 2.5) : 0.0;
+  float lit = smoothstep(-0.4, 0.15, uIgnite);
 
   if (kind < 0.5) {
     // Core: a dense shell of hot particles spinning with the star.
@@ -59,22 +91,27 @@ void main() {
     float z = r2 * 2.0 - 1.0;
     vec3 dir = vec3(sqrt(1.0 - z * z) * cos(th), z, sqrt(1.0 - z * z) * sin(th));
     float rr = CORE_R * pow(r3, 0.35);
-    pos = rotateAround(dir * rr, S, uTime * SPIN);
-    vColor = mix(vec3(1.0, 0.97, 1.0), vec3(0.8, 0.5, 1.0), r3 * r3);
-    vAlpha = 0.6 + 0.4 * flash;
-    size = 2.6 + flash * 1.5;
+    // Before ignition the core's matter falls in from far out; the burst then puffs it up.
+    float fall = easeOut(uTime / IGNITE_AT_S);
+    rr = mix(1.6 + r3 * 1.4, rr, fall) * (1.0 + 0.5 * burst);
+    pos = rotateAround(dir * rr, S, uPhase + r1 * (1.0 - fall) * 3.0);
+    vColor = mix(vec3(1.0, 0.97, 1.0), purpleShade(r1 * 3.0), 0.15 + 0.5 * r3 * r3);
+    vAlpha = (0.6 + 0.4 * flash + burst) * smoothstep(0.0, 0.5, uTime);
+    size = 2.6 + flash * 1.5 + burst * 2.0;
   } else if (kind < 1.5) {
     // Jets: fired from the poles of the magnetic axis as it was when the particle left.
     float side = r1 < 0.5 ? -1.0 : 1.0;
-    float life = fract(r2 * 7.31 + uTime * 0.42);
-    float born = uTime - life * 1.5;
-    vec3 m = side * magAxis(born, U, V);
+    float life = fract(r2 * 7.31 + uFlow);
+    // Where the magnetic axis pointed when this particle was fired.
+    vec3 m = side * magAxis(uPhase - life * LAG * uSpeed, U, V);
     vec3 p1 = normalize(cross(m, S));
     vec3 p2 = cross(m, p1);
     float d = CORE_R * 0.9 + life * 3.2;
     float spread = (0.02 + life * life * 0.6) * sqrt(r3);
     float a = r3 * 97.0 + life * 5.0;
     pos = m * d + (cos(a) * p1 + sin(a) * p2) * spread;
+    // Particles with close seeds travel together as a filament; give each a shade.
+    vec3 streak = purpleShade(floor(r3 * 11.0) * 0.618);
     vec3 hot = vec3(1.0, 0.92, 1.0);
     vec3 violet = vec3(0.62, 0.36, 1.0);
     vec3 magenta = vec3(0.92, 0.3, 0.95);
@@ -82,25 +119,48 @@ void main() {
     vColor = life < 0.08 ? mix(hot, violet, life / 0.08)
       : life < 0.22 ? mix(violet, magenta, (life - 0.08) / 0.14)
       : mix(magenta, red, smoothstep(0.22, 0.45, life));
-    vAlpha = smoothstep(0.0, 0.02, life) * pow(1.0 - life, 1.25);
+    vColor = mix(vColor, streak, 0.55 * smoothstep(0.03, 0.12, life) * (1.0 - smoothstep(0.4, 0.7, life)));
+    vAlpha = smoothstep(0.0, 0.02, life) * pow(1.0 - life, 1.25) * (0.75 + 0.5 * r2);
+    // The beams shoot out from ignition: only particles fired since then are shown.
+    vAlpha *= step(life, uIgnite * uFlowRate);
     size = 1.5 + (1.0 - life) * 2.8;
   } else if (kind < 2.5) {
     // Disk: a thin swirl in the equatorial plane; inner particles orbit faster.
     float rad = 0.32 + pow(r1, 1.7) * 1.5;
-    float ang = r2 * TAU + uTime * 0.55 / pow(rad, 1.5);
+    float ang = r2 * TAU + uPhase * 0.3 / pow(rad, 1.5);
+    float grow = easeOut(uIgnite / 1.8);
+    rad *= mix(0.15, 1.0, grow);
     float h = (r3 - 0.5) * 0.05 * rad;
     pos = (cos(ang) * U + sin(ang) * V) * rad + S * h;
     float t = clamp((rad - 0.32) / 1.5, 0.0, 1.0);
     vColor = mix(vec3(0.8, 0.5, 1.0), vec3(1.0, 0.2, 0.35), smoothstep(0.0, 0.6, t));
-    vAlpha = (1.0 - t) * 0.5 + 0.06;
-    size = 1.1 + (1.0 - t) * 0.8;
-  } else if (kind > 3.5) {
+    // Arms of slightly different purple, which shear into spiral streaks as the disk turns.
+    vColor = mix(vColor, purpleShade(floor(r2 * 14.0) * 0.618), 0.45);
+    vAlpha = ((1.0 - t) * 0.8 + 0.12) * smoothstep(0.0, 0.8, uIgnite) * (0.7 + 0.6 * r3);
+    size = 1.4 + (1.0 - t) * 1.1;
+  } else if (kind > 3.5 && kind < 4.5) {
     // Glow: a few huge, faint particles stacked on the core for bloom.
     pos = vec3(0.0);
     // The smallest ones are a white-hot nucleus; the biggest a faint violet haze.
     vColor = mix(vec3(1.0, 0.94, 1.0), vec3(0.6, 0.3, 1.0), sqrt(r1));
-    vAlpha = mix(0.85, 0.06, sqrt(r1)) * (0.75 + 0.6 * flash);
-    size = 7.0 + r1 * 60.0;
+    float glow = mix(smoothstep(0.0, IGNITE_AT_S, uTime) * 0.5, 1.0, lit);
+    vAlpha = mix(0.85, 0.06, sqrt(r1)) * (0.75 + 0.6 * flash + 2.0 * burst) * glow;
+    size = (7.0 + r1 * 60.0) * (1.0 + burst * 0.8);
+  } else if (kind > 4.5) {
+    // Shockwaves: rings racing out from the ignition, one after another.
+    float ring = floor(r1 * 3.0);
+    float age = uIgnite - ring * 0.3;
+    float rad = 0.22 + 3.4 * (1.0 - exp(-age * 1.5));
+    rad *= 1.0 + (r3 - 0.5) * 0.08 * (1.0 + age);
+    float ang = r2 * TAU;
+    // The middle ring faces the viewer; the others lie in the star's equator.
+    vec3 e1 = ring == 1.0 ? vec3(1.0, 0.0, 0.0) : U;
+    vec3 e2 = ring == 1.0 ? vec3(0.0, 1.0, 0.0) : V;
+    pos = (cos(ang) * e1 + sin(ang) * e2) * rad;
+    float fade = clamp(1.0 - age / 2.4, 0.0, 1.0);
+    vColor = mix(vec3(1.0, 0.95, 1.0), ring == 2.0 ? vec3(1.0, 0.25, 0.35) : purpleShade(r2 * 4.0), smoothstep(0.0, 0.6, age));
+    vAlpha = age > 0.0 ? fade * fade * 0.9 : 0.0;
+    size = 2.2 + fade * 1.5;
   } else {
     // Background stars, drifting very slowly.
     float th = r1 * TAU + uTime * 0.01;
@@ -109,7 +169,7 @@ void main() {
     pos = dir * (7.0 + r3 * 5.0);
     vColor = mix(vec3(0.7, 0.75, 1.0), vec3(1.0, 0.75, 0.9), r3);
     float tw = 0.6 + 0.4 * sin(uTime * (0.6 + r3 * 2.0) + r1 * 40.0);
-    vAlpha = (0.25 + 0.5 * r3 * r3) * tw;
+    vAlpha = (0.25 + 0.5 * r3 * r3) * tw * smoothstep(0.0, 2.0, uTime);
     size = 1.6 + r3 * 2.4;
   }
 
@@ -177,8 +237,9 @@ function buildParticles(small: boolean) {
     [KIND_CORE, small ? 1400 : 2200],
     [KIND_JET, small ? 9000 : 15000],
     [KIND_DISK, small ? 2600 : 4500],
-    [KIND_STAR, small ? 500 : 900],
+    [KIND_STAR, small ? 300 : 600],
     [KIND_GLOW, 10],
+    [KIND_SHOCK, small ? 2400 : 4000],
   ];
   const total = counts.reduce((n, [, c]) => n + c, 0);
   const data = new Float32Array(total * 4);
@@ -199,7 +260,7 @@ function startHero() {
   const canvas = document.getElementById('pulsar') as HTMLCanvasElement;
   const gl = canvas.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' });
   if (!gl) {
-    hero.classList.add('no-webgl');
+    hero.classList.add('no-webgl', 'settled');
     return;
   }
 
@@ -212,7 +273,7 @@ function startHero() {
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program) || 'link failed');
   } catch (err) {
     console.warn('Pulsar hero: falling back to CSS', err);
-    hero.classList.add('no-webgl');
+    hero.classList.add('no-webgl', 'settled');
     return;
   }
   gl.useProgram(program);
@@ -227,6 +288,11 @@ function startHero() {
   gl.vertexAttribPointer(aData, 4, gl.FLOAT, false, 0, 0);
 
   const uTime = gl.getUniformLocation(program, 'uTime');
+  const uPhase = gl.getUniformLocation(program, 'uPhase');
+  const uSpeed = gl.getUniformLocation(program, 'uSpeed');
+  const uFlow = gl.getUniformLocation(program, 'uFlow');
+  const uFlowRate = gl.getUniformLocation(program, 'uFlowRate');
+  const uIgnite = gl.getUniformLocation(program, 'uIgnite');
   const uProj = gl.getUniformLocation(program, 'uProj');
   const uView = gl.getUniformLocation(program, 'uView');
   const uPx = gl.getUniformLocation(program, 'uPx');
@@ -276,11 +342,28 @@ function startHero() {
     hero.style.setProperty('--star-y', `${(0.5 - clipY * 0.5) * 100}%`);
   }
 
-  function draw(t: number) {
+  // Animation state. Time only advances while the hero is animating, so the reveal plays
+  // when it's first seen. The spin and the jets' flow are integrated, since their speeds
+  // change during the reveal.
+  const sim = { t: 0, phase: 0, flow: 0 };
+  const spinAt = (t: number) => (t < IGNITE_AT ? SPIN_FAST * (t / IGNITE_AT) : SPIN_REST + (SPIN_FAST - SPIN_REST) * Math.exp(-(t - IGNITE_AT) / SPIN_SETTLE));
+  const flowAt = (t: number) => (t < IGNITE_AT ? FLOW_FAST : FLOW_REST + (FLOW_FAST - FLOW_REST) * Math.exp(-(t - IGNITE_AT) / SPIN_SETTLE));
+  function step(dt: number) {
+    sim.t += dt;
+    sim.phase += spinAt(sim.t) * dt;
+    sim.flow += flowAt(sim.t) * dt;
+  }
+
+  function draw() {
     pointer.x += (pointerTarget.x - pointer.x) * 0.05;
     pointer.y += (pointerTarget.y - pointer.y) * 0.05;
     setView();
-    gl!.uniform1f(uTime, t);
+    gl!.uniform1f(uTime, sim.t);
+    gl!.uniform1f(uPhase, sim.phase);
+    gl!.uniform1f(uSpeed, spinAt(sim.t));
+    gl!.uniform1f(uFlow, sim.flow);
+    gl!.uniform1f(uFlowRate, flowAt(sim.t));
+    gl!.uniform1f(uIgnite, sim.t - IGNITE_AT);
     gl!.clearColor(0, 0, 0, 0);
     gl!.clear(gl!.COLOR_BUFFER_BIT);
     gl!.drawArrays(gl!.POINTS, 0, total);
@@ -289,12 +372,14 @@ function startHero() {
   resize();
   window.addEventListener('resize', () => {
     resize();
-    if (!running) draw(stillTime);
+    if (!running) draw();
   });
 
-  const stillTime = 2.35; // a frame where both beams are clearly visible
   if (reducedMotion.matches) {
-    draw(stillTime);
+    // A settled frame where both beams are clearly visible.
+    Object.assign(sim, { t: 30, phase: 4.0, flow: 0.5 });
+    hero.classList.add('settled');
+    draw();
     return;
   }
 
@@ -310,14 +395,23 @@ function startHero() {
   // Only animate while the hero is on screen and the tab is visible.
   let visible = true;
   let raf = 0;
-  const start = performance.now();
+  let last = 0;
   const loop = (now: number) => {
-    draw((now - start) / 1000 + stillTime);
+    // Cap the step so a dropped frame or a resumed tab doesn't jump the animation.
+    if (last) step(Math.min(0.05, (now - last) / 1000));
+    last = now;
+    draw();
     raf = requestAnimationFrame(loop);
   };
   const update = () => {
     const should = visible && !document.hidden;
-    if (should && !running) { running = true; raf = requestAnimationFrame(loop); }
+    if (should && !running) {
+      running = true;
+      last = 0;
+      // The CSS sky and bloom start their own reveal in step with the first frame.
+      hero.classList.add('igniting');
+      raf = requestAnimationFrame(loop);
+    }
     if (!should && running) { running = false; cancelAnimationFrame(raf); }
   };
   new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; update(); }).observe(hero);
