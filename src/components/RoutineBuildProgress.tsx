@@ -133,7 +133,7 @@ const RoutineBuildProgress: React.FC<RoutineBuildProgressProps> = ({ commentary,
 
       {ready && (
         <Button colorScheme="cyan" size="lg" rightIcon={<FaArrowRight />} onClick={ready.onOpen} animation={`${slideIn} 0.3s ease-out`} sx={NO_MOTION}>
-          See my routine
+          See my routine & make changes
         </Button>
       )}
     </VStack>

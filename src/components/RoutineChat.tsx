@@ -179,7 +179,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
         <VStack
           align="stretch"
           spacing={3}
-          maxH={{ base: "55vh", md: "420px" }}
+          maxH={{ base: "35vh", md: "360px" }}
           overflowY="auto"
           ref={chatContainerRef}
         >

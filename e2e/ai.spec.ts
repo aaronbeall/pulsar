@@ -37,7 +37,7 @@ test('"Make my routine!" asks for a key, then builds the routine with AI', async
   await expect(progress.getByText('Your routine is ready')).toBeVisible();
   await expect(progress.getByText('I kept it to dumbbells')).toBeVisible();
   await expect(progress.getByText('Upper Pull')).toBeVisible();
-  await progress.getByRole('button', { name: 'See my routine' }).click();
+  await progress.getByRole('button', { name: 'See my routine & make changes' }).click();
   await expect(page).toHaveURL(/\/workout\/routine\/[\w-]+$/);
   await expect(page.getByText('Knee-Friendly Builder')).toBeVisible();
   await expect(page.getByText('I kept it to dumbbells')).toBeVisible();
