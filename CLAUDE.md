@@ -90,6 +90,12 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   `hooks/useAccount.ts` (`services/account.ts`); where there's no API it behaves as if
   sign-in doesn't exist. The server stores identity, plan and AI usage only, never workout
   data or prompt text. Previews hide sign-in (`AUTH_ORIGINS`).
+- **Pulsar AI subscriptions are Stripe Checkout with Managed Payments** (`worker/billing/`):
+  Stripe is the merchant of record, the webhook (`/api/billing/webhook`, signature checked by
+  hand in `signature.ts`) keeps the `subscription` table in step, and an active subscription
+  puts the account on the `pulsar_ai` tier. Buying and managing happen on Stripe's pages, so
+  there's no card UI in the app. Prices shown in the app are in `services/account.ts`
+  (`PULSAR_AI_PRICES`) and must match the Stripe prices.
 - Login/subscription must stay **optional** — the app should remain fully useful with
   zero account, local-only data, and template-based (non-AI) routines. Real AI requires
   *either* a personal API key (free, bring-your-own-key) *or* login + an active

@@ -1,23 +1,44 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Avatar, Box, Button, Flex, Heading, Icon, Text, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
 import { FaGoogle, FaUserCircle } from 'react-icons/fa';
 import { useAccount } from '../hooks/useAccount';
-import { deleteAccount, signInWithGoogle, signOut } from '../services/account';
+import { deleteAccount, openBillingPortal, signInWithGoogle, signOut } from '../services/account';
+import UpgradeButtons from './UpgradeButtons';
 
 /**
  * Settings > Account: optional Google sign-in. Hidden where the site has no sign-in (GitHub
  * Pages, plain `npm run dev`), so the app looks exactly as before there.
  */
+const formatDate = (ms: number) => new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
 const allowanceLine = ({ used, limit }: { used: number; limit: number }, one: string, many: string) =>
   `${Math.max(0, limit - used)} of ${limit} ${limit === 1 ? one : many} left`;
 
 const AccountCard = () => {
   const account = useAccount();
   const toast = useToast();
-  const [busy, setBusy] = useState<'signin' | 'signout' | 'delete' | null>(null);
+  const [busy, setBusy] = useState<'signin' | 'signout' | 'delete' | 'portal' | null>(null);
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
+
+  // Back from Stripe Checkout (?subscribed=1): Stripe's webhook can land a moment after the
+  // redirect, so check the account a few times until the subscription shows up.
+  const justSubscribed = new URLSearchParams(window.location.search).get('subscribed') === '1';
+  const { refresh } = account;
+  useEffect(() => {
+    if (!justSubscribed) return;
+    toast({ title: 'Welcome to Pulsar AI', description: 'Thanks for subscribing!', status: 'success', duration: 5000, isClosable: true });
+    const url = new URL(window.location.href);
+    url.searchParams.delete('subscribed');
+    window.history.replaceState(window.history.state, '', url.toString());
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      refresh();
+      if (++tries >= 5) window.clearInterval(timer);
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [justSubscribed, refresh, toast]);
 
   if (!account.signInAvailable) return null;
 
@@ -44,6 +65,16 @@ const AccountCard = () => {
       fail("Couldn't sign out", e);
     } finally {
       setBusy(null);
+    }
+  };
+
+  const handlePortal = async () => {
+    setBusy('portal');
+    try {
+      await openBillingPortal();
+    } catch (e) {
+      setBusy(null);
+      fail("Couldn't open billing", e);
     }
   };
 
@@ -91,8 +122,31 @@ const AccountCard = () => {
                 {allowanceLine(account.ai.edit, 'AI edit', 'AI edits')}
               </Text>
               {account.ai.resetsAt && (
-                <Text fontSize="xs" color={mutedColor}>Resets {new Date(account.ai.resetsAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</Text>
+                <Text fontSize="xs" color={mutedColor}>Resets {formatDate(account.ai.resetsAt)}</Text>
               )}
+            </Box>
+          )}
+          {account.subscription && account.ai?.tier === 'pulsar_ai' && (
+            <Box data-testid="subscription">
+              <Text fontSize="sm" color={mutedColor} mb={2}>
+                {account.subscription.interval === 'year' ? 'Yearly' : 'Monthly'} plan
+                {account.subscription.currentPeriodEnd &&
+                  (account.subscription.cancelAtPeriodEnd
+                    ? `, ends ${formatDate(account.subscription.currentPeriodEnd)}`
+                    : `, renews ${formatDate(account.subscription.currentPeriodEnd)}`)}
+                {account.subscription.status === 'past_due' && '. Payment failed: update your card.'}
+              </Text>
+              <Button size="sm" variant="outline" onClick={handlePortal} isLoading={busy === 'portal'} isDisabled={busy !== null}>
+                Manage subscription
+              </Button>
+            </Box>
+          )}
+          {account.billing && account.hostedAI && account.ai?.tier !== 'pulsar_ai' && (
+            <Box data-testid="upgrade">
+              <Text fontSize="sm" mb={2}>
+                Pulsar AI: 20 routine plans and 200 AI edits every month. Cancel anytime.
+              </Text>
+              <UpgradeButtons />
             </Box>
           )}
           <Flex gap={2} wrap="wrap">

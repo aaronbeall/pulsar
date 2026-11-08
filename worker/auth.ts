@@ -1,4 +1,6 @@
 import { betterAuth } from 'better-auth';
+import { APIError } from 'better-auth/api';
+import { getSubscription, isActive } from './billing/subscription';
 
 /**
  * Better Auth, created per request: the Worker serves production, PR previews and local dev
@@ -28,7 +30,18 @@ export function createAuth(env: Env, origin: string) {
       : {},
     user: {
       // Settings > Account > Delete account. Deleting cascades to sessions and accounts.
-      deleteUser: { enabled: true },
+      deleteUser: {
+        enabled: true,
+        // Deleting the account wouldn't stop Stripe billing, so an active subscription has to
+        // be cancelled first (Settings > Account > Manage subscription).
+        beforeDelete: async (user) => {
+          if (isActive(await getSubscription(env.DB, user.id))) {
+            throw new APIError('BAD_REQUEST', {
+              message: 'Cancel your Pulsar AI subscription before deleting your account (Manage subscription).',
+            });
+          }
+        },
+      },
     },
     session: {
       expiresIn: 60 * 60 * 24 * 90, // 90 days: a phone app shouldn't keep asking to sign in

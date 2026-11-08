@@ -63,6 +63,30 @@ Allowances (free: 1 plan + 2 edits per account) and model prices are in
   hosted AI answers "busy" until midnight UTC.
 - Local testing without spending: point `OPENAI_URL` in `.dev.vars` at a fake server that
   answers like OpenAI's streaming API.
+
+**Pulsar AI subscriptions (Stripe).** $3.99/month or $29.99/year through Stripe Checkout with
+[Managed Payments](https://docs.stripe.com/payments/managed-payments), so Stripe is the
+merchant of record and handles sales tax and VAT. `worker/billing/`: `/api/billing/checkout`
+and `/api/billing/portal` send the browser to Stripe; `/api/billing/webhook` verifies Stripe's
+signature and keeps the `subscription` table in step. An active (or past-due, while Stripe
+retries) subscription switches the account to the Pulsar AI tier in `worker/ai/plans.ts`.
+
+- Setup, in test mode first:
+  1. Stripe Dashboard > Settings > Managed Payments: activate it.
+  2. Create a product "Pulsar AI" with tax code `txcd_10103000` (SaaS, personal use) and two
+     recurring prices: $3.99 monthly, $29.99 yearly. Put their ids in `STRIPE_PRICE_MONTHLY`
+     and `STRIPE_PRICE_YEARLY` in `wrangler.jsonc`.
+  3. Settings > Billing > Customer portal: allow cancelling and updating the payment method.
+  4. Developers > Webhooks: add `https://pulsarfit.app/api/billing/webhook` with events
+     `checkout.session.completed`, `customer.subscription.created`, `.updated`, `.deleted`,
+     `.paused`, `.resumed`, `invoice.paid` and `invoice.payment_failed`.
+  5. `npx wrangler secret put STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (the endpoint's
+     `whsec_...`).
+- Locally, `stripe listen --forward-to localhost:8787/api/billing/webhook` prints a webhook
+  secret for `.dev.vars`; or point `STRIPE_API_BASE` at a fake server.
+- An account with an active subscription can't be deleted until it's cancelled, since
+  deleting the account wouldn't stop Stripe billing.
+- Before taking real payments: publish a privacy policy and terms, and switch to live keys.
 - The deploy workflow creates the D1 database if needed and applies migrations on `main`
   only, so a PR's migration never touches production before it merges.
 

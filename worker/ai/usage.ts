@@ -1,3 +1,4 @@
+import { getSubscription, isActive } from '../billing/subscription';
 import { AIKind, ESTIMATED_COST_MICROS, TIER_LIMITS, Tier, TokenUsage, costMicros, dayStart, periodEnd, periodStart } from './plans';
 
 // Allowance bookkeeping in D1 (table ai_usage, migration 0002). A call is reserved before
@@ -15,9 +16,9 @@ export interface UsageSummary {
 
 export type DenyReason = 'allowance_used' | 'daily_limit' | 'cost_cap';
 
-/** The account's tier. Everyone is on the free tier until subscriptions land. */
-export async function getTier(_db: D1Database, _userId: string): Promise<Tier> {
-  return 'free';
+/** The account's tier: Pulsar AI while its subscription is active, otherwise free. */
+export async function getTier(db: D1Database, userId: string): Promise<Tier> {
+  return isActive(await getSubscription(db, userId)) ? 'pulsar_ai' : 'free';
 }
 
 export async function usageSummary(db: D1Database, userId: string, tier: Tier, now = Date.now()): Promise<UsageSummary> {

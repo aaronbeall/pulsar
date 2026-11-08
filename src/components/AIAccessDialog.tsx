@@ -25,6 +25,7 @@ import { useOpenAiApiKey } from '../store/aiSettingsStore';
 import { AIKind, testApiKey } from '../services/ai';
 import { useAccount } from '../hooks/useAccount';
 import { signInWithGoogle } from '../services/account';
+import UpgradeButtons from './UpgradeButtons';
 
 export interface AIAccessAlternative {
   label: string;
@@ -52,12 +53,24 @@ interface AIAccessDialogProps {
 // - signed in with the allowance used: Pulsar AI subscription (coming soon);
 // - always: the user's own OpenAI key.
 // Open it through hooks/useAIGate.tsx rather than directly.
+/** This page without the dialog open: the action can't resume after leaving the site. */
+function returnPath() {
+  const params = new URLSearchParams(window.location.search);
+  params.delete('ai');
+  const query = params.toString();
+  return window.location.pathname + (query ? `?${query}` : '');
+}
+
 const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, onUnlocked, onClose, alternative }) => {
   const [existingKey, setApiKey] = useOpenAiApiKey();
   const account = useAccount();
   const [signingIn, setSigningIn] = useState(false);
   const offerSignIn = account.hostedAI && !account.user;
   const allowanceUsed = account.hostedAI && !!account.user && !!kind && !!account.ai && account.ai[kind].used >= account.ai[kind].limit;
+  const subscribed = account.ai?.tier === 'pulsar_ai';
+  // Signed in, free allowance used, and subscriptions are on sale here.
+  const offerUpgrade = allowanceUsed && !subscribed && account.billing;
+  const resetsOn = account.ai?.resetsAt ? new Date(account.ai.resetsAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : null;
   const toast = useToast();
   const [draftKey, setDraftKey] = useState('');
   const keyInputRef = useRef<HTMLInputElement>(null);
@@ -80,10 +93,7 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
     try {
       // Come back to this page without the dialog open: the action can't resume after the
       // round trip to Google, so the user taps it again (answers and drafts are kept).
-      const params = new URLSearchParams(window.location.search);
-      params.delete('ai');
-      const query = params.toString();
-      await signInWithGoogle(window.location.pathname + (query ? `?${query}` : ''));
+      await signInWithGoogle(returnPath());
     } catch (e) {
       setSigningIn(false);
       toast({ title: "Couldn't start sign-in", description: e instanceof Error ? e.message : undefined, status: 'error', duration: 4000, isClosable: true });
@@ -137,6 +147,29 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
                   Continue with Google
                 </Button>
               </Box>
+            ) : offerUpgrade ? (
+              <Box borderWidth="2px" borderColor="cyan.400" borderRadius="lg" p={4} bg={keyCardBg} data-testid="ai-upgrade-option">
+                <Flex align="center" gap={2} mb={1}>
+                  <Icon as={FaCrown} color="yellow.500" />
+                  <Heading size="sm">Get Pulsar AI</Heading>
+                </Flex>
+                <Text fontSize="sm" color={mutedColor} mb={3}>
+                  You've used your free AI. Pulsar AI gives you 20 routine plans and 200 AI edits
+                  every month, no OpenAI account needed. Cancel anytime.
+                </Text>
+                <UpgradeButtons returnTo={returnPath()} />
+              </Box>
+            ) : allowanceUsed && subscribed ? (
+              <Box borderWidth="2px" borderColor={cardBorder} borderRadius="lg" p={4} data-testid="ai-month-used">
+                <Flex align="center" gap={2} mb={1}>
+                  <Icon as={FaCrown} color="yellow.500" />
+                  <Text fontWeight="bold">Pulsar AI</Text>
+                </Flex>
+                <Text fontSize="sm" color={mutedColor}>
+                  You've used this month's Pulsar AI{resetsOn ? `. It resets ${resetsOn}.` : '.'} Until
+                  then you can use your own OpenAI key.
+                </Text>
+              </Box>
             ) : (
               <Box borderWidth="2px" borderColor={cardBorder} borderStyle="dashed" borderRadius="lg" p={4} opacity={0.7} aria-disabled data-testid="ai-premium-option">
                 <Flex align="center" gap={2} mb={1} wrap="wrap">
@@ -155,7 +188,7 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
             <Box borderWidth="2px" borderColor="cyan.400" borderRadius="lg" p={4} bg={keyCardBg}>
               <Flex align="center" gap={2} mb={1}>
                 <Icon as={FaKey} color="cyan.500" />
-                <Heading size="sm">{offerSignIn ? 'Or use your own OpenAI key' : 'Use your own OpenAI key'}</Heading>
+                <Heading size="sm">{offerSignIn || offerUpgrade ? 'Or use your own OpenAI key' : 'Use your own OpenAI key'}</Heading>
               </Flex>
               <Text fontSize="sm" color={mutedColor} mb={3}>
                 Free from Pulsar. OpenAI bills your account directly, usually under a cent per routine.{' '}
@@ -187,14 +220,14 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
         <ModalFooter flexDirection="column" gap={2} alignItems="stretch">
           <Button
             colorScheme="cyan"
-            variant={offerSignIn ? 'outline' : 'solid'}
+            variant={offerSignIn || offerUpgrade ? 'outline' : 'solid'}
             size="lg"
             onClick={handleVerify}
             isLoading={verifying}
             loadingText="Checking key..."
             isDisabled={!draftKey.trim()}
           >
-            {offerSignIn ? 'Use this key' : 'Continue'}
+            {offerSignIn || offerUpgrade ? 'Use this key' : 'Continue'}
           </Button>
           {alternative && (
             <Button variant="ghost" size="lg" onClick={alternative.onClick}>
