@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { workoutPrompts } from '../src/constants/prompts';
 
 /** A tab in the bottom navigation bar. */
-export function navTab(page: Page, name: 'Home' | 'Workout' | 'History') {
+export function navTab(page: Page, name: 'Home' | 'Workout' | 'Activity') {
   return page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name });
 }
 

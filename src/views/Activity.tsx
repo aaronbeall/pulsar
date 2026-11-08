@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Flex, Heading, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
+import { Box, Flex, Heading, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
 import { FaChartBar, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaMedal, FaTrophy } from 'react-icons/fa';
 import { usePulsarLoading, useRoutines, useWorkouts } from '../store/pulsarStore';
 import { formatTotalDuration, getHistorySummaryStats, getRoutineStints } from '../utils/historyStats';
@@ -9,7 +9,7 @@ import SectionCard from '../components/SectionCard';
 import HistoryTimeline from '../components/HistoryTimeline';
 import WeeklyActivityGraph from '../components/WeeklyActivityGraph';
 
-const History: React.FC = () => {
+const Activity: React.FC = () => {
   const routines = useRoutines();
   const workouts = useWorkouts();
   // routines/workouts default to [] (never undefined) even before loadAll() resolves, so
@@ -30,21 +30,23 @@ const History: React.FC = () => {
     return (
       <Flex direction="column" align="center" justify="center" minH="60vh" w="100%">
         <Spinner size="xl" color="cyan.400" thickness="4px" speed="0.7s" mb={4} />
-        <Text color="gray.500" fontSize="lg">Loading your history...</Text>
+        <Text color="gray.500" fontSize="lg">Loading your activity...</Text>
       </Flex>
     );
   }
 
   return (
     <Flex direction="column" gap={{ base: 4, sm: 5 }}>
-      <Heading
-        fontSize={{ base: 'xl', sm: '2xl' }}
-        bgGradient="linear(to-r, cyan.400, blue.500)"
-        bgClip="text"
-        mb={1}
-      >
-        History
-      </Heading>
+      <Box>
+        <Heading
+          fontSize={{ base: 'xl', sm: '2xl' }}
+          bgGradient="linear(to-r, orange.400, pink.500)"
+          bgClip="text"
+        >
+          Activity
+        </Heading>
+        <Text fontSize="sm" color="gray.500">Your streaks, workouts and routines over time.</Text>
+      </Box>
 
       <SimpleGrid columns={{ base: 2, sm: 3 }} spacing={{ base: 3, sm: 4 }}>
         <StatCard icon={FaFire} label="Day streak" value={summary.streak} color="orange.400" />
@@ -68,4 +70,4 @@ const History: React.FC = () => {
   );
 };
 
-export default History;
+export default Activity;

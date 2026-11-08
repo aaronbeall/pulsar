@@ -45,7 +45,7 @@ test('switching routines keeps the streak, and days open their story', async ({ 
 
   // Old Mon/Wed + new Thu, no misses: before the switch Tuesday wasn't scheduled.
   await expect(page.getByText('day streak')).toBeVisible();
-  await expect(page.getByText('4', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Open activity' })).toContainText('4');
 
   // A past day shows what was done.
   await page.getByRole('button', { name: 'Previous month' }).click();
@@ -64,9 +64,29 @@ test('switching routines keeps the streak, and days open their story', async ({ 
   await expect(sheet.getByText('New Plan')).toBeVisible();
   await page.goBack();
 
-  // History tells the same story, one card per routine stretch.
-  await navTab(page, 'History').click();
+  // Activity tells the same story, one card per routine stretch.
+  await navTab(page, 'Activity').click();
   await expect(page.getByText('New Plan')).toBeVisible();
   await expect(page.getByText('Old Plan')).toBeVisible();
   await expect(page.getByText(/^3 workouts/)).toBeVisible();
+});
+
+test("a retired routine's page sums up its activity and opens its own streak calendar", async ({ page }) => {
+  await seedSwitchedRoutines(page);
+  await page.goto('/app/workout/routine/old');
+  const card = page.getByTestId('activity-summary');
+  await expect(card).toContainText('day streak when it ended');
+  await card.click();
+  await expect(page).toHaveURL(/activity=1/);
+  const drawer = page.getByRole('dialog');
+  await expect(drawer.getByText('Routine Activity')).toBeVisible();
+  await expect(drawer.getByText('day streak when it ended')).toBeVisible();
+  await expect(drawer.getByText('October 2026')).toBeVisible(); // opens on the month it was last used
+  await page.goBack();
+  await expect(drawer).toBeHidden();
+
+  // Home sums up everything and links to Activity.
+  await page.goto('/app/');
+  await page.getByTestId('activity-summary').click();
+  await expect(page).toHaveURL(/\/activity$/);
 });

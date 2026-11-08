@@ -23,13 +23,31 @@ import DaySheet, { useDaySheet } from './DaySheet';
 interface StreakCalendarProps {
   workouts: Workout[];
   routines: Routine[];
+  /** Where tapping the streak header goes; null for no link (e.g. inside a sheet). */
+  linkTo?: string | null;
+  /** For a retired routine: the streak is shown as where it ended, not as live. */
+  ended?: boolean;
 }
 
-const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) => {
+const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines, linkTo = '/activity', ended = false }) => {
   // All routines, not just active ones: past days are judged by each routine's schedule history.
-  const { days, streak, best, status } = useMemo(() => getStreakInfo(workouts, routines), [workouts, routines]);
-  const isGrayed = status !== 'up_to_date';
-  const isPending = status === 'pending';
+  const info = useMemo(() => getStreakInfo(workouts, routines), [workouts, routines]);
+  const { streak, best, status } = info;
+  // An ended routine's last run stops at its last workout, not at today.
+  const lastCompleted = useMemo(() => {
+    const done = Object.values(info.days).filter(d => d.completed).map(d => d.date.getTime());
+    return done.length ? new Date(Math.max(...done)) : undefined;
+  }, [info]);
+  const days = useMemo(() => {
+    if (!ended || !lastCompleted) return info.days;
+    const trimmed: typeof info.days = {};
+    for (const [key, day] of Object.entries(info.days)) {
+      trimmed[key] = day.date > lastCompleted ? { ...day, inStreak: false } : day;
+    }
+    return trimmed;
+  }, [info, ended, lastCompleted]);
+  const isGrayed = ended || status !== 'up_to_date';
+  const isPending = !ended && status === 'pending';
   const flameColor = isGrayed ? 'gray.400' : 'orange.400';
   const streakTextColor = isGrayed ? 'gray.400' : 'orange.500';
   const [bgActiveColor] = useToken('colors', [useColorModeValue('orange.300', 'orange.700')]);
@@ -52,7 +70,8 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
-  const [viewDate, setViewDate] = useState(() => startOfMonth(new Date()));
+  // An ended routine opens on the month it was last used.
+  const [viewDate, setViewDate] = useState(() => startOfMonth(ended && lastCompleted ? lastCompleted : new Date()));
   const isCurrentMonthView = isSameMonth(viewDate, today);
   const monthStart = startOfMonth(viewDate);
   const monthEnd = endOfMonth(viewDate);
@@ -101,7 +120,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
 
   return (
     <Box mt={6} mb={2}>
-      <Flex as={RouterLink} to="/history" aria-label="Open history" align="center" justify="center" mb={2} alignItems='center'>
+      <Flex {...(linkTo ? { as: RouterLink, to: linkTo, 'aria-label': 'Open activity' } : {})} align="center" justify="center" mb={2} alignItems='center' wrap="wrap">
         <Text
           fontSize="2xl"
           fontWeight="bold"
@@ -149,7 +168,7 @@ const StreakCalendar: React.FC<StreakCalendarProps> = ({ workouts, routines }) =
             lineHeight: 1,
           }}>{streak}</span>
         </Text>
-        <Text color={streakTextColor} fontWeight="medium">day streak</Text>
+        <Text color={streakTextColor} fontWeight="medium">{ended ? 'day streak when it ended' : 'day streak'}</Text>
         {best > streak && (
           <Text ml={3} fontSize="sm" color="gray.500" fontWeight="semibold">
             Best {best}
