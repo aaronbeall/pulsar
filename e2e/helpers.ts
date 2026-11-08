@@ -22,7 +22,7 @@ export async function answerSetupQuestions(page: Page, answers: string[]) {
  * page on the new routine. Returns the routine's id.
  */
 export async function createRoutineFromTemplate(page: Page, templateName = 'Strength Builder') {
-  await page.goto('/workout/setup');
+  await page.goto('/app/workout/setup');
   // The chooser shows the top three templates for the answers, so answer for this one.
   await answerSetupQuestions(page, ['strength', '', '', '']);
   await page.getByRole('button', { name: /Choose from a template/ }).click();
@@ -53,9 +53,11 @@ export async function completeAllSets(page: Page) {
   for (let guard = 0; guard < 200; guard++) {
     await expect(startSet.or(completeSet).or(done).first()).toBeVisible();
     if (await done.isVisible()) return;
+    // Check again right before clicking: finishing the last set swaps the buttons for the
+    // celebration, which can land between the wait above and these checks.
     if (await completeSet.isVisible()) {
       await completeSet.click();
-    } else {
+    } else if (await startSet.isVisible()) {
       await startSet.click();
     }
   }

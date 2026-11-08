@@ -2,7 +2,7 @@ import { test, expect } from './fixtures';
 import { createRoutineFromTemplate, navTab } from './helpers';
 
 test('a new user is welcomed and sent to routine setup', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/app/');
   await expect(page.getByText('Welcome to Pulsar!')).toBeVisible();
   await page.getByRole('button', { name: 'Create My First Workout' }).click();
 

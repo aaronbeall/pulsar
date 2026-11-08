@@ -5,7 +5,7 @@ import { createRoutineFromTemplate } from './helpers';
 
 /** Writes a routine with one timed exercise (2 × 30s) and a workout for it straight into IndexedDB. */
 async function seedTimedWorkout(page: Page) {
-  await page.goto('/');
+  await page.goto('/app/');
   await page.evaluate(async () => {
     const req = indexedDB.open('PulsarDB', 1);
     const db = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -37,7 +37,7 @@ test('a timed set catches up after the phone was locked', async ({ page }) => {
     };
   });
   await seedTimedWorkout(page);
-  await page.goto('/workout/session/w1');
+  await page.goto('/app/workout/session/w1');
 
   await page.getByRole('button', { name: 'Start Set 1' }).click();
   await expect(page.getByRole('button', { name: 'End Set Early' })).toBeVisible();
@@ -73,7 +73,7 @@ test('backs up and restores all data', async ({ page }) => {
   });
   await createRoutineFromTemplate(page, 'Strength Builder');
 
-  await page.goto('/settings');
+  await page.goto('/app/settings');
   await expect(page.getByText('Last backup:')).toContainText('never');
   const [download] = await Promise.all([
     page.waitForEvent('download'),
@@ -89,7 +89,7 @@ test('backs up and restores all data', async ({ page }) => {
   // Make a second routine after the backup: restoring now would lose it, and the dialog says so.
   await page.clock.fastForward('01:00');
   await createRoutineFromTemplate(page, 'Strength Builder');
-  await page.goto('/settings');
+  await page.goto('/app/settings');
   const [newerChooser] = await Promise.all([
     page.waitForEvent('filechooser'),
     page.getByRole('button', { name: 'Restore Backup' }).click(),
@@ -117,12 +117,12 @@ test('backs up and restores all data', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Replace & Restore' }).click();
   await expect(page.getByText('Backup restored')).toBeVisible();
 
-  await page.goto('/workout');
+  await page.goto('/app/workout');
   await expect(page.getByText('Strength Builder').first()).toBeVisible();
 });
 
 test('rejects a file that is not a Pulsar backup', async ({ page }) => {
-  await page.goto('/settings');
+  await page.goto('/app/settings');
   const [chooser] = await Promise.all([
     page.waitForEvent('filechooser'),
     page.getByRole('button', { name: 'Restore Backup' }).click(),

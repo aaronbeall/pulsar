@@ -10,7 +10,8 @@ import { initDevMode } from './utils/devMode';
 
 initDevMode(); // Apply ?dev=1 / ?dev=0 before anything reads the flag
 
-const base = import.meta.env.BASE_URL;
+// The app lives at <base>app/; the site root is the marketing homepage (see vite.config.ts).
+const base = `${import.meta.env.BASE_URL}app/`;
 const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

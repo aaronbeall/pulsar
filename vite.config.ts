@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -7,12 +7,40 @@ import { VitePWA } from 'vite-plugin-pwa';
 // pr-<n>/ subpath of the live site.
 const previewPr = process.env.VITE_PREVIEW_PR;
 
+const base = process.env.BASE || '/';
+// The site has two pages: the marketing homepage at <base> (index.html) and the app at
+// <base>app/ (app/index.html). Static assets are shared at <base>.
+const appBase = `${base}app/`;
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Client-side routes live under <base>app/, so deep links like <base>app/workout must load
+ * the app's page in the dev and preview servers, the way 404.html does on GitHub Pages.
+ */
+function appRouteFallback(): Plugin {
+  const rewrite = (req: { url?: string }, _res: unknown, next: () => void) => {
+    const path = (req.url || '').split(/[?#]/)[0];
+    if (path.startsWith(appBase) && !/\.[a-z0-9]+$/i.test(path)) {
+      req.url = `${appBase}index.html${(req.url || '').slice(path.length)}`;
+    }
+    next();
+  };
+  return {
+    name: 'app-route-fallback',
+    configureServer: (server) => { server.middlewares.use(rewrite); },
+    configurePreviewServer: (server) => { server.middlewares.use(rewrite); },
+  };
+}
+
 export default defineConfig({
-  base: process.env.BASE || '/',
+  base,
   plugins: [
     react(),
+    appRouteFallback(),
     VitePWA({
       registerType: 'autoUpdate',
+      // The service worker is served from <base>sw.js but only controls the app.
+      scope: appBase,
       devOptions: {
         enabled: true,
         type: 'module',
@@ -20,15 +48,12 @@ export default defineConfig({
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,ico,json}'],
-        // The live app's service worker scope (/pulsar/) also covers the PR previews under
-        // /pulsar/pr-<n>/, and its SPA navigation fallback would otherwise answer a preview
-        // URL with the cached live index.html. Previews register their own, narrower worker.
-        // The marketing homepage (home/) is its own page, not an app route, so the app's SPA
-        // fallback must never answer for it.
-        navigateFallbackDenylist: previewPr ? [/\/home(\/|$)/] : [/\/pr-\d+(\/|$)/, /\/home(\/|$)/],
-        // The homepage and its screenshots aren't needed offline, so keep them out of the
-        // app's precache.
-        globIgnores: ['home/**', 'assets/landing-*'],
+        // Offline, any app route opens the app's page. The worker's scope is <base>app/, so
+        // the homepage and PR previews (<base>pr-<n>/) are never answered by it.
+        navigateFallback: 'app/index.html',
+        navigateFallbackAllowlist: [new RegExp(`^${escapeRegExp(appBase)}`)],
+        // The homepage and its images aren't needed offline, so keep them out of the precache.
+        globIgnores: ['index.html', '404.html', 'assets/landing-*'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/commons\.wikimedia\.org\/w\/api\.php/,
@@ -66,15 +91,14 @@ export default defineConfig({
         ],
       },
       manifest: {
-        id: '.',
+        id: 'app/',
         name: previewPr ? `Pulsar (PR #${previewPr})` : 'Pulsar',
         short_name: previewPr ? `Pulsar #${previewPr}` : 'Pulsar',
         description: 'A modern, installable workout and routine tracker.',
-        // Relative, not absolute — this app deploys to a subpath (e.g. /pulsar/ on
-        // GitHub Pages) as well as domain root locally, and relative start_url/scope
-        // resolve correctly against wherever the manifest itself is served from.
-        start_url: '.',
-        scope: '.',
+        // Relative to the manifest (served at <base>), so they work at any base path: the
+        // installed app opens at <base>app/ and stays inside it.
+        start_url: 'app/',
+        scope: 'app/',
         display: 'standalone',
         background_color: '#ffffff',
         theme_color: '#06b6d4',
@@ -114,11 +138,11 @@ export default defineConfig({
   build: {
     assetsInlineLimit: 0,
     rollupOptions: {
-      // Two pages: the app (index.html) and the marketing homepage (home/index.html, served
-      // at <base>home/). See home/README.md.
+      // Two pages: the marketing homepage (index.html, at <base>) and the app
+      // (app/index.html, at <base>app/). See home/README.md.
       input: {
-        main: resolve(__dirname, 'index.html'),
-        landing: resolve(__dirname, 'home/index.html'),
+        landing: resolve(__dirname, 'index.html'),
+        app: resolve(__dirname, 'app/index.html'),
       },
     },
   }

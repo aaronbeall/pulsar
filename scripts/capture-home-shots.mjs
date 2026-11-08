@@ -1,4 +1,4 @@
-// Captures the real-app screenshots used on the marketing homepage (home/).
+// Captures the real-app screenshots used on the marketing homepage (index.html, home/shots/).
 // Usage: npm run build && npx vite preview --port 4173 & node scripts/capture-home-shots.mjs
 // AI replies are canned (no key or network needed); the clock is pinned to a Monday.
 import { chromium } from 'playwright';
@@ -87,7 +87,7 @@ let page;
 try {
   page = await newPage(browser);
   await mockAI(page, ROUTINE);
-  await page.goto(`${BASE}/workout/setup`);
+  await page.goto(`${BASE}/app/workout/setup`);
   await answerSetup(page, ['get stronger without hurting my knees', 'dumbbells and a mat', '3-4 days, 40 minutes', 'bad knees, no jumping']);
   await shot(page, 'setup');
   await page.getByRole('button', { name: 'Make my routine!' }).click();
@@ -119,7 +119,7 @@ try {
   await shot(page, 'editor');
 
   // Today's workout: mid-set, then finished.
-  await page.goto(`${BASE}/`);
+  await page.goto(`${BASE}/app/`);
   await page.getByRole('button', { name: 'Start Workout' }).click();
   const startSet = page.getByRole('button', { name: /^Start Set \d+$/ });
   const completeSet = page.getByRole('button', { name: /^Complete \d+ Reps$/ });
@@ -148,7 +148,7 @@ try {
   await page.waitForTimeout(1500);
 
   // Log earlier workouts with dev mode's calendar tap (it reloads the page), to show a streak.
-  await page.goto(`${BASE}/?dev=1`);
+  await page.goto(`${BASE}/app/?dev=1`);
   for (const d of [2, 4, 6, 7, 9, 11, 13, 14, 16, 18, 20, 21, 23]) {
     const cell = page.locator(`[title="Nov ${d}"]`).first();
     await cell.waitFor({ timeout: 15000 });
