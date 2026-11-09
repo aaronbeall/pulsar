@@ -4,6 +4,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { FaTimes } from 'react-icons/fa';
 import { Routine, Workout } from '../models/types';
 import { getYearActivity } from '../utils/workoutUtils';
+import DaySheet, { useDaySheet } from './DaySheet';
 
 interface YearActivityCalendarProps {
   workouts: Workout[];
@@ -28,6 +29,7 @@ const YearActivityCalendar: React.FC<YearActivityCalendarProps> = ({ workouts, r
   const currentYear = new Date().getFullYear();
   const [year, setYear] = useState(currentYear);
 
+  const daySheet = useDaySheet();
   const activity = useMemo(() => getYearActivity(year, workouts, routines), [year, workouts, routines]);
 
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -79,48 +81,62 @@ const YearActivityCalendar: React.FC<YearActivityCalendarProps> = ({ workouts, r
             <Text fontSize="10px" fontWeight="bold" color={monthLabelColor} mb={1}>
               {label}
             </Text>
-            <Box display="grid" gridTemplateColumns="repeat(7, 1fr)" gap="3px" justifyItems="center">
+            <Box display="grid" gridTemplateColumns="repeat(7, 1fr)" columnGap="1px" rowGap="1px" justifyItems="center">
               {Array.from({ length: leadingBlanks(monthIdx) }, (_, i) => (
-                <Box key={`blank-${i}`} boxSize="7px" />
+                <Box key={`blank-${i}`} h="12px" />
               ))}
               {Array.from({ length: daysInMonth(monthIdx) }, (_, dayIdx) => {
                 const date = new Date(year, monthIdx, dayIdx + 1);
                 const day = activity[date.toDateString()];
-                if (!day) return <Box key={dayIdx} boxSize="7px" />;
+                if (!day) return <Box key={dayIdx} h="12px" />;
                 const isToday = date.toDateString() === new Date().toDateString();
                 const isMissed = !day.future && !day.rest && !day.completed;
                 const title = `${date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}${
-                  day.future ? ' · upcoming' : day.completed ? ' · workout done' : day.rest ? ' · rest' : ' · missed'
+                  day.future ? (day.rest ? '' : ' · planned') : day.completed ? ' · workout done' : day.rest ? ' · rest' : ' · missed'
                 }`;
                 const ringShadow = isToday ? `0 0 0 1.5px ${todayRingColor}` : undefined;
 
+                const open = () => daySheet.openDay(date);
+                const cell = (dot: React.ReactNode) => (
+                  <Flex
+                    key={dayIdx}
+                    as="button"
+                    w="100%"
+                    h="12px"
+                    align="center"
+                    justify="center"
+                    title={title}
+                    aria-label={title}
+                    onClick={open}
+                  >
+                    {dot}
+                  </Flex>
+                );
+
                 if (isMissed) {
-                  return (
+                  return cell(
                     <Flex
-                      key={dayIdx}
                       boxSize="7px"
                       align="center"
                       justify="center"
                       borderRadius="full"
                       opacity={0.55}
                       boxShadow={ringShadow}
-                      title={title}
                     >
                       <Icon as={FaTimes} boxSize="10px" color={missedColor} />
                     </Flex>
                   );
                 }
-                return (
+                const planned = day.future && !day.rest;
+                return cell(
                   <Box
-                    key={dayIdx}
                     boxSize="7px"
                     borderRadius="full"
                     bg={day.future ? 'transparent' : day.completed ? completedColor : restColor}
                     border={day.future ? '1px solid' : undefined}
-                    borderColor={day.future ? futureColor : undefined}
-                    opacity={day.future ? 0.5 : day.completed ? 1 : 0.55}
+                    borderColor={day.future ? (planned ? completedColor : futureColor) : undefined}
+                    opacity={day.future ? (planned ? 0.8 : 0.35) : day.completed ? 1 : 0.55}
                     boxShadow={ringShadow}
-                    title={title}
                   />
                 );
               })}
@@ -139,10 +155,11 @@ const YearActivityCalendar: React.FC<YearActivityCalendarProps> = ({ workouts, r
         <LegendItem label="Rest">
           <Box boxSize="8px" borderRadius="full" bg={restColor} opacity={0.55} />
         </LegendItem>
-        <LegendItem label="Upcoming">
-          <Box boxSize="8px" borderRadius="full" bg="transparent" border="1px solid" borderColor={futureColor} opacity={0.5} />
+        <LegendItem label="Planned">
+          <Box boxSize="8px" borderRadius="full" bg="transparent" border="1px solid" borderColor={completedColor} opacity={0.8} />
         </LegendItem>
       </Flex>
+      <DaySheet workouts={workouts} routines={routines} />
     </Box>
   );
 };

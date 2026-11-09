@@ -77,6 +77,14 @@ export interface RoutineRevision {
   changeId?: string; // for 'ai' revisions, the RoutineChange the accepted items came from
 }
 
+// One span of time a routine was active, with the weekdays it scheduled during it. `end` is
+// unset for the current period. See utils/schedulePeriods.ts.
+export interface SchedulePeriod {
+  start: number;
+  end?: number;
+  days: DayOfWeek[];
+}
+
 export interface Routine {
   id: string; // Unique identifier
   name: string;
@@ -87,6 +95,7 @@ export interface Routine {
   chatHistory: RoutineChatMessage[];
   changes?: RoutineChange[]; // all AI-proposed changes, any status — pending ones await a decision
   revisions?: RoutineRevision[]; // change history, oldest first
+  schedulePeriods?: SchedulePeriod[]; // when it was active and on which weekdays, oldest first (kept by the store)
   liked?: boolean;
   disliked?: boolean;
   favorite?: boolean;

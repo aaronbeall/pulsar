@@ -21,13 +21,13 @@ import {
   useToken,
 } from '@chakra-ui/react';
 import { IconType } from 'react-icons';
-import { FaBars, FaSun, FaMoon, FaHome, FaDumbbell, FaCog, FaHistory, FaDownload, FaInfoCircle } from 'react-icons/fa';
+import { FaBars, FaSun, FaMoon, FaHome, FaDumbbell, FaCog, FaChartLine, FaDownload, FaInfoCircle } from 'react-icons/fa';
 import { useUrlModal } from './hooks/useUrlModal';
-import { Routes, Route, Link, useLocation, Link as RouterLink } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Link as RouterLink, Navigate } from 'react-router-dom';
 import Home from './views/Home';
 import Workout from './views/Workout';
 import Settings from './views/Settings';
-import History from './views/History';
+import Activity from './views/Activity';
 import About from './views/About';
 import { usePulsarStoreInit } from './store/pulsarStore';
 import { useInstallPromptInit, useInstallPromptStore } from './store/installPromptStore';
@@ -79,7 +79,7 @@ const App: React.FC = () => {
   const navItems: { to: string; label: string; icon: IconType; isActive: (path: string) => boolean }[] = [
     { to: '/', label: 'Home', icon: FaHome, isActive: (path) => path === '/' },
     { to: '/workout', label: 'Workout', icon: FaDumbbell, isActive: (path) => path.startsWith('/workout') },
-    { to: '/history', label: 'History', icon: FaHistory, isActive: (path) => path === '/history' },
+    { to: '/activity', label: 'Activity', icon: FaChartLine, isActive: (path) => path === '/activity' },
   ];
 
   return (
@@ -151,7 +151,8 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/workout/*" element={<Workout />} />
-            <Route path="/history" element={<History />} />
+            <Route path="/activity" element={<Activity />} />
+            <Route path="/history" element={<Navigate to={{ pathname: '/activity', search: location.search }} replace />} />
             <Route
               path="/settings"
               element={<Settings colorScheme={colorScheme} onColorSchemeChange={handleColorSchemeChange} />}
