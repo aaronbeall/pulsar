@@ -82,7 +82,7 @@ export const WorkoutSetup: React.FC = () => {
         reason: 'Building a routine from your answers uses Pulsar AI.',
         alternative: {
           label: 'Match me to a template',
-          description: 'Our matching scores every ready-made routine against your answers and shows you the best fits. Instant, no AI.',
+          description: 'We score every ready-made routine against your answers and show you the best fits. No AI needed, and you can edit any of it by hand.',
           icon: FaBook,
           onClick: () => templateChooser.open(),
         },
