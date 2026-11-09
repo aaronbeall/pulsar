@@ -15,5 +15,8 @@
   // workers.dev URL plus a preview URL per uploaded version (used for PR previews).
   "workers_dev": true,
   "preview_urls": true,
+  // Production domain. Its DNS must be on this Cloudflare account; deploy attaches it and
+  // issues the certificate.
+  "routes": [{ "pattern": "pulsarworkouts.app", "custom_domain": true }],
   "observability": { "enabled": true }
 }

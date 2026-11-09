@@ -81,6 +81,10 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   homepage, the app and the API from the same origin, so login cookies need no CORS. Static
   files are served before the Worker runs; API routes go under `/api/`. GitHub Pages
   workflows stay only until the Cloudflare deploy is confirmed live. See README "Deploying".
+- **Naming: the official product name is "Pulsar Workouts"; the brand is "Pulsar".** Use
+  "Pulsar Workouts" where the full name matters (page titles, the PWA manifest `name`, legal,
+  store, OAuth and payment listings) and keep "Pulsar" for the logo, short name and in-app
+  copy ("Pulsar AI" stays). The domain is `pulsarworkouts.app`.
 - Login/subscription must stay **optional** — the app should remain fully useful with
   zero account, local-only data, and template-based (non-AI) routines. Real AI requires
   *either* a personal API key (free, bring-your-own-key) *or* login + an active
