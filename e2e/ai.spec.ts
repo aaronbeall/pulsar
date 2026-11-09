@@ -29,7 +29,7 @@ test('"Make my routine!" asks for a key, then builds the routine with AI', async
   await expect(prompt.getByText('Unlock Pulsar AI')).toBeVisible();
   await expect(prompt.getByText('Building a routine from your answers uses Pulsar AI.')).toBeVisible();
   await prompt.getByPlaceholder('sk-...').fill('sk-test-key');
-  await prompt.getByRole('button', { name: 'Continue' }).click();
+  await prompt.getByRole('button', { name: 'Use this key' }).click();
 
   // The routine is built without tapping "Make my routine!" again. The build screen shows the
   // coach's note and the planned week, then waits for the user to open the routine.
@@ -52,7 +52,7 @@ test('the key prompt offers templates as the non-AI way forward', async ({ page 
 
   const prompt = page.getByRole('dialog');
   await expect(prompt.getByRole('button', { name: 'Not now' })).toHaveCount(0);
-  await prompt.getByRole('button', { name: 'Create from a template instead' }).click();
+  await prompt.getByRole('button', { name: /Match me to a template/ }).click();
 
   await expect(page.getByRole('heading', { name: 'Choose a Routine Template' })).toBeVisible();
   // Templates are ranked against the answers.
@@ -80,7 +80,7 @@ test('routine chat asks for a key, sends the message, and applies an accepted ch
   const prompt = page.getByRole('dialog');
   await expect(prompt.getByText('Chatting with your routine uses Pulsar AI.')).toBeVisible();
   await prompt.getByPlaceholder('sk-...').fill('sk-test-key');
-  await prompt.getByRole('button', { name: 'Continue' }).click();
+  await prompt.getByRole('button', { name: 'Use this key' }).click();
 
   await expect(page.getByText('make friday a rest day')).toBeVisible();
   await expect(page.getByTestId('ai-thinking')).toBeVisible();
@@ -109,7 +109,7 @@ test('each day of a suggestion is accepted or rejected inline, and the chat summ
   await input.fill('two tweaks');
   await input.press('Enter');
   await page.getByRole('dialog').getByPlaceholder('sk-...').fill('sk-test-key');
-  await page.getByRole('dialog').getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Use this key' }).click();
   await expect(page.getByText('Two tweaks for you.')).toBeVisible();
 
   await page.locator('#routine-day-Friday').getByRole('button', { name: 'Accept' }).click();
@@ -130,7 +130,7 @@ test('routine chat offers manual editing as the non-AI way forward', async ({ pa
   await input.fill('swap deadlifts');
   await input.press('Enter');
 
-  await page.getByRole('dialog').getByRole('button', { name: 'Edit the routine myself' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /Edit the routine myself/ }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(input).toHaveValue('swap deadlifts');
 });

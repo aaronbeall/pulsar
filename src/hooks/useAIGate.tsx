@@ -60,7 +60,7 @@ export function useAIGate() {
   }, [close]);
 
   const alternative = request?.alternative && {
-    label: request.alternative.label,
+    ...request.alternative,
     onClick: async () => {
       const run = request.alternative!.onClick;
       await close();

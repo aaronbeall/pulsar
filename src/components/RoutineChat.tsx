@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useSessionDraft } from '../hooks/useSessionDraft';
 import { Box, VStack, Text, Flex, Button, Collapse, IconButton, Input, useToast } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
-import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp } from 'react-icons/fa';
+import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp, FaPen } from 'react-icons/fa';
 import { useAIGate } from '../hooks/useAIGate';
 import { useUrlModal } from '../hooks/useUrlModal';
 import { v4 as uuidv4 } from 'uuid';
@@ -72,7 +72,12 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
     aiGate.requireAI(() => sendMessage(text), {
       kind: 'edit',
       reason: 'Chatting with your routine uses Pulsar AI.',
-      alternative: onEditManually && { label: 'Edit the routine myself', onClick: onEditManually },
+      alternative: onEditManually && {
+        label: 'Edit the routine myself',
+        description: 'Change days, exercises, sets and reps by hand.',
+        icon: FaPen,
+        onClick: onEditManually,
+      },
     });
   };
 
