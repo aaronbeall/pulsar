@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { FaFlagCheckered, FaDumbbell } from 'react-icons/fa';
 import { Counter } from '../components/Counter';
 import Confetti from 'react-confetti';
+import { formatSessionName } from '../utils/sessionName';
 
 export const CongratulatoryInterstitial: React.FC<{
   streak: number;
@@ -107,7 +108,7 @@ export const CongratulatoryInterstitial: React.FC<{
                   letterSpacing="tight"
                   style={{ lineHeight: 1.1 }}
                 >
-                  {`“${nickname}” Completed!`}
+                  {`${formatSessionName(nickname)} Completed!`}
                 </Heading>
                 <Text fontSize="xl" color="gray.400" mb={4} textAlign="center">
                   You finished your{' '}

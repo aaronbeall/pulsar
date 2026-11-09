@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 import { completeAllSets, createRoutineFromTemplate, navTab } from './helpers';
 
-test('completes a full workout and sees it in history', async ({ page }) => {
+test('completes a full workout and sees it in Activity', async ({ page }) => {
   await createRoutineFromTemplate(page, 'Strength Builder');
   await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect(page.getByText('Set 1 of 5')).toBeVisible();
@@ -14,12 +14,12 @@ test('completes a full workout and sees it in history', async ({ page }) => {
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByText('Workout Complete!')).toBeVisible();
 
-  // Home now shows today's workout as done, and history lists it.
+  // Home now shows today's workout as done, and Activity lists it.
   await navTab(page, 'Home').click();
   await expect(page.getByText(/You crushed your workout today/)).toBeVisible();
 
-  await navTab(page, 'History').click();
-  await expect(page).toHaveURL(/\/history$/);
+  await navTab(page, 'Activity').click();
+  await expect(page).toHaveURL(/\/activity$/);
   await expect(page.getByText('Strength Builder').first()).toBeVisible();
   await expect(page.getByText('In progress')).toBeHidden();
 });
@@ -66,7 +66,7 @@ test('opening a workout day without starting a set does not start it', async ({ 
   await expect(page).toHaveURL(/\/workout\/session\/?\?routineId=/);
 
   // Leaving without starting a set leaves nothing behind.
-  await navTab(page, 'History').click();
+  await navTab(page, 'Activity').click();
   await expect(page.getByText('In progress')).toBeHidden();
   await navTab(page, 'Home').click();
   await expect(page.getByRole('button', { name: 'Start Workout' })).toBeVisible();

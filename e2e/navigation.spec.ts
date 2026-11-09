@@ -4,8 +4,8 @@ import { navTab } from './helpers';
 test('the bottom nav and menu reach every screen', async ({ page }) => {
   await page.goto('/app/');
 
-  await navTab(page, 'History').click();
-  await expect(page).toHaveURL(/\/history$/);
+  await navTab(page, 'Activity').click();
+  await expect(page).toHaveURL(/\/activity$/);
 
   await navTab(page, 'Workout').click();
   await expect(page).toHaveURL(/\/workout\/setup$/);

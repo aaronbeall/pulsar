@@ -23,6 +23,7 @@ import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
 import { DEFAULT_OPENAI_MODEL, useOpenAiApiKey, useOpenAiModel } from '../store/aiSettingsStore';
 import { testApiKey } from '../services/ai';
 import BackupRestoreCard from '../components/BackupRestoreCard';
+import TestPresetLoader from '../components/TestPresetLoader';
 import { DB_NAME } from '../db/indexedDb';
 import { isDevMode, setDevMode } from '../utils/devMode';
 
@@ -215,6 +216,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
             Home calendar to log it as done.
           </Text>
           <VStack spacing={3} align="stretch">
+            <TestPresetLoader />
             <FormControl>
               <FormLabel fontSize="sm" mb={1}>OpenAI model</FormLabel>
               <Input
