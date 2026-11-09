@@ -1,9 +1,12 @@
 import { useCallback, useRef, useState } from 'react';
 import AIAccessDialog, { AIAccessAlternative } from '../components/AIAccessDialog';
-import { hasActiveAIProvider } from '../services/ai';
+import { AIKind, hasActiveAIProvider } from '../services/ai';
+import { useAccount } from './useAccount';
 import { useUrlModal } from './useUrlModal';
 
 interface GateRequest {
+  /** Which allowance the action spends: a new routine plan, or a chat edit. */
+  kind?: AIKind;
   reason?: string;
   alternative?: AIAccessAlternative;
 }
@@ -12,18 +15,21 @@ interface GateRequest {
  * Gate an AI action behind AI access, paywall-style. `requireAI(action)` runs the action
  * right away when AI is available; otherwise it shows AIAccessDialog and runs the same
  * action as soon as access is in place, so the user never has to repeat what they started.
- * Render `gate` once in the component. Later, a subscription check slots in here alongside
- * the key check without any caller changing.
+ * Access is the user's own key or a signed-in account with hosted allowance left for that
+ * kind of action (services/ai/index.ts). Render `gate` once in the component.
  */
 export function useAIGate() {
+  // Loads the account (and its AI allowance) as soon as a gated screen mounts, so the check
+  // below is current by the time the user taps.
+  useAccount();
   const [request, setRequest] = useState<GateRequest | null>(null);
   const pendingAction = useRef<(() => void) | null>(null);
   // Open state lives in the URL (?ai=...) so Back closes the dialog. 'action' means an AI
   // action is waiting to continue; that can't survive a reload, so the param is dropped then.
   const modal = useUrlModal('ai', { isStale: (value) => value === 'action' && !pendingAction.current });
 
-  const requireAI = useCallback((action: () => void, options: GateRequest = {}) => {
-    if (hasActiveAIProvider()) {
+  const requireAI = useCallback((action: () => void, options: GateRequest & { kind: AIKind }) => {
+    if (hasActiveAIProvider(options.kind)) {
       action();
       return;
     }
@@ -66,6 +72,7 @@ export function useAIGate() {
     <AIAccessDialog
       isOpen={modal.isOpen}
       reason={request?.reason}
+      kind={request?.kind}
       alternative={alternative}
       onUnlocked={handleUnlocked}
       onClose={close}

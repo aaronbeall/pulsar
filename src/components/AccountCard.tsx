@@ -8,6 +8,9 @@ import { deleteAccount, signInWithGoogle, signOut } from '../services/account';
  * Settings > Account: optional Google sign-in. Hidden where the site has no sign-in (GitHub
  * Pages, plain `npm run dev`), so the app looks exactly as before there.
  */
+const allowanceLine = ({ used, limit }: { used: number; limit: number }, one: string, many: string) =>
+  `${Math.max(0, limit - used)} of ${limit} ${limit === 1 ? one : many} left`;
+
 const AccountCard = () => {
   const account = useAccount();
   const toast = useToast();
@@ -77,6 +80,21 @@ const AccountCard = () => {
               <Text fontSize="sm" color={mutedColor} noOfLines={1}>{user.email}</Text>
             </Box>
           </Flex>
+          {account.hostedAI && account.ai && (
+            <Box data-testid="ai-allowance">
+              <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                {account.ai.tier === 'free' ? 'Free Pulsar AI' : 'Pulsar AI'}
+              </Text>
+              <Text fontSize="sm" color={mutedColor}>
+                {allowanceLine(account.ai.plan, 'routine plan', 'routine plans')}
+                {' · '}
+                {allowanceLine(account.ai.edit, 'AI edit', 'AI edits')}
+              </Text>
+              {account.ai.resetsAt && (
+                <Text fontSize="xs" color={mutedColor}>Resets {new Date(account.ai.resetsAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</Text>
+              )}
+            </Box>
+          )}
           <Flex gap={2} wrap="wrap">
             <Button variant="outline" onClick={handleSignOut} isLoading={busy === 'signout'} isDisabled={busy !== null}>
               Sign out
@@ -89,8 +107,11 @@ const AccountCard = () => {
       ) : (
         <VStack align="stretch" spacing={3}>
           <Text fontSize="sm" color={mutedColor}>
-            Sign in to use Pulsar AI without your own OpenAI key. Your account holds only your
-            name and email. Your routines and workouts stay on this device.
+            {account.hostedAI
+              ? 'Sign in to try Pulsar AI free: 1 routine plan and 2 AI edits, no OpenAI key needed.'
+              : 'Sign in to keep a Pulsar account.'}{' '}
+            Your account holds only your name and email. Your routines and workouts stay on this
+            device.
           </Text>
           <Button
             leftIcon={<FaGoogle />}

@@ -25,19 +25,23 @@ at best. All design and layout work going forward must be mobile-first-friendly:
 
 - **Import React hooks directly** (`import { useState } from 'react'`) and call them as
   `useState(...)`, never `React.useState(...)`.
-- **AI is bring-your-own-key only.** With a personal OpenAI key (Settings), routine
-  generation and routine chat call OpenAI directly from the browser through the
-  `services/ai` `AIProvider` interface. Without a key there is no AI and no mock: the
-  user is asked for AI access at the moment they use an AI feature (never an explicit
-  "turn on AI" step): wrap AI actions in `hooks/useAIGate.tsx`'s `requireAI`, which shows
-  `components/AIAccessDialog.tsx` and then continues the action. That gate is also where
-  premium subscriptions will be offered. The no-AI alternative for routine creation is the
-  keyword template search (`services/templateSearch.ts`). Don't reintroduce a fake "AI" fallback. Hosted AI behind login/subscription is a
-  later phase (see `PLAN-ai-subscription.md`).
+- **AI has two paths behind one `AIProvider` interface** (`services/ai`): the user's own
+  OpenAI key (`byokProvider.ts`, browser calls OpenAI directly) and hosted Pulsar AI
+  (`hostedProvider.ts`, through the Worker's `/api/ai/*`, which holds Pulsar's key and
+  enforces each account's allowance; see `worker/ai/`). A key always wins; otherwise a
+  signed-in account with allowance left uses hosted AI. Prompts live once in
+  `services/ai/prompts.ts`, shared by both (the Worker bundles it, so keep it free of
+  browser-only imports). Without either there is no AI and no mock: the user is asked at the
+  moment they use an AI feature (never an explicit "turn on AI" step). Wrap AI actions in
+  `hooks/useAIGate.tsx`'s `requireAI(action, { kind: 'plan' | 'edit', ... })`, which shows
+  `components/AIAccessDialog.tsx` (sign in for the free allowance, the subscription, or a
+  key) and then continues the action. The no-AI alternative for routine creation is the
+  keyword template search (`services/templateSearch.ts`). Don't reintroduce a fake "AI"
+  fallback. Allowances and prices live in `worker/ai/plans.ts`.
 - **Never put a real API key behind a `VITE_`-prefixed env var again.** The existing
   Google CSE key is already public in the client bundle (acceptable for a free-tier image
   search) — that pattern must not be reused for an LLM key or anything metered/abusable.
-  Real AI calls must go through a server-side proxy (planned: Supabase Edge Function).
+  Hosted AI calls go through the Worker, with `OPENAI_API_KEY` as a Worker secret.
 - **Data stays local-first for now.** Routines/workouts/exercises live in IndexedDB via
   `pulsarStore.ts` / `db/indexedDb.ts`. Don't add a backend sync path for this data
   without an explicit decision — sync is an intentionally deferred premium-tier phase.

@@ -53,6 +53,20 @@ only when it is.
   3. If sign-in should also work on another origin (say the workers.dev URL), add it to
      `AUTH_ORIGINS` in `wrangler.jsonc` and register its callback URL with Google.
 - PR previews hide sign-in: each has its own host, which Google won't redirect back to.
+
+**Hosted AI.** Signed-in accounts get Pulsar AI without their own key: `/api/ai/plan` and
+`/api/ai/edit` (`worker/ai/`) build the prompt with the app's own prompt code, reserve one
+call from the account's allowance, call OpenAI with Pulsar's key and stream the reply back.
+Allowances (free: 1 plan + 2 edits per account) and model prices are in
+`worker/ai/plans.ts`; usage is in the `ai_usage` table.
+
+- Production setup: `npx wrangler secret put OPENAI_API_KEY` with a key from a dedicated
+  OpenAI project, and set a monthly budget on that project as a last line of defence.
+- Guardrails: per-account allowance and cost cap (checked atomically before each call), and
+  `AI_DAILY_BUDGET_USD` in `wrangler.jsonc`, a daily spend across all accounts after which
+  hosted AI answers "busy" until midnight UTC.
+- Local testing without spending: point `OPENAI_URL` in `.dev.vars` at a fake server that
+  answers like OpenAI's streaming API.
 - The deploy workflow creates the D1 database if needed and applies migrations on `main`
   only, so a PR's migration never touches production before it merges.
 

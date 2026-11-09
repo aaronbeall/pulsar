@@ -11,6 +11,7 @@ import { RoutineTemplateChooser } from '../components/RoutineTemplateChooser';
 import { AIError } from '../services/ai';
 import { useAIGate } from '../hooks/useAIGate';
 import { useUrlModal } from '../hooks/useUrlModal';
+import { useSessionDraft } from '../hooks/useSessionDraft';
 import ThinkingIndicator from '../components/ThinkingIndicator';
 import RoutineBuildProgress, { PlannedDay } from '../components/RoutineBuildProgress';
 
@@ -19,8 +20,10 @@ const emptyResponses = () => Array(workoutPrompts.length).fill('');
 
 export const WorkoutSetup: React.FC = () => {
   // Hoist all hooks to the top
-  const [step, setStep] = useState<number>(1);
-  const [responses, setResponses] = useState<string[]>(emptyResponses);
+  // Kept for the tab's session, so leaving for Google sign-in (or a reload) keeps the answers.
+  const [step, setStep, clearStepDraft] = useSessionDraft<number>('pulsar:setupStep', () => 1);
+  const [responses, setResponses, clearResponsesDraft] = useSessionDraft<string[]>('pulsar:setupAnswers', emptyResponses);
+  const clearDraft = () => { clearStepDraft(); clearResponsesDraft(); };
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isGeneratingWithAI, setIsGeneratingWithAI] = useState(false);
   const [build, setBuild] = useState<{ commentary: string; commentaryDone: boolean; plannedDays: PlannedDay[] }>({ commentary: '', commentaryDone: false, plannedDays: [] });
@@ -59,6 +62,7 @@ export const WorkoutSetup: React.FC = () => {
 
   const addRoutineAndNavigate = async (routine: Routine) => {
     await saveRoutine(routine);
+    clearDraft();
     openRoutine(routine);
   };
 
@@ -74,6 +78,7 @@ export const WorkoutSetup: React.FC = () => {
       setStep(step + 1);
     } else {
       aiGate.requireAI(generateWithAI, {
+        kind: 'plan',
         reason: 'Building a routine from your answers uses Pulsar AI.',
         alternative: { label: 'Create from a template instead', onClick: () => templateChooser.open() },
       });
@@ -89,6 +94,7 @@ export const WorkoutSetup: React.FC = () => {
         onScheduleDays: (plannedDays) => setBuild(b => ({ ...b, plannedDays })),
       });
       await saveRoutine(routine);
+      clearDraft();
       // Show the finished week and let the user open it, rather than jumping away mid-read.
       setBuild(b => ({
         ...b,

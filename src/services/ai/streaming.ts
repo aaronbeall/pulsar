@@ -1,3 +1,4 @@
+import { AIError, StreamOptions } from './types';
 // Helpers for streaming OpenAI chat completions. The model answers in JSON (json_object
 // mode), so the human-readable "commentary" field arrives as a string inside a partial JSON
 // document. These pull that text out while the rest is still being written, so the UI can
@@ -96,4 +97,71 @@ export function extractScheduleDays(json: string): PartialScheduleDay[] {
     days.push({ day: match[1], kind });
   }
   return days;
+}
+
+/**
+ * Read a streamed completion (`stream: true`), calling `onContent` with everything received
+ * so far after each chunk. Returns the full message content.
+ */
+export async function readStreamedContent(res: Response, onContent: (content: string) => void): Promise<string> {
+  const reader = res.body!.getReader();
+  const decoder = new TextDecoder();
+  const parser = new SSEParser();
+  let content = '';
+  const handle = (payloads: string[]) => {
+    let changed = false;
+    for (const payload of payloads) {
+      if (payload === '[DONE]') continue;
+      let event: { choices?: Array<{ delta?: { content?: string } }>; error?: { message?: string } };
+      try {
+        event = JSON.parse(payload);
+      } catch {
+        continue;
+      }
+      if (event.error) throw new AIError('network', `The AI stopped mid-reply${event.error.message ? `: ${event.error.message}` : '.'}`);
+      const delta = event.choices?.[0]?.delta?.content;
+      if (delta) {
+        content += delta;
+        changed = true;
+      }
+    }
+    if (changed) onContent(content);
+  };
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      handle(parser.push(decoder.decode(value, { stream: true })));
+    }
+  } catch (e) {
+    if (e instanceof AIError) throw e;
+    throw new AIError('network', 'The connection to the AI dropped mid-reply. Try again.');
+  }
+  handle(parser.push(decoder.decode()));
+  handle(parser.flush());
+  return content;
+}
+
+/** Turns StreamOptions callbacks into a raw-content callback, firing each only when its value changes. */
+export function commentaryStreamer(options?: StreamOptions): ((content: string) => void) | undefined {
+  const { onCommentary, onScheduleDays } = options || {};
+  if (!onCommentary && !onScheduleDays) return undefined;
+  let last = '';
+  let lastDone = false;
+  let dayCount = 0;
+  return (content) => {
+    const partial = onCommentary && extractPartialJsonString(content, 'commentary');
+    if (partial && (partial.text !== last || partial.done !== lastDone)) {
+      last = partial.text;
+      lastDone = partial.done;
+      onCommentary!(partial.text, partial.done);
+    }
+    if (onScheduleDays) {
+      const days = extractScheduleDays(content);
+      if (days.length !== dayCount) {
+        dayCount = days.length;
+        onScheduleDays(days);
+      }
+    }
+  };
 }
