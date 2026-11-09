@@ -26,8 +26,10 @@ sees paths with no file, and sends app routes to the app's page (`worker/fallbac
   preview version with its own URL (`pr-<n>-pulsar.<account>.workers.dev`), posted on the PR.
 - One-time setup: create the API token (template "Edit Cloudflare Workers") and add repo
   secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Without them the workflow skips
-  deploying. Add the custom domain (pulsarfit.app) to the Worker in the Cloudflare dashboard
-  under Settings > Domains & Routes.
+  deploying.
+- Production domain: `pulsarworkouts.app`, declared in `wrangler.jsonc` as a custom domain, so
+  `wrangler deploy` attaches it (DNS record and certificate included). The domain's DNS must
+  be on the same Cloudflare account, or the deploy fails.
 - After changing bindings in `wrangler.jsonc`, run `npm run cf:types` to regenerate
   `worker/worker-configuration.d.ts`.
 
