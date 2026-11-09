@@ -133,7 +133,10 @@ export default defineConfig({
   ],
   server: {
     host: true,
-    port: 9092
+    port: 9092,
+    // `PULSAR_API=http://localhost:8787 npm run dev` sends /api to a running `wrangler dev`, so
+    // sign-in works with hot reload. Without it there's no API and sign-in is hidden.
+    proxy: process.env.PULSAR_API ? { '/api': { target: process.env.PULSAR_API, changeOrigin: false } } : undefined,
   },
   build: {
     assetsInlineLimit: 0,

@@ -18,5 +18,17 @@
   // Production domain. Its DNS must be on this Cloudflare account; deploy attaches it and
   // issues the certificate.
   "routes": [{ "pattern": "pulsarworkouts.app", "custom_domain": true }],
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Accounts and sessions (Better Auth), later plans and AI usage. No workout data.
+  // No database_id: Wrangler finds (or creates) the database by name.
+  "d1_databases": [
+    { "binding": "DB", "database_name": "pulsar", "migrations_dir": "worker/migrations" }
+  ],
+  "vars": {
+    // Origins where Google sign-in is offered: each needs <origin>/api/auth/callback/google
+    // registered in the Google OAuth client. localhost always works. Comma-separated.
+    "AUTH_ORIGINS": "https://pulsarworkouts.app"
+  },
+  // Secrets (wrangler secret put, or .dev.vars locally): BETTER_AUTH_SECRET,
+  // GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET. See README "Deploying".
 }

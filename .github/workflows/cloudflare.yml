@@ -4,8 +4,9 @@ name: Cloudflare
 # - push to main: `wrangler deploy` to production;
 # - same-repo PR: `wrangler versions upload --preview-alias pr-<n>`, a preview URL that
 #   doesn't touch production, posted as a sticky comment.
-# Needs repo secrets CLOUDFLARE_API_TOKEN (template "Edit Cloudflare Workers") and
-# CLOUDFLARE_ACCOUNT_ID. Until they're set every run skips the deploy steps and passes.
+# Needs repo secrets CLOUDFLARE_API_TOKEN (template "Edit Cloudflare Workers", plus
+# Account > D1 > Edit) and CLOUDFLARE_ACCOUNT_ID. Until they're set every run skips the
+# deploy steps and passes.
 
 on:
   push:
@@ -56,6 +57,16 @@ jobs:
           BASE: /
           # PR builds get their own IndexedDB name and app name (see vite.config.ts).
           VITE_PREVIEW_PR: ${{ env.PR }}
+
+      - name: Make sure the D1 database exists
+        if: steps.creds.outputs.ok
+        run: npx wrangler d1 info pulsar > /dev/null 2>&1 || npx wrangler d1 create pulsar
+
+      # Only main migrates: previews share production's database, and a PR's unmerged
+      # migration must not change it. (Previews don't offer sign-in, so they don't need it.)
+      - name: Apply database migrations
+        if: steps.creds.outputs.ok && github.event_name != 'pull_request'
+        run: npx wrangler d1 migrations apply pulsar --remote
 
       - name: Deploy to production
         if: steps.creds.outputs.ok && github.event_name != 'pull_request'
