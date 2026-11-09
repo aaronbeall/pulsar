@@ -8,10 +8,10 @@ describe('originAllowed', () => {
   });
 
   it('allows only listed origins elsewhere', () => {
-    const list = 'https://pulsarfit.app, https://pulsar.example.workers.dev/';
-    expect(originAllowed(list, 'https://pulsarfit.app')).toBe(true);
+    const list = 'https://pulsarworkouts.app, https://pulsar.example.workers.dev/';
+    expect(originAllowed(list, 'https://pulsarworkouts.app')).toBe(true);
     expect(originAllowed(list, 'https://pulsar.example.workers.dev')).toBe(true);
     expect(originAllowed(list, 'https://pr-12-pulsar.example.workers.dev')).toBe(false);
-    expect(originAllowed(undefined, 'https://pulsarfit.app')).toBe(false);
+    expect(originAllowed(undefined, 'https://pulsarworkouts.app')).toBe(false);
   });
 });

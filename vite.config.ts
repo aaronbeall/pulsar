@@ -92,7 +92,7 @@ export default defineConfig({
       },
       manifest: {
         id: 'app/',
-        name: previewPr ? `Pulsar (PR #${previewPr})` : 'Pulsar',
+        name: previewPr ? `Pulsar Workouts (PR #${previewPr})` : 'Pulsar Workouts',
         short_name: previewPr ? `Pulsar #${previewPr}` : 'Pulsar',
         description: 'A modern, installable workout and routine tracker.',
         // Relative to the manifest (served at <base>), so they work at any base path: the
