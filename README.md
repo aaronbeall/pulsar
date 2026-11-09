@@ -26,8 +26,10 @@ sees paths with no file, and sends app routes to the app's page (`worker/fallbac
   preview version with its own URL (`pr-<n>-pulsar.<account>.workers.dev`), posted on the PR.
 - One-time setup: create the API token (template "Edit Cloudflare Workers") and add repo
   secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Without them the workflow skips
-  deploying. Add the custom domain (pulsarfit.app) to the Worker in the Cloudflare dashboard
-  under Settings > Domains & Routes.
+  deploying.
+- Production domain: `pulsarworkouts.app`, declared in `wrangler.jsonc` as a custom domain, so
+  `wrangler deploy` attaches it (DNS record and certificate included). The domain's DNS must
+  be on the same Cloudflare account, or the deploy fails.
 - After changing bindings in `wrangler.jsonc`, run `npm run cf:types` to regenerate
   `worker/worker-configuration.d.ts`.
 
@@ -41,8 +43,10 @@ only when it is.
   `npx wrangler d1 migrations apply pulsar --local`, then `npm run cf:dev`. For hot reload,
   run `wrangler dev` and `PULSAR_API=http://localhost:8787 npm run dev` side by side.
 - Production setup, once:
-  1. Google Cloud console > APIs & Services > Credentials: create an OAuth client of type
-     "Web application" with redirect URIs `https://pulsarfit.app/api/auth/callback/google`
+  1. Google Cloud console > APIs & Services > OAuth consent screen: app name "Pulsar
+     Workouts", home page `https://pulsarworkouts.app`, authorized domain
+     `pulsarworkouts.app`. Then Credentials: create an OAuth client of type
+     "Web application" with redirect URIs `https://pulsarworkouts.app/api/auth/callback/google`
      and `http://localhost:8787/api/auth/callback/google`.
   2. `npx wrangler secret put BETTER_AUTH_SECRET` (a long random string, e.g.
      `openssl rand -base64 32`), then `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.

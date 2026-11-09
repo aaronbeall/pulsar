@@ -20,7 +20,7 @@ entries (`rollupOptions.input` in `vite.config.ts`) and deploy together:
   dev and preview, and by `404.html` on GitHub Pages (`scripts/make-pages-404.mjs`), which
   sends any other missing path to the homepage.
 - With a custom domain, set `PAGES_BASE` to `/` and the same layout becomes
-  `pulsarfit.app/` and `pulsarfit.app/app/`.
+  `pulsarworkouts.app/` and `pulsarworkouts.app/app/`.
 
 ## Files
 

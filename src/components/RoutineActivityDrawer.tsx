@@ -18,6 +18,8 @@ import { FaCheckCircle, FaEdit, FaInfoCircle, FaPlay, FaPowerOff, FaRobot, FaTim
 import { Routine, Workout } from '../models/types';
 import { getRoutineStats } from '../utils/workoutUtils';
 import WeeklyActivityGraph from './WeeklyActivityGraph';
+import StreakCalendar from './StreakCalendar';
+import { formatSessionName } from '../utils/sessionName';
 
 const RoutineStatsBox: React.FC<{ routine: Routine, workouts: Workout[] }> = React.memo(({ routine, workouts }) => {
   const stats = getRoutineStats(routine, workouts);
@@ -48,35 +50,13 @@ const RoutineStatsBox: React.FC<{ routine: Routine, workouts: Workout[] }> = Rea
           </Badge>
         </Flex>
       </Box>
-      <Box textAlign="left" minW={20}>
-        <Text fontSize="sm" color="gray.500">Streak</Text>
-        <Flex align="center" justify="center" mt={1} mb={0.5} gap={1}>
-          <Text
-            fontSize="2xl"
-            fontWeight="extrabold"
-            color={stats.streak > 0 ? 'orange.400' : 'gray.400'}
-            lineHeight={1}
-            display="flex"
-            alignItems="center"
-            gap={1}
-          >
-            {stats.streak > 0 ? (
-              '🔥'
-            ) : (
-              <span style={{ filter: 'grayscale(1)', opacity: 0.7, display: 'inline-block' }}>🔥</span>
-            )}
-            {stats.streak}
-            <Text as="span" fontSize="md" color={stats.streak > 0 ? 'orange.400' : 'gray.400'} fontWeight="semibold" ml={1}>
-              {stats.streak === 1 ? 'day' : 'days'}
-            </Text>
-          </Text>
-        </Flex>
-      </Box>
     </Flex>
   );
 });
 
 export const RoutineActivityDrawer: React.FC<{ routine: Routine, workouts: Workout[], isOpen: boolean, onClose: () => void }> = ({ routine, workouts, isOpen, onClose }) => {
+  const routineWorkouts = useMemo(() => workouts.filter(w => w.routineId === routine.id), [workouts, routine.id]);
+  const routineAsList = useMemo(() => [routine], [routine]);
   if (!isOpen) return null;
 
   return (
@@ -87,8 +67,18 @@ export const RoutineActivityDrawer: React.FC<{ routine: Routine, workouts: Worko
         <DrawerHeader>Routine Activity</DrawerHeader>
         <DrawerBody>
           <RoutineStatsBox routine={routine} workouts={workouts} />
+          {routineWorkouts.length > 0 && (
+            <Box mb={4} mt={-4}>
+              <StreakCalendar
+                workouts={routineWorkouts}
+                routines={routineAsList}
+                linkTo={null}
+                ended={!routine.active}
+              />
+            </Box>
+          )}
           <Box mb={4}>
-            <WeeklyActivityGraph title="Weekly Activity" workouts={workouts.filter(w => w.routineId === routine.id)} />
+            <WeeklyActivityGraph title="Weekly Activity" workouts={routineWorkouts} />
           </Box>
           <Divider my={4} />
           <Box position="relative" pl={0} pr={2} py={2}>
@@ -218,7 +208,7 @@ const ActivityTimeline: React.FC<{
               </Text>
               {event.name && (
                 <Text fontSize="md" color="gray.700" _dark={{ color: 'gray.200' }} mt={0.5}>
-                  "{event.name}"
+                  {event.type === 'workout' ? formatSessionName(event.name) : event.name}
                 </Text>
               )}
               {event.detail && (

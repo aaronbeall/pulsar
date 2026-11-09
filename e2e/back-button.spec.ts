@@ -6,28 +6,28 @@ import { answerSetupQuestions, createRoutineFromTemplate, navTab } from './helpe
 
 test('Back closes the side menu, and leaving through it skips the menu on the way back', async ({ page }) => {
   await page.goto('/app/');
-  await navTab(page, 'History').click();
-  await expect(page).toHaveURL(/\/history$/);
+  await navTab(page, 'Activity').click();
+  await expect(page).toHaveURL(/\/activity$/);
 
   await page.getByRole('button', { name: 'Open menu' }).click();
   await expect(page.getByRole('dialog', { name: 'Menu' })).toBeVisible();
-  await expect(page).toHaveURL(/\/history\?menu=1$/);
+  await expect(page).toHaveURL(/\/activity\?menu=1$/);
 
   await page.goBack();
   await expect(page.getByRole('dialog', { name: 'Menu' })).toBeHidden();
-  await expect(page).toHaveURL(/\/history$/);
+  await expect(page).toHaveURL(/\/activity$/);
 
-  // Settings from the menu: Back returns to History with the menu closed.
+  // Settings from the menu: Back returns to Activity with the menu closed.
   await page.getByRole('button', { name: 'Open menu' }).click();
   await page.getByRole('button', { name: 'Settings' }).click();
   await expect(page).toHaveURL(/\/settings$/);
   await page.goBack();
-  await expect(page).toHaveURL(/\/history$/);
+  await expect(page).toHaveURL(/\/activity$/);
   await expect(page.getByRole('dialog', { name: 'Menu' })).toBeHidden();
 });
 
 test('Back closes dialogs on a routine, and closing one in the app does not leave a Back step', async ({ page }) => {
-  await page.goto('/app/history');
+  await page.goto('/app/activity');
   const routineId = await createRoutineFromTemplate(page, 'Strength Builder');
   const routineUrl = new RegExp(`/workout/routine/${routineId}$`);
 
@@ -53,7 +53,7 @@ test('Back closes dialogs on a routine, and closing one in the app does not leav
   // Neither dialog left an entry behind, and neither did setup's template chooser (the new
   // routine replaced setup), so Back goes straight to where we started.
   await page.goBack();
-  await expect(page).toHaveURL(/\/history$/);
+  await expect(page).toHaveURL(/\/activity$/);
 });
 
 test('a deep link opens the Activity drawer, and closing it stays on the routine', async ({ page }) => {

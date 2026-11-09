@@ -25,7 +25,7 @@ function makeRoutine(overrides: Partial<Routine> = {}): Routine {
     name: 'Test Routine',
     description: '',
     active: true,
-    createdAt: Date.now(),
+    createdAt: d(2026, 1, 1).getTime(), // well before every test's today
     dailySchedule: [],
     chatHistory: [],
     ...overrides,
@@ -110,7 +110,7 @@ describe('getStreakInfo', () => {
   it('returns an empty/expired streak when there are no completed workouts', () => {
     vi.setSystemTime(d(2026, 7, 29));
     const result = getStreakInfo([], []);
-    expect(result).toEqual({ streak: 0, status: 'expired', days: {} });
+    expect(result).toEqual({ streak: 0, best: 0, status: 'expired', days: {} });
   });
 
   it('counts a streak through today, bridging non-scheduled rest days', () => {
@@ -172,27 +172,96 @@ describe('getStreakInfo', () => {
     expect(result.status).toBe('up_to_date');
   });
 
-  it('excludes completed workouts under an inactive routine from streak continuity, but still shows the day as completed', () => {
+  it('counts a workout under a since-retired routine: it was done, so it keeps the streak going', () => {
     vi.setSystemTime(d(2026, 7, 29)); // Wednesday
     const activeRoutine = makeRoutine({ id: 'active-1', active: true, dailySchedule: [scheduleDay('Wednesday')] });
     const inactiveRoutine = makeRoutine({ id: 'inactive-1', active: false, dailySchedule: [scheduleDay('Tuesday')] });
     const workouts = [
       makeWorkout({ routineId: 'active-1', day: 'Wednesday', startedAt: d(2026, 7, 29).getTime(), completedAt: d(2026, 7, 29).getTime() }),
-      // Completed yesterday, under a now-inactive routine — must not count or extend the streak...
       makeWorkout({ routineId: 'inactive-1', day: 'Tuesday', startedAt: d(2026, 7, 28).getTime(), completedAt: d(2026, 7, 28).getTime() }),
     ];
 
     const result = getStreakInfo(workouts, [activeRoutine, inactiveRoutine]);
-    expect(result.streak).toBe(1);
-    expect(result.status).toBe('up_to_date');
-    // ...but it's still an accurate historical record: the day shows as completed (you did
-    // work out), it's just not part of the active-routine streak chain, and since no active
-    // routine schedules Tuesday anymore it's also treated as a rest day.
+    expect(result.streak).toBe(2);
     const tuesday = result.days[d(2026, 7, 28).toDateString()];
-    expect(tuesday).toBeDefined();
     expect(tuesday.completed).toBe(true);
-    expect(tuesday.rest).toBe(true);
-    expect(tuesday.inStreak).toBe(false);
+    expect(tuesday.inStreak).toBe(true);
+  });
+
+  it('keeps the past intact when you switch routines', () => {
+    // Old routine (Mon/Wed) used 7/20-7/27, then on Tue 7/28 switched to a Tue/Thu routine.
+    vi.setSystemTime(d(2026, 7, 30)); // Thursday
+    const oldRoutine = makeRoutine({
+      id: 'old', active: false, dailySchedule: [scheduleDay('Monday'), scheduleDay('Wednesday')],
+      schedulePeriods: [{ start: d(2026, 7, 20, 8).getTime(), end: d(2026, 7, 28, 8).getTime(), days: ['Monday', 'Wednesday'] }],
+    });
+    const newRoutine = makeRoutine({
+      id: 'new', dailySchedule: [scheduleDay('Tuesday'), scheduleDay('Thursday')],
+      schedulePeriods: [{ start: d(2026, 7, 28, 8).getTime(), days: ['Tuesday', 'Thursday'] }],
+    });
+    const done = (routineId: string, day: DayOfWeek, date: Date) => makeWorkout({ routineId, day, startedAt: date.getTime(), completedAt: date.getTime() });
+    const workouts = [
+      done('old', 'Monday', d(2026, 7, 20)),
+      done('old', 'Wednesday', d(2026, 7, 22)),
+      done('old', 'Monday', d(2026, 7, 27)),
+      done('new', 'Tuesday', d(2026, 7, 28)),
+      done('new', 'Thursday', d(2026, 7, 30)),
+    ];
+
+    const result = getStreakInfo(workouts, [oldRoutine, newRoutine]);
+    expect(result.streak).toBe(5); // the switch didn't reset anything
+    // Past Tuesdays/Thursdays from before the new routine existed are rest days, not misses.
+    expect(result.days[d(2026, 7, 21).toDateString()].rest).toBe(true);
+    expect(result.days[d(2026, 7, 23).toDateString()].rest).toBe(true);
+    // The old routine's Wednesday after the switch is no longer scheduled.
+    expect(result.days[d(2026, 7, 29).toDateString()].rest).toBe(true);
+  });
+
+  it('does not turn past days into misses when a weekday is added to the schedule', () => {
+    vi.setSystemTime(d(2026, 7, 31)); // Friday
+    // Mon/Fri until Thursday 7/30, then Wednesday was added.
+    const routine = makeRoutine({
+      id: 'r1', dailySchedule: [scheduleDay('Monday'), scheduleDay('Wednesday'), scheduleDay('Friday')],
+      schedulePeriods: [
+        { start: d(2026, 7, 1).getTime(), end: d(2026, 7, 30).getTime(), days: ['Monday', 'Friday'] },
+        { start: d(2026, 7, 30).getTime(), days: ['Monday', 'Wednesday', 'Friday'] },
+      ],
+    });
+    const workouts = [
+      makeWorkout({ routineId: 'r1', day: 'Monday', startedAt: d(2026, 7, 27).getTime(), completedAt: d(2026, 7, 27).getTime() }),
+    ];
+    const result = getStreakInfo(workouts, [routine]);
+    expect(result.days[d(2026, 7, 29).toDateString()].rest).toBe(true); // Wednesday wasn't on the plan yet
+    expect(result.status).toBe('pending'); // Friday is today and not done; nothing was missed
+    expect(result.streak).toBe(1);
+  });
+
+  it('does not count misses from before a routine was created', () => {
+    vi.setSystemTime(d(2026, 7, 29)); // Wednesday
+    const routine = makeRoutine({ id: 'r1', createdAt: d(2026, 7, 27, 9).getTime(), dailySchedule: [scheduleDay('Monday'), scheduleDay('Wednesday')] });
+    const workouts = [
+      makeWorkout({ routineId: 'r1', day: 'Monday', startedAt: d(2026, 7, 27).getTime(), completedAt: d(2026, 7, 27).getTime() }),
+    ];
+    const result = getStreakInfo(workouts, [routine]);
+    expect(result.days[d(2026, 7, 22).toDateString()]).toBeUndefined(); // history starts at the routine's first day
+    expect(result.streak).toBe(1);
+  });
+
+  it('tracks the best streak across broken runs', () => {
+    vi.setSystemTime(d(2026, 7, 31)); // Friday
+    const routine = makeRoutine({ id: 'r1', dailySchedule: [scheduleDay('Monday'), scheduleDay('Wednesday'), scheduleDay('Friday')], createdAt: d(2026, 7, 13).getTime() });
+    const done = (day: DayOfWeek, date: Date) => makeWorkout({ routineId: 'r1', day, startedAt: date.getTime(), completedAt: date.getTime() });
+    const workouts = [
+      done('Monday', d(2026, 7, 13)), done('Wednesday', d(2026, 7, 15)), done('Friday', d(2026, 7, 17)),
+      // missed Monday 7/20
+      done('Wednesday', d(2026, 7, 22)),
+    ];
+    const result = getStreakInfo(workouts, [routine]);
+    expect(result.best).toBe(3);
+    expect(result.status).toBe('expired'); // missed 7/24 and 7/27
+    // The broken run's pill stops at its last workout, not at the day it was missed.
+    expect(result.days[d(2026, 7, 18).toDateString()].inStreak).toBe(false);
+    expect(result.days[d(2026, 7, 17).toDateString()].inStreak).toBe(true);
   });
 });
 

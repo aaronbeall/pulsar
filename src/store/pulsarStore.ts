@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { Exercise, Routine, RoutineDay, Workout } from '../models/types';
 import * as db from '../db/indexedDb';
 import { getExerciseStats as calcExerciseStats, ExerciseStats } from '../utils/workoutUtils';
+import { reconcileSchedulePeriods } from '../utils/schedulePeriods';
 
 interface PulsarStoreState {
   exercises: Exercise[];
@@ -59,11 +60,16 @@ export const usePulsarStore = create<PulsarStoreState>()((set, get) => ({
     await db.removeExercise(id);
     set({ exercises: get().exercises.filter(e => e.id !== id) });
   },
-  addRoutine: async (routine) => {
+  addRoutine: async (incoming) => {
+    const routine = { ...incoming, schedulePeriods: reconcileSchedulePeriods(undefined, incoming) };
     await db.addRoutine(routine);
     set({ routines: [...get().routines, routine] });
   },
-  updateRoutine: async (routine) => {
+  updateRoutine: async (incoming) => {
+    // The schedule log is derived from the stored version, never from the caller's copy,
+    // which may be stale.
+    const prev = get().routines.find(r => r.id === incoming.id);
+    const routine = { ...incoming, schedulePeriods: reconcileSchedulePeriods(prev, incoming) };
     await db.addRoutine(routine);
     set({ routines: get().routines.map(r => r.id === routine.id ? routine : r) });
   },

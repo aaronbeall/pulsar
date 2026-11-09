@@ -15,6 +15,9 @@
   // workers.dev URL plus a preview URL per uploaded version (used for PR previews).
   "workers_dev": true,
   "preview_urls": true,
+  // Production domain. Its DNS must be on this Cloudflare account; deploy attaches it and
+  // issues the certificate.
+  "routes": [{ "pattern": "pulsarworkouts.app", "custom_domain": true }],
   "observability": { "enabled": true },
   // Accounts and sessions (Better Auth), later plans and AI usage. No workout data.
   // No database_id: Wrangler finds (or creates) the database by name.
@@ -24,7 +27,7 @@
   "vars": {
     // Origins where Google sign-in is offered: each needs <origin>/api/auth/callback/google
     // registered in the Google OAuth client. localhost always works. Comma-separated.
-    "AUTH_ORIGINS": "https://pulsarfit.app",
+    "AUTH_ORIGINS": "https://pulsarworkouts.app",
     // Hosted Pulsar AI (worker/ai/). Allowances and prices are in worker/ai/plans.ts.
     "AI_MODEL": "gpt-5-mini",
     // Daily spend across all accounts before hosted AI turns itself off until tomorrow (UTC).

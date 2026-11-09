@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useExercises, usePulsarLoading, useRoutines, useWorkouts } from '../store/pulsarStore';
 import { findExercisesForToday, findRoutineForToday, getWorkoutStatusForToday, hasRoutineForToday } from '../utils/workoutUtils';
 import StreakCalendar from '../components/StreakCalendar';
+import ActivitySummaryCard from '../components/ActivitySummaryCard';
 import InstallAppAlert from '../components/InstallAppAlert';
 import TimeToWorkoutAlert from '../components/TimeToWorkoutAlert';
 import RestDayAlert from '../components/RestDayAlert';
@@ -171,7 +172,14 @@ const Home: React.FC = () => {
             ) : (
               <RestDayAlert />
             )}
-            {workouts.length > 0 && <StreakCalendar workouts={workouts} routines={routines} />}
+            {workouts.length > 0 && (
+              <>
+                <StreakCalendar workouts={workouts} routines={routines} />
+                <Box mt={4}>
+                  <ActivitySummaryCard workouts={workouts} routines={routines} title="Your activity" to="/activity" showStreak={false} />
+                </Box>
+              </>
+            )}
           </Box>
         )}
       </Container>

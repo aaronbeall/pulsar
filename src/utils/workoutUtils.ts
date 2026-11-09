@@ -1,6 +1,7 @@
 import { DayOfWeek, Routine, Workout } from '../models/types';
 import { DAYS_OF_WEEK } from '../constants/days';
-import { isSameWeek, startOfWeek, addDays, isAfter, isBefore, isEqual, subDays, isSameDay, formatDistanceToNow, differenceInDays } from 'date-fns';
+import { isSameWeek, startOfWeek, addDays, isAfter, isSameDay, formatDistanceToNow } from 'date-fns';
+import { getSchedulePeriods, scheduledWeekdaysAt } from './schedulePeriods';
 
 export const getDayOfWeek = (date: Date): DayOfWeek => {
   return DAYS_OF_WEEK[date.getDay()];
@@ -96,6 +97,93 @@ export const getWorkoutStatusForToday = (workouts: Workout[], routines: Routine[
   return getWorkoutStatusForDay(workouts, routines, getTodayDayOfWeek(), new Date());
 };
 
+// ---------------------------------------------------------------------------------------
+// Day model: one source of truth for what happened, or is planned, on each calendar day.
+// Both the Home streak calendar and the History year grid are built on it.
+//
+// A day is "scheduled" when some routine scheduled its weekday AT THAT TIME (see
+// utils/schedulePeriods.ts): a past day is judged by the schedule in force at the end of it,
+// today and future days by the current one. Switching or editing a routine therefore never
+// rewrites past days, and a routine adds no misses from before it existed.
+// A day is "completed" when any workout dated to it was finished, from any routine.
+// ---------------------------------------------------------------------------------------
+
+export interface DayStatus {
+  date: Date; // local midnight
+  completed: boolean;
+  scheduled: boolean;
+  /** Routines that scheduled this day (at the time). */
+  routineIds: string[];
+  future: boolean;
+  isToday: boolean;
+  /** A scheduled past day with no completed workout. Today never counts as missed. */
+  missed: boolean;
+}
+
+/** The calendar day a workout belongs to: its scheduled weekday in the week it was started. */
+export function getScheduledDate(workout: Workout): Date {
+  const startedAt = new Date(workout.startedAt);
+  const weekStart = startOfWeek(startedAt, { weekStartsOn: 0 }); // Sunday
+  const dayIdx = DAYS_OF_WEEK.indexOf(workout.day);
+  return addDays(weekStart, dayIdx);
+}
+
+function completedDateKeys(workouts: Workout[]): Set<string> {
+  const keys = new Set<string>();
+  for (const w of workouts) {
+    if (w.completedAt) keys.add(getScheduledDate(w).toDateString());
+  }
+  return keys;
+}
+
+const startOfToday = (now: Date) => {
+  const t = new Date(now);
+  t.setHours(0, 0, 0, 0);
+  return t;
+};
+
+/** Which routines scheduled `date`, judged at the end of that day (or now, if sooner). */
+function routinesScheduledOn(routines: Routine[], date: Date, now: number): string[] {
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+  const t = Math.min(endOfDay.getTime(), now);
+  const weekday = getDayOfWeek(date);
+  return routines.filter(r => scheduledWeekdaysAt(r, t).includes(weekday)).map(r => r.id);
+}
+
+/** Status of every day from `start` to `end` inclusive, keyed by toDateString(). */
+export function getDayStatuses(
+  start: Date,
+  end: Date,
+  workouts: Workout[],
+  routines: Routine[],
+  now: Date = new Date(),
+): Record<string, DayStatus> {
+  const completed = completedDateKeys(workouts);
+  const today = startOfToday(now);
+  const result: Record<string, DayStatus> = {};
+  let d = startOfToday(start);
+  const last = startOfToday(end);
+  while (!isAfter(d, last)) {
+    const key = d.toDateString();
+    const routineIds = routinesScheduledOn(routines, d, now.getTime());
+    const future = isAfter(d, today);
+    const isToday = isSameDay(d, today);
+    const isCompleted = !future && completed.has(key);
+    result[key] = {
+      date: new Date(d),
+      completed: isCompleted,
+      scheduled: routineIds.length > 0,
+      routineIds,
+      future,
+      isToday,
+      missed: routineIds.length > 0 && !isCompleted && !future && !isToday,
+    };
+    d = addDays(d, 1);
+  }
+  return result;
+}
+
 export interface StreakDay {
   date: Date;
   completed: boolean;
@@ -104,151 +192,75 @@ export interface StreakDay {
 }
 
 export interface StreakInfo {
-  streak: number; // current streak count (workout days only)
+  streak: number; // current streak: days with a completed workout in the unbroken run
+  best: number; // longest run ever, same unit
   status: 'pending' | 'up_to_date' | 'expired';
   days: Record<string, StreakDay>; // key: date string (toDateString), value: StreakDay
 }
 
-// Helper to get the scheduled date for a workout (week from startedAt, day from w.day)
-function getScheduledDate(workout: Workout): Date {
-  const startedAt = new Date(workout.startedAt);
-  const weekStart = startOfWeek(startedAt, { weekStartsOn: 0 }); // Sunday
-  const dayIdx = DAYS_OF_WEEK.indexOf(workout.day);
-  return addDays(weekStart, dayIdx);
-}
-
-// Builds a Set of toDateString() keys for the scheduled date of each completed workout
-// matching the given predicate.
-function completedDateKeys(workouts: Workout[], predicate: (w: Workout) => boolean): Set<string> {
-  const keys = new Set<string>();
-  for (const w of workouts) {
-    if (w.completedAt && predicate(w)) {
-      keys.add(getScheduledDate(w).toDateString());
-    }
-  }
-  return keys;
-}
-
-export function getStreakInfo(workouts: Workout[], routines: Routine[]): StreakInfo {
-  const activeRoutineIds = new Set(routines.filter(r => r.active).map(r => r.id));
-
-  // "completed" (exposed on each StreakDay, drives the calendar's day markers) reflects
-  // ANY completed workout session — an accurate historical record regardless of whether
-  // its routine is still active. Streak continuity — inStreak / the numeric streak count /
-  // pending-expired status — is computed separately from completedForStreak, which stays
-  // scoped to workouts under routines that are STILL active, so deactivating a routine
-  // can't keep extending the streak indefinitely.
-  const completedAll = completedDateKeys(workouts, () => true);
-  const completedForStreak = completedDateKeys(workouts, w => activeRoutineIds.has(w.routineId));
-
-  if (completedAll.size === 0) return { streak: 0, status: 'expired', days: {} };
-
-  // Walk back to the earliest completed workout of any kind, so history displays fully
-  // even on days that only have an inactive-routine workout to show.
-  let firstDate: Date | undefined;
+// The first day worth showing: the earliest completed workout or the earliest day any
+// routine was scheduled, whichever comes first.
+function historyStart(workouts: Workout[], routines: Routine[]): Date | undefined {
+  let first: number | undefined;
   for (const w of workouts) {
     if (!w.completedAt) continue;
-    const scheduled = getScheduledDate(w);
-    if (!firstDate || isBefore(scheduled, firstDate)) firstDate = scheduled;
+    const t = getScheduledDate(w).getTime();
+    if (first === undefined || t < first) first = t;
   }
-  if (!firstDate) return { streak: 0, status: 'expired', days: {} };
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Build the day array (oldest first) alongside a parallel streak-only completion flag —
-  // the latter isn't part of the exposed StreakDay shape, it's only needed to compute
-  // inStreak/streak/status below.
-  const streakDaysArr: StreakDay[] = [];
-  const forStreakArr: boolean[] = [];
-  let d = today;
-  while (!isBefore(d, firstDate)) {
-    const key = d.toDateString();
-    const dayOfWeek = getDayOfWeek(d);
-    const hasRoutine = routines
-      .filter(r => r.active)
-      .some(r => r.dailySchedule.some(s => s.day === dayOfWeek));
-    streakDaysArr.push({
-      date: new Date(d),
-      completed: completedAll.has(key),
-      rest: !hasRoutine,
-      inStreak: false,
-    });
-    forStreakArr.push(completedForStreak.has(key));
-    d = subDays(d, 1);
+  for (const r of routines) {
+    const p = getSchedulePeriods(r)[0];
+    if (p && p.start > 0 && (first === undefined || p.start < first)) first = p.start;
   }
-  streakDaysArr.reverse();
-  forStreakArr.reverse();
+  return first === undefined ? undefined : new Date(first);
+}
 
-  // Mark all days that are in a streak (consecutive completed scheduled workouts, rest
-  // days between are inStreak if between completed workouts or today) — using the
-  // active-routine-scoped completion flag, not the display "completed" field.
-  let inStreak = false;
-  for (let i = 0; i < streakDaysArr.length; i++) {
-    const day = streakDaysArr[i];
-    const completedForStreakToday = forStreakArr[i];
-    if (day.rest) {
-      // Mark as inStreak if between completed workouts or today
-      if (inStreak || completedForStreakToday) {
-        day.inStreak = true;
-      }
-      continue;
+/**
+ * The streak runs through every completed day (scheduled or a bonus workout on a rest day)
+ * and is broken only by a missed scheduled day. Rest days bridge it without adding to the
+ * count. Today can't break it: if today is scheduled and not done yet the status is
+ * "pending" (expiring today).
+ */
+export function getStreakInfo(workouts: Workout[], routines: Routine[], now: Date = new Date()): StreakInfo {
+  const empty: StreakInfo = { streak: 0, best: 0, status: 'expired', days: {} };
+  if (!workouts.some(w => w.completedAt)) return empty;
+  const start = historyStart(workouts, routines);
+  if (!start || isAfter(start, now)) return empty;
+
+  const statuses = Object.values(getDayStatuses(start, now, workouts, routines, now));
+  const days: StreakDay[] = statuses.map(s => ({ date: s.date, completed: s.completed, rest: !s.scheduled, inStreak: false }));
+
+  let best = 0;
+  let count = 0;
+  let runStart = -1; // index of the run's first completed day, -1 when there's no run
+  let lastCompleted = -1;
+  const closeRun = (endIdx: number) => {
+    for (let j = runStart; j <= endIdx; j++) days[j].inStreak = true;
+    best = Math.max(best, count);
+  };
+  statuses.forEach((s, i) => {
+    if (s.completed) {
+      if (runStart < 0) runStart = i;
+      lastCompleted = i;
+      count++;
+    } else if (s.missed && runStart >= 0) {
+      closeRun(lastCompleted); // the run ends at its last workout, not at the miss
+      runStart = -1;
+      count = 0;
     }
-    if (completedForStreakToday) {
-      inStreak = true;
-      day.inStreak = true;
-    } else {
-      // Not completed scheduled workout
-      if (i === streakDaysArr.length - 1) {
-        // Today is a scheduled workout and not completed
-        // If the streak is unbroken up to today, mark today as inStreak (for pending)
-        if (inStreak) {
-          day.inStreak = true;
-        }
-        continue;
-      } else {
-        // Missed a scheduled workout in the past, break the streak
-        inStreak = false;
-      }
-    }
-  }
+  });
 
-  // Calculate current streak and status
-  let streak = 0;
-  let status: 'pending' | 'up_to_date' | 'expired' = 'expired';
-  const todayIdx = streakDaysArr.length - 1;
-  const todayDay = streakDaysArr[todayIdx];
-  const todayCompletedForStreak = forStreakArr[todayIdx];
-  // Find the last inStreak scheduled workout before today (or today if completed)
-  for (let i = todayIdx; i >= 0; i--) {
-    const day = streakDaysArr[i];
-    if (day.rest) continue;
-    if (day.inStreak) {
-      // If today is pending, do not count today in the streak
-      if (i === todayIdx && !todayCompletedForStreak && todayDay.inStreak && !todayDay.rest) {
-        continue;
-      }
-      streak++;
-    } else {
-      break;
-    }
-  }
-  // Determine status
-  if (!todayDay.rest && !todayCompletedForStreak && todayDay.inStreak) {
-    status = 'pending';
-  } else if (todayDay.inStreak) {
-    status = 'up_to_date';
+  const todayStatus = statuses[statuses.length - 1];
+  let status: StreakInfo['status'] = 'expired';
+  if (runStart >= 0) {
+    closeRun(days.length - 1); // still alive: carries through rest days and today
+    status = todayStatus.scheduled && !todayStatus.completed ? 'pending' : 'up_to_date';
   } else {
-    status = 'expired';
-    streak = 0;
+    count = 0;
   }
 
-  // Convert to map
-  const days: Record<string, StreakDay> = {};
-  for (const day of streakDaysArr) {
-    days[day.date.toDateString()] = day;
-  }
-  return { streak, status, days };
+  const map: Record<string, StreakDay> = {};
+  for (const day of days) map[day.date.toDateString()] = day;
+  return { streak: count, best, status, days: map };
 }
 
 export interface YearDay {
@@ -258,36 +270,18 @@ export interface YearDay {
   future: boolean;
 }
 
-// Classifies every day of a calendar year for a year-at-a-glance view — unlike
-// getStreakInfo (which only walks backward from today to the first workout), this covers
-// the full Jan 1 - Dec 31 range, including days before any workout history and days still
-// to come. "completed" reflects ANY completed workout session regardless of the routine's
-// current active status — an accurate historical record. "rest" reuses the same
-// active-routine-schedule check as the rest of the app (hasRoutineForDay), so a day only
-// counts as a miss if it was scheduled for a routine that's STILL active — matching how
-// the streak calendar reasons about rest days. A day can therefore be both "completed" and
-// "rest" at once (e.g. a bonus workout logged under a routine you've since retired).
-export function getYearActivity(year: number, workouts: Workout[], routines: Routine[]): Record<string, YearDay> {
-  const completedDates = completedDateKeys(workouts, () => true);
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
+// Classifies every day of a calendar year for the History year grid, from the same day model
+// as the streak calendar. A day can be both "completed" and "rest" (a bonus workout).
+// Future days show the current schedule.
+export function getYearActivity(year: number, workouts: Workout[], routines: Routine[], now: Date = new Date()): Record<string, YearDay> {
+  const statuses = getDayStatuses(new Date(year, 0, 1), new Date(year, 11, 31), workouts, routines, now);
   const result: Record<string, YearDay> = {};
-  const end = new Date(year, 11, 31);
-  let d = new Date(year, 0, 1);
-  while (!isAfter(d, end)) {
-    const key = d.toDateString();
-    result[key] = {
-      date: new Date(d),
-      completed: completedDates.has(key),
-      rest: !hasRoutineForDay(routines, getDayOfWeek(d)),
-      future: isAfter(d, today),
-    };
-    d = addDays(d, 1);
+  for (const [key, s] of Object.entries(statuses)) {
+    result[key] = { date: s.date, completed: s.completed, rest: !s.scheduled, future: s.future };
   }
   return result;
 }
+
 
 export type ExerciseStats = {
   routines: number;

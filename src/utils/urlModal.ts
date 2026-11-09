@@ -25,7 +25,9 @@ export type UrlModalKey =
   | 'finish'          // WorkoutSession: finish workout early confirmation
   | 'celebrate'       // WorkoutSession: the workout complete celebration
   | 'templates'       // WorkoutSetup: create a routine from a template
-  | 'restore';        // Settings: restore backup confirmation
+  | 'restore'         // Settings: restore backup confirmation
+  | 'loadPreset'      // Settings › Developer: load test data confirmation (value: preset id)
+  | 'day';            // Streak calendar / year grid: one day's details (value: yyyy-MM-dd)
 
 /** Key in the history entry's state listing the modals this app pushed, oldest first. */
 export const URL_MODAL_STATE_KEY = 'urlModals';

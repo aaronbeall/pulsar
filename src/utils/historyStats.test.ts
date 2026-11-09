@@ -3,9 +3,7 @@ import {
   isPerfectWorkout,
   getHistorySummaryStats,
   formatTotalDuration,
-  getRoutineTimeline,
-  getWorkoutHistory,
-  getHistoryTimeline,
+  getRoutineStints,
   getRoutineName,
   getWorkoutKind,
 } from './historyStats';
@@ -101,6 +99,7 @@ describe('getHistorySummaryStats', () => {
     expect(stats.totalWorkoutTimeMs).toBe(90 * 60 * 1000); // 1h + 30m
     expect(stats.uniqueExercisesDone).toBe(1); // only ex1 — ex2 was skipped, so it doesn't count as "done"
     expect(stats.activeRoutineCount).toBe(1);
+    expect(stats.bestStreak).toBe(2); // 7/20 and 7/27
   });
 });
 
@@ -118,51 +117,53 @@ describe('formatTotalDuration', () => {
   });
 });
 
-describe('getRoutineTimeline', () => {
-  it('excludes routines with no workout history and sorts the rest by most recent activity', () => {
-    const withHistory = makeRoutine({ id: 'r1', name: 'Has History' });
-    const neverUsed = makeRoutine({ id: 'r2', name: 'Never Used' });
-    const olderHistory = makeRoutine({ id: 'r3', name: 'Older History' });
+describe('getRoutineStints', () => {
+  const now = new Date(2026, 6, 31, 12); // Friday 7/31
+  const done = (routineId: string, day: DayOfWeek, at: number) => makeWorkout({ routineId, day, startedAt: at, completedAt: at });
 
+  it('groups workouts into active stretches, keeps edits inside one stretch, and counts misses', () => {
+    // "Old" ran Mon/Wed 7/6 to 7/20. "New" started 7/20 on Tue, gained Thu on 7/27.
+    const old = makeRoutine({
+      id: 'old', active: false, dailySchedule: [scheduleDay('Monday'), scheduleDay('Wednesday')],
+      schedulePeriods: [{ start: d(2026, 7, 6, 8), end: d(2026, 7, 20, 8), days: ['Monday', 'Wednesday'] }],
+    });
+    const fresh = makeRoutine({
+      id: 'new', dailySchedule: [scheduleDay('Tuesday'), scheduleDay('Thursday')],
+      schedulePeriods: [
+        { start: d(2026, 7, 20, 8), end: d(2026, 7, 27, 8), days: ['Tuesday'] },
+        { start: d(2026, 7, 27, 8), days: ['Tuesday', 'Thursday'] },
+      ],
+    });
     const workouts = [
-      makeWorkout({ routineId: 'r1', startedAt: d(2026, 7, 1), completedAt: d(2026, 7, 1) }),
-      makeWorkout({ routineId: 'r1', startedAt: d(2026, 7, 20), completedAt: d(2026, 7, 20) }),
-      makeWorkout({ routineId: 'r3', startedAt: d(2026, 6, 1), completedAt: d(2026, 6, 5) }),
+      done('old', 'Monday', d(2026, 7, 6)),
+      done('old', 'Wednesday', d(2026, 7, 8)),
+      // missed Mon 7/13, did Wed 7/15
+      done('old', 'Wednesday', d(2026, 7, 15)),
+      done('new', 'Tuesday', d(2026, 7, 21)),
+      done('new', 'Tuesday', d(2026, 7, 28)),
+      // missed Thu 7/30
     ];
 
-    const timeline = getRoutineTimeline([withHistory, neverUsed, olderHistory], workouts);
-
-    expect(timeline.map(e => e.routine.id)).toEqual(['r1', 'r3']); // r2 excluded, r1 more recent than r3
-    expect(timeline[0].firstDate).toBe(d(2026, 7, 1));
-    expect(timeline[0].lastDate).toBe(d(2026, 7, 20));
-    expect(timeline[1].lastDate).toBe(d(2026, 6, 5)); // uses completedAt, not startedAt
+    const stints = getRoutineStints(workouts, [old, fresh], now);
+    expect(stints.map(s => s.routine.id)).toEqual(['new', 'old']); // the current one first
+    const [current, previous] = stints;
+    expect(current.end).toBeUndefined();
+    expect(current.days).toEqual(['Tuesday']);
+    expect(current.changes).toEqual([{ date: d(2026, 7, 27, 8), days: ['Tuesday', 'Thursday'] }]);
+    expect(current.workouts.map(w => w.startedAt)).toEqual([d(2026, 7, 28), d(2026, 7, 21)]);
+    expect(current.missed).toBe(1);
+    expect(previous.completed).toBe(3);
+    expect(previous.missed).toBe(1);
   });
-});
 
-describe('getWorkoutHistory', () => {
-  it('returns all workouts sorted newest first without mutating the input', () => {
-    const original = [
-      makeWorkout({ id: 'old', startedAt: d(2026, 1, 1) }),
-      makeWorkout({ id: 'new', startedAt: d(2026, 7, 1) }),
-    ];
-    const sorted = getWorkoutHistory(original);
-    expect(sorted.map(w => w.id)).toEqual(['new', 'old']);
-    expect(original.map(w => w.id)).toEqual(['old', 'new']); // input untouched
-  });
-});
-
-describe('getHistoryTimeline', () => {
-  it('merges workouts and routine-created entries into one newest-first feed', () => {
-    const routine = makeRoutine({ id: 'r1', name: 'Leg Day', createdAt: d(2026, 7, 10) });
-    const workouts = [
-      makeWorkout({ id: 'w-old', routineId: 'r1', startedAt: d(2026, 7, 1) }),
-      makeWorkout({ id: 'w-new', routineId: 'r1', startedAt: d(2026, 7, 20) }),
-    ];
-
-    const timeline = getHistoryTimeline(workouts, [routine]);
-
-    expect(timeline.map(item => item.type === 'workout' ? item.workout.id : `created-${item.routine.id}`))
-      .toEqual(['w-new', 'created-r1', 'w-old']);
+  it("gives workouts outside any recorded stretch their own stint, and skips routines never used", () => {
+    const retired = makeRoutine({ id: 'r1', active: false, dailySchedule: [scheduleDay('Monday')] });
+    const neverUsed = makeRoutine({ id: 'r2', active: false });
+    const stints = getRoutineStints([done('r1', 'Monday', d(2026, 7, 6)), done('r1', 'Monday', d(2026, 7, 13))], [retired, neverUsed], now);
+    expect(stints).toHaveLength(1);
+    expect(stints[0].start).toBe(d(2026, 7, 6));
+    expect(stints[0].end).toBe(d(2026, 7, 13));
+    expect(stints[0].completed).toBe(2);
   });
 });
 

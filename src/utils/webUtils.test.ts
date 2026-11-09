@@ -126,3 +126,12 @@ describe('searchExerciseImages', () => {
     expect(await searchExerciseImages('nonsense')).toEqual([]);
   });
 });
+
+describe('getHowToUrl', () => {
+  it("uses the exercise's saved link, or builds a video search from its name", async () => {
+    const { getHowToUrl, getSearchUrl, getHowToQuery } = await import('./webUtils');
+    expect(getHowToUrl({ name: 'Squat', howToUrl: 'https://example.com/squat' })).toBe('https://example.com/squat');
+    expect(getHowToUrl({ name: 'Squat', howToUrl: '' })).toBe(getSearchUrl(getHowToQuery('Squat')));
+    expect(getHowToUrl({ name: ' ' })).toBe('');
+  });
+});

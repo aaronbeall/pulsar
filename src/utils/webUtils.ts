@@ -24,6 +24,10 @@ export const getHowToQuery = (exerciseName: string) => {
   return `how to ${ exerciseName } site:youtube.com`;
 }
 
+/** An exercise's how-to video link: its saved one, or a search built from its name. */
+export const getHowToUrl = (exercise: { name: string; howToUrl?: string }) =>
+  exercise.howToUrl || (exercise.name.trim() ? getSearchUrl(getHowToQuery(exercise.name.trim())) : '');
+
 /**
  * Search Wikimedia Commons for images matching an exercise, best match first. Free, no API
  * key required — Commons' API is CORS-enabled for anonymous client-side use via `origin=*`.
