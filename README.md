@@ -76,12 +76,14 @@ signature and keeps the `subscription` table in step. An active (or past-due, wh
 retries) subscription switches the account to the Pulsar AI tier in `worker/ai/plans.ts`.
 
 - Setup, in test mode first:
-  1. Stripe Dashboard > Settings > Managed Payments: activate it.
+  1. Stripe Dashboard > Settings > Business > Public details: business name "Pulsar
+     Workouts", website `https://pulsarworkouts.app`, statement descriptor "PULSAR WORKOUTS".
+     Then Settings > Managed Payments: activate it.
   2. Create a product "Pulsar AI" with tax code `txcd_10103000` (SaaS, personal use) and two
      recurring prices: $3.99 monthly, $29.99 yearly. Put their ids in `STRIPE_PRICE_MONTHLY`
      and `STRIPE_PRICE_YEARLY` in `wrangler.jsonc`.
   3. Settings > Billing > Customer portal: allow cancelling and updating the payment method.
-  4. Developers > Webhooks: add `https://pulsarfit.app/api/billing/webhook` with events
+  4. Developers > Webhooks: add `https://pulsarworkouts.app/api/billing/webhook` with events
      `checkout.session.completed`, `customer.subscription.created`, `.updated`, `.deleted`,
      `.paused`, `.resumed`, `invoice.paid` and `invoice.payment_failed`.
   5. `npx wrangler secret put STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (the endpoint's
