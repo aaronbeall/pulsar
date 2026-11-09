@@ -1,6 +1,7 @@
 // RoutineDisplayTable.tsx
 // Displays a read-only table view of a routine's weekly schedule and exercises, with clickable exercise names for details.
 
+import { getHowToUrl } from '../utils/webUtils';
 import {
   Box,
   Card,
@@ -145,10 +146,10 @@ export const RoutineDisplayTable: React.FC<{
                               >
                                 {exerciseDetails.name}
                               </Text>
-                              {exerciseDetails.howToUrl && (
+                              {getHowToUrl(exerciseDetails) && (
                                 <IconButton
                                   as="a"
-                                  href={exerciseDetails.howToUrl}
+                                  href={getHowToUrl(exerciseDetails)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   size="xs"

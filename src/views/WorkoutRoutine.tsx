@@ -40,6 +40,7 @@ import { getPendingProposals, summarizeRoutineEdit } from '../utils/routineChang
 import { v4 as uuidv4 } from 'uuid';
 import { useExercises, usePulsarStore, useRoutine, useRoutines, useWorkouts } from '../store/pulsarStore';
 import { PortalMenuList } from '../components/PortalMenuList';
+import ActivitySummaryCard from '../components/ActivitySummaryCard';
 
 const WorkoutRoutine: React.FC = () => {
   const { routineId } = useParams<{ routineId: string }>();
@@ -66,6 +67,8 @@ const WorkoutRoutine: React.FC = () => {
   const navigate = useNavigate();
   const decideChange = useRoutineChangeActions(routineId || '');
   const proposals = useMemo(() => getPendingProposals({ changes: routine?.changes }), [routine?.changes]);
+  const routineWorkouts = useMemo(() => workouts.filter(w => w.routineId === routine?.id), [workouts, routine?.id]);
+  const routineAsList = useMemo(() => (routine ? [routine] : []), [routine]);
 
   const dismissResponse = async (id: string) => {
     if (!routine) return;
@@ -222,16 +225,6 @@ const WorkoutRoutine: React.FC = () => {
             >
               Edit
             </Button>
-            {/* Secondary action */}
-            <Button
-              leftIcon={<FaChartBar />}
-              colorScheme="cyan"
-              variant="outline"
-              size="sm"
-              onClick={() => activity.open()}
-            >
-              Activity
-            </Button>
             <Menu>
               <MenuButton
                 as={IconButton}
@@ -284,6 +277,18 @@ const WorkoutRoutine: React.FC = () => {
           </Text>
         )}
         </Box>
+        )}
+        {!isEditing && (
+          <Box mb={4}>
+            <ActivitySummaryCard
+              workouts={routineWorkouts}
+              routines={routineAsList}
+              title="Activity"
+              cta="Details"
+              onOpen={() => activity.open()}
+              ended={!routine.active && routineWorkouts.length > 0}
+            />
+          </Box>
         )}
         {activity.isOpen && (
           <RoutineActivityDrawer routine={routine} workouts={workouts} isOpen onClose={activity.close} />

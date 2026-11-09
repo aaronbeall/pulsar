@@ -1,16 +1,15 @@
 import React, { useMemo } from 'react';
-import { Flex, Heading, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
-import { FaChartBar, FaClipboardList, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaTrophy } from 'react-icons/fa';
+import { Box, Flex, Heading, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
+import { FaChartBar, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaMedal, FaTrophy } from 'react-icons/fa';
 import { usePulsarLoading, useRoutines, useWorkouts } from '../store/pulsarStore';
-import { formatTotalDuration, getHistorySummaryStats, getHistoryTimeline, getRoutineTimeline } from '../utils/historyStats';
+import { formatTotalDuration, getHistorySummaryStats, getRoutineStints } from '../utils/historyStats';
 import YearActivityCalendar from '../components/YearActivityCalendar';
 import StatCard from '../components/StatCard';
 import SectionCard from '../components/SectionCard';
-import RoutineHistoryList from '../components/RoutineHistoryList';
-import WorkoutHistoryList from '../components/WorkoutHistoryList';
+import HistoryTimeline from '../components/HistoryTimeline';
 import WeeklyActivityGraph from '../components/WeeklyActivityGraph';
 
-const History: React.FC = () => {
+const Activity: React.FC = () => {
   const routines = useRoutines();
   const workouts = useWorkouts();
   // routines/workouts default to [] (never undefined) even before loadAll() resolves, so
@@ -22,13 +21,8 @@ const History: React.FC = () => {
     [workouts, routines]
   );
 
-  const routineTimeline = useMemo(
-    () => (routines && workouts ? getRoutineTimeline(routines, workouts) : []),
-    [routines, workouts]
-  );
-
-  const historyTimeline = useMemo(
-    () => (routines && workouts ? getHistoryTimeline(workouts, routines) : []),
+  const stints = useMemo(
+    () => (routines && workouts ? getRoutineStints(workouts, routines) : []),
     [workouts, routines]
   );
 
@@ -36,27 +30,29 @@ const History: React.FC = () => {
     return (
       <Flex direction="column" align="center" justify="center" minH="60vh" w="100%">
         <Spinner size="xl" color="cyan.400" thickness="4px" speed="0.7s" mb={4} />
-        <Text color="gray.500" fontSize="lg">Loading your history...</Text>
+        <Text color="gray.500" fontSize="lg">Loading your activity...</Text>
       </Flex>
     );
   }
 
   return (
     <Flex direction="column" gap={{ base: 4, sm: 5 }}>
-      <Heading
-        fontSize={{ base: 'xl', sm: '2xl' }}
-        bgGradient="linear(to-r, cyan.400, blue.500)"
-        bgClip="text"
-        mb={1}
-      >
-        History
-      </Heading>
+      <Box>
+        <Heading
+          fontSize={{ base: 'xl', sm: '2xl' }}
+          bgGradient="linear(to-r, orange.400, pink.500)"
+          bgClip="text"
+        >
+          Activity
+        </Heading>
+        <Text fontSize="sm" color="gray.500">Your streaks, workouts and routines over time.</Text>
+      </Box>
 
       <SimpleGrid columns={{ base: 2, sm: 3 }} spacing={{ base: 3, sm: 4 }}>
         <StatCard icon={FaFire} label="Day streak" value={summary.streak} color="orange.400" />
         <StatCard icon={FaDumbbell} label="Workouts done" value={summary.totalCompleted} color="cyan.500" />
         <StatCard icon={FaTrophy} label="Perfect workouts" value={summary.perfectWorkouts} color="yellow.400" />
-        <StatCard icon={FaClipboardList} label="Active routines" value={summary.activeRoutineCount} color="green.400" />
+        <StatCard icon={FaMedal} label="Best streak" value={summary.bestStreak} color="green.400" />
         <StatCard icon={FaClock} label="Total workout time" value={formatTotalDuration(summary.totalWorkoutTimeMs)} color="purple.400" />
         <StatCard icon={FaLayerGroup} label="Exercises done" value={summary.uniqueExercisesDone} color="pink.400" />
       </SimpleGrid>
@@ -67,15 +63,11 @@ const History: React.FC = () => {
         <WeeklyActivityGraph workouts={workouts} />
       </SectionCard>
 
-      <SectionCard icon={FaClipboardList} title="Routine History">
-        <RoutineHistoryList entries={routineTimeline} />
-      </SectionCard>
-
-      <SectionCard icon={FaHistory} title="Workout History">
-        <WorkoutHistoryList items={historyTimeline} routines={routines} />
+      <SectionCard icon={FaHistory} title="Timeline">
+        <HistoryTimeline stints={stints} routines={routines} />
       </SectionCard>
     </Flex>
   );
 };
 
-export default History;
+export default Activity;
