@@ -9,15 +9,17 @@ describe('parseAccountState', () => {
   });
 
   it('reads a signed-out visitor', () => {
-    expect(parseAccountState({ signInAvailable: true, user: null })).toEqual({ signInAvailable: true, hostedAI: false, user: null, ai: null });
+    expect(parseAccountState({ signInAvailable: true, user: null })).toEqual({ signInAvailable: true, hostedAI: false, billing: false, user: null, ai: null, subscription: null });
   });
 
   it('reads a signed-in user and fills missing fields', () => {
     expect(parseAccountState({ signInAvailable: true, user: { id: 'u1', name: 'Ada', email: 'a@b.c' } })).toEqual({
       signInAvailable: true,
       hostedAI: false,
+      billing: false,
       user: { id: 'u1', name: 'Ada', email: 'a@b.c', image: null },
       ai: null,
+      subscription: null,
     });
   });
 
@@ -32,5 +34,14 @@ describe('parseAccountState', () => {
     expect(allowanceLeft(state, 'edit')).toBe(2);
     expect(allowanceLeft({ ...state, hostedAI: false }, 'edit')).toBe(0);
     expect(allowanceLeft({ ...state, user: null }, 'edit')).toBe(0);
+  });
+
+  it('reads the subscription', () => {
+    const state = parseAccountState({
+      signInAvailable: true, billing: true, user: { id: 'u1' },
+      subscription: { status: 'active', interval: 'year', currentPeriodEnd: 123, cancelAtPeriodEnd: true },
+    });
+    expect(state.billing).toBe(true);
+    expect(state.subscription).toEqual({ status: 'active', interval: 'year', currentPeriodEnd: 123, cancelAtPeriodEnd: true });
   });
 });

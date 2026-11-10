@@ -80,7 +80,12 @@ export const WorkoutSetup: React.FC = () => {
       aiGate.requireAI(generateWithAI, {
         kind: 'plan',
         reason: 'Building a routine from your answers uses Pulsar AI.',
-        alternative: { label: 'Create from a template instead', onClick: () => templateChooser.open() },
+        alternative: {
+          label: 'Match me to a template',
+          description: 'We score every ready-made routine against your answers and show you the best fits. No AI needed, and you can edit any of it by hand.',
+          icon: FaBook,
+          onClick: () => templateChooser.open(),
+        },
       });
     }
   };

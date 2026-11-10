@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { createAuth, signInAvailable } from '../auth';
+import { currentUser } from '../session';
 import { AIKind } from './plans';
 import { BadRequest, messagesFor } from './request';
 import { usageTap } from './stream';
@@ -21,14 +21,6 @@ const openaiUrl = (env: Env) => (env as { OPENAI_URL?: string }).OPENAI_URL || O
 const modelFor = (env: Env) => env.AI_MODEL || DEFAULT_MODEL;
 const dailyBudgetMicros = (env: Env) => Math.round((Number(env.AI_DAILY_BUDGET_USD) || DEFAULT_DAILY_BUDGET_USD) * 1_000_000);
 
-/** The signed-in user's id, or null. */
-export async function currentUserId(env: Env, request: Request): Promise<string | null> {
-  const origin = new URL(request.url).origin;
-  if (!signInAvailable(env, origin)) return null;
-  const session = await createAuth(env, origin).api.getSession({ headers: request.headers });
-  return session?.user.id ?? null;
-}
-
 /** The allowance shown in the app (part of /api/me). */
 export async function aiStatus(env: Env, userId: string): Promise<UsageSummary | null> {
   if (!hostedAIAvailable(env)) return null;
@@ -45,7 +37,7 @@ for (const kind of ['plan', 'edit'] as AIKind[]) {
     const env = c.env;
     if (!hostedAIAvailable(env)) return error('unavailable', 'Pulsar AI is not available here.', 503);
 
-    const userId = await currentUserId(env, c.req.raw);
+    const userId = (await currentUser(env, c.req.raw))?.id;
     if (!userId) return error('signin_required', 'Sign in to use Pulsar AI.', 401);
 
     let messages;

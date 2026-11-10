@@ -63,7 +63,11 @@ test('signed out, the AI gate offers free Pulsar AI with Google first and keeps 
 
   const gate = page.getByRole('dialog');
   await expect(gate.getByText('Try Pulsar AI free')).toBeVisible();
-  await expect(gate.getByText('Or use your own OpenAI key')).toBeVisible();
+  // The key is folded away behind its own section while Pulsar AI is on offer.
+  await expect(gate.getByPlaceholder('sk-...')).toBeHidden();
+  await gate.getByRole('button', { name: 'Or use your own OpenAI key' }).click();
+  await expect(gate.getByPlaceholder('sk-...')).toBeVisible();
+  await expect(gate.getByRole('button', { name: 'Use this key' })).toBeDisabled();
   const toGoogle = page.waitForRequest((req) => req.url().startsWith('https://accounts.google.com/'));
   await gate.getByRole('button', { name: 'Continue with Google' }).click();
   await toGoogle;

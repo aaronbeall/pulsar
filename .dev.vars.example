@@ -11,3 +11,8 @@ AUTH_ORIGINS=https://pulsarworkouts.app
 OPENAI_API_KEY=
 AI_MODEL=gpt-5-mini
 AI_DAILY_BUDGET_USD=10
+# Stripe test mode (sk_test_..., whsec_... from `stripe listen` or the dashboard endpoint).
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_MONTHLY=
+STRIPE_PRICE_YEARLY=

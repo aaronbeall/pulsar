@@ -31,8 +31,12 @@
     // Hosted Pulsar AI (worker/ai/). Allowances and prices are in worker/ai/plans.ts.
     "AI_MODEL": "gpt-5-mini",
     // Daily spend across all accounts before hosted AI turns itself off until tomorrow (UTC).
-    "AI_DAILY_BUDGET_USD": "10"
+    "AI_DAILY_BUDGET_USD": "10",
+    // Stripe price ids for Pulsar AI ($3.99/month, $29.99/year). Test-mode ids until launch.
+    "STRIPE_PRICE_MONTHLY": "price_1UaEg4Ru7wLB1EixsMo5hCxg",
+    "STRIPE_PRICE_YEARLY": "price_1UaEgzRu7wLB1EixjkEftQEi"
   },
   // Secrets (wrangler secret put, or .dev.vars locally): BETTER_AUTH_SECRET,
-  // GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OPENAI_API_KEY. See README "Deploying".
+  // GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OPENAI_API_KEY, STRIPE_SECRET_KEY,
+  // STRIPE_WEBHOOK_SECRET. See README "Deploying".
 }

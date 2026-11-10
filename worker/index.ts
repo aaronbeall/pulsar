@@ -1,6 +1,9 @@
 import { Hono } from 'hono';
 import { createAuth, signInAvailable } from './auth';
 import { aiRoutes, aiStatus } from './ai/routes';
+import { billingAvailable, billingRoutes } from './billing/routes';
+import { getSubscription } from './billing/subscription';
+import { currentUser } from './session';
 import { fallbackFor } from './fallback';
 
 // The site's Worker. Cloudflare serves files from dist/ before this runs, so it only sees
@@ -20,16 +23,24 @@ app.get('/api/me', async (c) => {
   c.header('Cache-Control', 'no-store');
   const origin = new URL(c.req.url).origin;
   if (!signInAvailable(c.env, origin)) return c.json({ signInAvailable: false, user: null });
-  const auth = createAuth(c.env, origin);
-  const session = await auth.api.getSession({ headers: c.req.raw.headers });
-  const user = session
-    ? { id: session.user.id, name: session.user.name, email: session.user.email, image: session.user.image ?? null }
-    : null;
+  const user = await currentUser(c.env, c.req.raw);
   const ai = user ? await aiStatus(c.env, user.id) : null;
-  return c.json({ signInAvailable: true, hostedAI: Boolean(c.env.OPENAI_API_KEY), user, ai });
+  const sub = user ? await getSubscription(c.env.DB, user.id) : null;
+  const subscription = sub
+    ? { status: sub.status, interval: sub.interval, currentPeriodEnd: sub.currentPeriodEnd, cancelAtPeriodEnd: sub.cancelAtPeriodEnd }
+    : null;
+  return c.json({
+    signInAvailable: true,
+    hostedAI: Boolean(c.env.OPENAI_API_KEY),
+    billing: billingAvailable(c.env),
+    user,
+    ai,
+    subscription,
+  });
 });
 
 app.route('/api/ai', aiRoutes);
+app.route('/api/billing', billingRoutes);
 
 app.notFound(async (c) => {
   const url = new URL(c.req.url);

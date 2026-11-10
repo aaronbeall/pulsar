@@ -1,7 +1,8 @@
 // About.tsx
 // Static "About & Legal" page: app info, privacy policy, terms of use, and credits.
-// Pulsar has no backend/account system today (see CLAUDE.md / PLAN-ai-subscription.md),
-// so this reflects that reality — local-only data, no collection, no sign-in.
+// Keep this in step with what the app actually does: workouts are local-only, an account is
+// optional and only for Pulsar AI (worker/auth.ts), and subscriptions go through Stripe
+// (worker/billing/). See CLAUDE.md.
 
 import React from 'react';
 import {
@@ -71,40 +72,58 @@ const About: React.FC = () => {
             <TabPanel px={0} fontSize="sm" color={mutedColor}>
               <SectionHeading>Your data stays on your device</SectionHeading>
               <Text>
-                Pulsar doesn't require an account and doesn't have a server. Every routine, workout,
-                and preference you create is stored locally in your browser (IndexedDB) and is never
-                uploaded, collected, or sold.
+                Pulsar is free to use and doesn't need an account. Every routine, workout and
+                preference you create is stored locally in your browser (IndexedDB). It's never
+                uploaded, collected or sold, whether or not you sign in.
               </Text>
 
               <SectionHeading>Network requests</SectionHeading>
-              <Text mb={2}>The app makes a couple of narrow, anonymous requests:</Text>
+              <Text mb={2}>The app makes only a few network requests:</Text>
               <UnorderedList spacing={1} pl={2}>
                 <ListItem>Exercise photos are loaded on demand from a public open-source dataset hosted on GitHub — no personal information is sent with these requests.</ListItem>
                 <ListItem>If installed as an app (PWA), your browser may cache pages and assets locally for offline use. This cache stays on your device.</ListItem>
+                <ListItem>The app asks Pulsar's server whether you're signed in, and talks to it when you sign in, use Pulsar AI or manage a subscription.</ListItem>
               </UnorderedList>
+
+              <SectionHeading>If you sign in</SectionHeading>
+              <Text>
+                An account is optional and only needed for Pulsar AI. Signing in with Google stores
+                your name, email address and profile photo, your sign-in sessions, and a record of your
+                Pulsar AI uses (what kind, when, and how much it cost). It never stores your workouts,
+                your routines or what you type to the AI. You can delete your account in Settings at
+                any time, which removes all of it (cancel a subscription first).
+              </Text>
 
               <SectionHeading>AI features</SectionHeading>
               <Text mb={2}>
-                AI features are optional. Pulsar is fully usable with zero account and local-only data.
-                If you add your own OpenAI API key, then when you use an AI feature Pulsar sends OpenAI
-                what that feature needs, directly from your browser:
+                AI features are optional, and there are two ways to use them. With <b>Pulsar AI</b>{' '}
+                (sign in required), your request goes through Pulsar's server, which passes it to OpenAI
+                without keeping it. With <b>your own OpenAI key</b>, your browser sends it straight
+                to OpenAI. Either way, OpenAI receives what the feature needs:
               </Text>
               <UnorderedList spacing={1} pl={2} mb={2}>
                 <ListItem>Building a routine: your answers to the setup questions.</ListItem>
                 <ListItem>Routine chat: your message, recent chat messages, and that routine's name, description and schedule.</ListItem>
               </UnorderedList>
               <Text>
-                Your key is stored only in this browser and is sent only to OpenAI. OpenAI handles that
-                data under its own terms and privacy policy. Nothing is sent to OpenAI unless you use an
-                AI feature. If a Pulsar subscription with built-in AI is offered later, this policy will
-                be updated before it launches.
+                Your own key is stored only in this browser and is sent only to OpenAI. OpenAI handles
+                that data under its own terms and privacy policy. Nothing is sent unless you use an AI
+                feature.
+              </Text>
+
+              <SectionHeading>Payments</SectionHeading>
+              <Text>
+                Pulsar AI subscriptions are sold through Stripe, which is the merchant of record and
+                handles your payment details and receipts. Pulsar never sees your card. It keeps only
+                your subscription's status and renewal date, to know which AI allowance you have.
               </Text>
             </TabPanel>
 
             <TabPanel px={0} fontSize="sm" color={mutedColor}>
               <SectionHeading>Use at your own risk</SectionHeading>
               <Text>
-                Pulsar is provided free of charge, "as is," without warranty of any kind. It is a
+                Pulsar is free to use. Pulsar AI is optional, with a small free allowance and a paid
+                subscription for more. Pulsar is provided "as is," without warranty of any kind. It is a
                 personal project, not a medical or fitness authority — nothing in the app is professional
                 medical or fitness advice. Talk to a qualified professional before starting any exercise
                 program, especially if you have an existing health condition.
