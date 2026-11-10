@@ -165,7 +165,7 @@ const AccountCard = () => {
             {account.hostedAI
               ? 'Sign in to try Pulsar AI free: 1 routine plan and 2 AI edits, no OpenAI key needed.'
               : 'Sign in to keep a Pulsar account.'}{' '}
-            Your account holds only your name and email. Your routines and workouts stay on this
+            Your account holds only your name, email and AI usage. Your routines and workouts stay on this
             device.
           </Text>
           <Button
