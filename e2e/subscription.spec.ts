@@ -50,7 +50,7 @@ test('a subscriber sees their plan in Settings and can manage it in Stripe', asy
   const calls = await mockAccount(page, 'pulsar_ai', { plan: 2, edit: 10 });
   await page.goto('/app/settings');
   const card = page.getByTestId('account-card');
-  await expect(card.getByText('18 of 20 routine plans left', { exact: false })).toBeVisible();
+  await expect(card.getByRole('meter', { name: 'Routine plans' })).toHaveAttribute('aria-valuetext', '18 of 20 left');
   await expect(card.getByText('Yearly plan, renews', { exact: false })).toBeVisible();
   await expect(card.getByTestId('upgrade')).toHaveCount(0);
 
