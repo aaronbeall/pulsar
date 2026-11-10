@@ -167,7 +167,6 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
                 <Benefits items={[
                   'A routine built around your goals, schedule and equipment',
                   'Change it by asking, like "swap squats, my knees hurt"',
-                  'No OpenAI account or key needed',
                 ]} />
                 <Button leftIcon={<FaGoogle />} colorScheme="cyan" size="lg" w="full" mt={4} onClick={handleSignIn} isLoading={signingIn}>
                   Continue with Google
@@ -188,7 +187,6 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
                 <Benefits items={[
                   '20 new routine plans every month',
                   '200 AI edits every month: just ask for changes',
-                  'No OpenAI account or key. Cancel anytime',
                 ]} />
                 <Box mt={4}>
                   <UpgradeButtons returnTo={returnPath()} />
