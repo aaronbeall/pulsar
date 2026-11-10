@@ -20,6 +20,24 @@ export function isActive(row: Pick<SubscriptionRow, 'status' | 'currentPeriodEnd
   return row.currentPeriodEnd === null || row.currentPeriodEnd + 24 * 60 * 60 * 1000 > now;
 }
 
+/**
+ * Whether a subscription from Stripe should replace the account's stored one. Events for an
+ * older subscription can still arrive after a newer one started (a late retry, or two
+ * checkouts finished in two tabs), and an ended old one must not switch off the live one.
+ */
+export function shouldReplace(existing: SubscriptionRow | null, incoming: SubscriptionRow, now = Date.now()): boolean {
+  if (!existing || existing.stripeSubscriptionId === incoming.stripeSubscriptionId) return true;
+  return isActive(incoming, now) || !isActive(existing, now);
+}
+
+/**
+ * Whether the account can be deleted without leaving a subscription billing. Allowed once
+ * it's cancelled: it then ends at the period end, and nothing more is charged.
+ */
+export function canDeleteAccount(row: SubscriptionRow | null, now = Date.now()): boolean {
+  return !isActive(row, now) || row!.cancelAtPeriodEnd;
+}
+
 type StripeSubscription = {
   id: string;
   customer: string | { id: string };

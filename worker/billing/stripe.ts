@@ -7,6 +7,10 @@ export class StripeError extends Error {
   }
 }
 
+// Pinned so Stripe's responses don't change shape under us. Managed Payments needs
+// 2025-03-31.basil or later; subscription.ts reads the period end the basil way.
+export const STRIPE_API_VERSION = '2025-03-31.basil';
+
 const apiBase = (env: Env) => (env as { STRIPE_API_BASE?: string }).STRIPE_API_BASE || 'https://api.stripe.com';
 
 /** Flattens nested params into Stripe's form style: a[b][0][c]=v. */
@@ -25,6 +29,7 @@ async function stripe<T>(env: Env, method: 'GET' | 'POST', path: string, params?
     method,
     headers: {
       Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`,
+      'Stripe-Version': STRIPE_API_VERSION,
       ...(method === 'POST' ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {}),
     },
     body: method === 'POST' && params ? toForm(params).toString() : undefined,

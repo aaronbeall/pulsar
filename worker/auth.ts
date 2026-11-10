@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { APIError } from 'better-auth/api';
-import { getSubscription, isActive } from './billing/subscription';
+import { canDeleteAccount, getSubscription } from './billing/subscription';
 
 /**
  * Better Auth, created per request: the Worker serves production, PR previews and local dev
@@ -33,9 +33,10 @@ export function createAuth(env: Env, origin: string) {
       deleteUser: {
         enabled: true,
         // Deleting the account wouldn't stop Stripe billing, so an active subscription has to
-        // be cancelled first (Settings > Account > Manage subscription).
+        // be cancelled first (Settings > Account > Manage subscription). Once cancelled it just
+        // runs out at the period end, so deleting is fine.
         beforeDelete: async (user) => {
-          if (isActive(await getSubscription(env.DB, user.id))) {
+          if (!canDeleteAccount(await getSubscription(env.DB, user.id))) {
             throw new APIError('BAD_REQUEST', {
               message: 'Cancel your Pulsar AI subscription before deleting your account (Manage subscription).',
             });
