@@ -24,6 +24,10 @@ entries (`rollupOptions.input` in `vite.config.ts`) and deploy together:
 
 ## Files
 
+- `../privacy/index.html`, `../terms/index.html`, `legal.css`: the Privacy Policy and Terms of
+  Service, plain pages at `<base>privacy/` and `<base>terms/`. The app links to them (About,
+  sign-in, upgrade buttons via `src/components/LegalLinks.tsx`), and Stripe and Google's OAuth
+  consent screen point at them. Keep them in step with what the server actually stores.
 - `index.html`, `home.css`: the page. Mobile-first; wider screens are the enhancement.
 - `main.ts`: the pulsar hero, a particle system in plain WebGL (no three.js) with all
   motion computed in the vertex shader. It pauses when the hero is off screen or the tab is

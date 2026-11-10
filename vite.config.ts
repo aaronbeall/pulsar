@@ -141,11 +141,14 @@ export default defineConfig({
   build: {
     assetsInlineLimit: 0,
     rollupOptions: {
-      // Two pages: the marketing homepage (index.html, at <base>) and the app
-      // (app/index.html, at <base>app/). See home/README.md.
+      // The marketing homepage (index.html, at <base>), the app (app/index.html, at
+      // <base>app/), and the privacy policy and terms (<base>privacy/, <base>terms/).
+      // See home/README.md.
       input: {
         landing: resolve(__dirname, 'index.html'),
         app: resolve(__dirname, 'app/index.html'),
+        privacy: resolve(__dirname, 'privacy/index.html'),
+        terms: resolve(__dirname, 'terms/index.html'),
       },
     },
   }

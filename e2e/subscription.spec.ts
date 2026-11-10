@@ -72,6 +72,9 @@ test('free accounts can upgrade from Settings', async ({ page }) => {
   await page.goto('/app/settings');
   const upgrade = page.getByTestId('account-card').getByTestId('upgrade');
   await expect(upgrade).toBeVisible();
+  // Auto-renewal and the terms are stated before purchase.
+  await expect(upgrade.getByTestId('upgrade-terms')).toContainText('Renews automatically');
+  await expect(upgrade.getByRole('link', { name: 'Terms' })).toHaveAttribute('href', '/terms/');
   const toStripe = page.waitForRequest((req) => req.url().startsWith('https://checkout.stripe.com/'));
   await upgrade.getByRole('button', { name: '$3.99/month' }).click();
   await toStripe;

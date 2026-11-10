@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Button, Stack, Text, useToast } from '@chakra-ui/react';
+import { Button, Stack, Text, useColorModeValue, useToast } from '@chakra-ui/react';
 import { PULSAR_AI_PRICES, startCheckout } from '../services/account';
+import LegalLinks from './LegalLinks';
 
 /**
  * The two ways to buy Pulsar AI. Each leaves for Stripe Checkout and comes back to
@@ -9,6 +10,7 @@ import { PULSAR_AI_PRICES, startCheckout } from '../services/account';
 const UpgradeButtons = ({ returnTo }: { returnTo?: string }) => {
   const toast = useToast();
   const [busy, setBusy] = useState<'month' | 'year' | null>(null);
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
 
   const choose = async (interval: 'month' | 'year') => {
     setBusy(interval);
@@ -30,6 +32,11 @@ const UpgradeButtons = ({ returnTo }: { returnTo?: string }) => {
       <Button variant="outline" colorScheme="cyan" size="lg" w="full" onClick={() => choose('month')} isLoading={busy === 'month'} isDisabled={busy !== null}>
         {PULSAR_AI_PRICES.month}
       </Button>
+      {/* Auto-renewal has to be stated before purchase, next to the buttons. */}
+      <Text fontSize="xs" color={mutedColor} textAlign="center" data-testid="upgrade-terms">
+        Renews automatically until you cancel. Cancel anytime in Settings.{' '}
+        <LegalLinks />
+      </Text>
     </Stack>
   );
 };

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Avatar, Box, Button, Flex, Heading, Icon, Text, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
+import { Avatar, Box, Button, Flex, Heading, Icon, Link, Text, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
 import { FaGoogle, FaUserCircle } from 'react-icons/fa';
 import { useAccount } from '../hooks/useAccount';
 import { deleteAccount, openBillingPortal, signInWithGoogle, signOut } from '../services/account';
 import UpgradeButtons from './UpgradeButtons';
+import { PRIVACY_URL, TERMS_URL } from './LegalLinks';
 
 /**
  * Settings > Account: optional Google sign-in. Hidden where the site has no sign-in (GitHub
@@ -177,6 +178,11 @@ const AccountCard = () => {
           >
             Sign in with Google
           </Button>
+          <Text fontSize="xs" color={mutedColor}>
+            By signing in you agree to the{' '}
+            <Link href={TERMS_URL} textDecoration="underline">Terms of Service</Link> and{' '}
+            <Link href={PRIVACY_URL} textDecoration="underline">Privacy Policy</Link>.
+          </Text>
         </VStack>
       )}
     </Box>

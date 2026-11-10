@@ -31,6 +31,7 @@ import { AIKind, testApiKey } from '../services/ai';
 import { useAccount } from '../hooks/useAccount';
 import { signInWithGoogle } from '../services/account';
 import UpgradeButtons from './UpgradeButtons';
+import LegalLinks from './LegalLinks';
 
 export interface AIAccessAlternative {
   label: string;
@@ -172,7 +173,7 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
                   Continue with Google
                 </Button>
                 <Text fontSize="xs" color={mutedColor} mt={2} textAlign="center">
-                  Your workouts stay on this device.
+                  Your workouts stay on this device. <LegalLinks />
                 </Text>
               </Box>
             ) : offerUpgrade ? (
