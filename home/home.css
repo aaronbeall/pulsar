@@ -1,35 +1,11 @@
 /* Pulsar marketing homepage. Mobile first: base styles are the phone layout, and the
    min-width queries at the bottom are the enhancement for wider screens. */
 
-:root {
-  --bg: #07040f;
-  --bg-2: #0e0820;
-  --ink: #f4efff;
-  --ink-dim: #b9add6;
-  --violet: #8b5cf6;
-  --magenta: #d946ef;
-  --red: #ef4444;
-  --brand: #6200ee;
-  --energy: linear-gradient(100deg, #a78bfa 0%, #d946ef 45%, #ef4444 100%);
-  --gutter: 20px;
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-}
+@import './base.css';
 
-* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--font);
-  line-height: 1.45;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
-
-a { color: inherit; }
+body { overflow-x: hidden; }
 
 /* ---------- Top bar ---------- */
 
@@ -52,18 +28,6 @@ a { color: inherit; }
   backdrop-filter: blur(14px);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06);
 }
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  font-size: 18px;
-}
-
-.brand svg { width: 30px; height: 30px; color: #a78bfa; filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.8)); }
 
 /* ---------- Buttons ---------- */
 
@@ -405,7 +369,7 @@ a { color: inherit; }
 }
 
 .footer-brand { display: flex; align-items: center; gap: 12px; text-align: left; }
-.footer-brand svg { width: 36px; height: 36px; color: #a78bfa; filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.7)); }
+.footer-brand svg { width: 36px; height: 36px; color: var(--mark); filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.7)); }
 .footer-brand strong { display: block; color: var(--ink); font-weight: 800; letter-spacing: 0.08em; font-size: 16px; }
 .footer-brand span { font-size: 13px; }
 

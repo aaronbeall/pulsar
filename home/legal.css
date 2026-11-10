@@ -1,30 +1,14 @@
 /* Privacy policy and terms pages (privacy/index.html, terms/index.html). Plain reading
    pages in the homepage's colors. Mobile first; wider screens only get a centered column. */
 
+@import './base.css';
+
 :root {
-  --bg: #07040f;
-  --panel: #0e0820;
-  --ink: #f4efff;
-  --ink-dim: #b9add6;
+  --panel: var(--bg-2);
   --accent: #c4b5fd;
-  --line: rgba(255, 255, 255, 0.08);
-  --gutter: 16px;
-  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-* { box-sizing: border-box; }
-
-html { -webkit-text-size-adjust: 100%; }
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--font);
-  font-size: 16px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-}
+body { font-size: 16px; line-height: 1.6; }
 
 a { color: var(--accent); text-underline-offset: 2px; }
 
@@ -36,18 +20,6 @@ a { color: var(--accent); text-underline-offset: 2px; }
   padding: calc(12px + env(safe-area-inset-top)) var(--gutter) 12px;
   border-bottom: 1px solid var(--line);
 }
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  color: var(--ink);
-  text-decoration: none;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-.brand svg { width: 28px; height: 28px; color: #a78bfa; }
 
 .legal-top nav { display: flex; gap: 4px; }
 .legal-top nav a {
@@ -101,6 +73,6 @@ th { color: var(--ink-dim); font-weight: 600; }
 .legal-foot a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; color: var(--ink-dim); }
 
 @media (min-width: 768px) {
-  :root { --gutter: 32px; }
+  .legal-top, main, .legal-foot { --gutter: 32px; }
   h1 { font-size: 38px; }
 }

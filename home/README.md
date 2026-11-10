@@ -24,6 +24,7 @@ entries (`rollupOptions.input` in `vite.config.ts`) and deploy together:
 
 ## Files
 
+- `base.css`: what every static page shares (colors, fonts, reset, the PULSAR wordmark). `home.css` and `legal.css` import it first.
 - `../privacy/index.html`, `../terms/index.html`, `legal.css`: the Privacy Policy and Terms of
   Service, plain pages at `<base>privacy/` and `<base>terms/`. The app links to them (About,
   sign-in, upgrade buttons via `src/components/LegalLinks.tsx`), and Stripe and Google's OAuth
