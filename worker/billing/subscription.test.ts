@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isActive, rowFromStripe } from './subscription';
+import { SubscriptionRow, canDeleteAccount, isActive, rowFromStripe, shouldReplace } from './subscription';
 
 const now = Date.UTC(2026, 10, 18);
 
@@ -42,5 +42,37 @@ describe('isActive', () => {
     expect(isActive({ status: 'active', currentPeriodEnd: now - 2 * day }, now)).toBe(false);
     expect(isActive({ status: 'active', currentPeriodEnd: now - day / 2 }, now)).toBe(true);
     expect(isActive(null, now)).toBe(false);
+  });
+});
+
+const sub = (id: string, status: string, extra: Partial<SubscriptionRow> = {}): SubscriptionRow => ({
+  userId: 'u1', stripeCustomerId: 'cus_1', stripeSubscriptionId: id, status, interval: 'month',
+  currentPeriodEnd: now + 10 * 24 * 60 * 60 * 1000, cancelAtPeriodEnd: false, ...extra,
+});
+
+describe('shouldReplace', () => {
+  it('stores the first subscription and updates the same one', () => {
+    expect(shouldReplace(null, sub('sub_1', 'active'), now)).toBe(true);
+    expect(shouldReplace(sub('sub_1', 'active'), sub('sub_1', 'canceled'), now)).toBe(true);
+  });
+
+  it('replaces an ended subscription with a new one', () => {
+    expect(shouldReplace(sub('sub_1', 'canceled'), sub('sub_2', 'active'), now)).toBe(true);
+  });
+
+  it("doesn't let a late event for an old ended subscription switch off the live one", () => {
+    expect(shouldReplace(sub('sub_2', 'active'), sub('sub_1', 'canceled'), now)).toBe(false);
+  });
+});
+
+describe('canDeleteAccount', () => {
+  it('allows deleting with no subscription or an ended one', () => {
+    expect(canDeleteAccount(null, now)).toBe(true);
+    expect(canDeleteAccount(sub('sub_1', 'canceled'), now)).toBe(true);
+  });
+
+  it('blocks deleting while a subscription will renew, and allows it once cancelled', () => {
+    expect(canDeleteAccount(sub('sub_1', 'active'), now)).toBe(false);
+    expect(canDeleteAccount(sub('sub_1', 'active', { cancelAtPeriodEnd: true }), now)).toBe(true);
   });
 });

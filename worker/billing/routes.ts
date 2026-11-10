@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { currentUser } from '../session';
 import { verifyStripeSignature } from './signature';
 import { StripeError, createCheckoutSession, createPortalSession, retrieveSubscription } from './stripe';
-import { claimEvent, forgetEvent, getSubscription, isActive, rowFromStripe, saveSubscription, userIdForSubscription } from './subscription';
+import { claimEvent, forgetEvent, getSubscription, isActive, rowFromStripe, saveSubscription, shouldReplace, userIdForSubscription } from './subscription';
 
 // Pulsar AI subscriptions through Stripe Checkout with Managed Payments (Stripe is the
 // merchant of record and handles sales tax and VAT), the Stripe Customer Portal for managing
@@ -74,6 +74,11 @@ async function syncSubscription(env: Env, subscriptionId: string, knownUserId?: 
   const row = rowFromStripe(sub, userId);
   if (!row) {
     console.warn('Stripe subscription with no Pulsar account', subscriptionId);
+    return;
+  }
+  const existing = await getSubscription(env.DB, row.userId);
+  if (!shouldReplace(existing, row)) {
+    console.warn('Ignoring an inactive older subscription; the account has a live one', subscriptionId);
     return;
   }
   await saveSubscription(env.DB, row);
