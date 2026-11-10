@@ -44,6 +44,9 @@ async function mockHostedAI(page: Page, opts: { signedIn: boolean; used?: Allowa
     authCalls.push(new URL(route.request().url()).pathname.replace(/^.*\/api\/auth\//, ''));
     return route.fulfill({ json: { url: 'https://accounts.google.com/o/oauth2/v2/auth?client_id=e2e', redirect: true } });
   });
+  // A stand-in Google page, so leaving for sign-in finishes loading before the test comes back
+  // (an aborted request would leave a late error page racing the next navigation).
+  await page.route('https://accounts.google.com/**', (route) => route.fulfill({ contentType: 'text/html', body: '<title>Google</title>' }));
   await page.route('**/api/ai/*', (route) => {
     const kind = route.request().url().endsWith('/plan') ? 'plan' : 'edit';
     aiRequests.push({ kind, body: route.request().postDataJSON() });
@@ -68,18 +71,63 @@ test('signed out, the AI gate offers free Pulsar AI with Google first and keeps 
   await gate.getByRole('button', { name: 'Or use your own OpenAI key' }).click();
   await expect(gate.getByPlaceholder('sk-...')).toBeVisible();
   await expect(gate.getByRole('button', { name: 'Use this key' })).toBeDisabled();
-  const toGoogle = page.waitForRequest((req) => req.url().startsWith('https://accounts.google.com/'));
   await gate.getByRole('button', { name: 'Continue with Google' }).click();
-  await toGoogle;
+  await page.waitForURL(/accounts\.google\.com/);
   expect(api.authCalls).toEqual(['sign-in/social']);
 
-  // Coming back from Google reloads the app: the answers are still there.
+  // Coming back from Google reloads the app, and building carries on by itself with the
+  // answers that were kept.
   api.signIn();
   await page.goto('/app/workout/setup');
-  await expect(page.getByRole('textbox')).toHaveValue('none');
-  await page.getByRole('button', { name: 'Make my routine!' }).click();
   await expect(page.getByTestId('routine-build-progress').getByText('Your routine is ready')).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(api.aiRequests).toHaveLength(1);
   expect(JSON.stringify(api.aiRequests[0].body)).toContain('dumbbells');
+});
+
+test('back from Google with the free plan already used, the gate opens again instead of building', async ({ page }) => {
+  const api = await mockHostedAI(page, { signedIn: false, used: { plan: 1, edit: 0 } });
+  await page.goto('/app/workout/setup');
+  await answerSetupQuestions(page, ['get stronger', '', '', '']);
+  await page.getByRole('button', { name: 'Make my routine!' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Continue with Google' }).click();
+  await page.waitForURL(/accounts\.google\.com/);
+
+  api.signIn();
+  await page.goto('/app/workout/setup');
+  await expect(page.getByRole('dialog').getByText("You've used your free AI.", { exact: false })).toBeVisible();
+  expect(api.aiRequests).toHaveLength(0);
+});
+
+test('cancelling at Google comes back to the answers with nothing started', async ({ page }) => {
+  const api = await mockHostedAI(page, { signedIn: false });
+  await page.goto('/app/workout/setup');
+  await answerSetupQuestions(page, ['get stronger', '', '', 'none']);
+  await page.getByRole('button', { name: 'Make my routine!' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Continue with Google' }).click();
+  await page.waitForURL(/accounts\.google\.com/);
+
+  await page.goto('/app/workout/setup'); // still signed out
+  await expect(page.getByRole('textbox')).toHaveValue('none');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(api.aiRequests).toHaveLength(0);
+});
+
+test('a chat message sends by itself after signing in from the gate', async ({ page }) => {
+  const api = await mockHostedAI(page, { signedIn: false });
+  await createRoutineFromTemplate(page);
+  const routineUrl = page.url();
+
+  const chat = page.getByPlaceholder('Suggest changes or ask a question...');
+  await chat.fill('Add a mobility day on Friday');
+  await chat.press('Enter');
+  await page.getByRole('dialog').getByRole('button', { name: 'Continue with Google' }).click();
+  await page.waitForURL(/accounts\.google\.com/);
+
+  api.signIn();
+  await page.goto(routineUrl);
+  await expect(page.getByText('Added a Friday mobility day.')).toBeVisible();
+  expect(api.aiRequests.map((r) => r.body.message)).toEqual(['Add a mobility day on Friday']);
 });
 
 test('signed in with allowance left, AI builds the routine with no key and no prompt', async ({ page }) => {

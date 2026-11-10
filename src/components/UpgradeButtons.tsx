@@ -6,13 +6,14 @@ import { PULSAR_AI_PRICES, startCheckout } from '../services/account';
  * The two ways to buy Pulsar AI. Each leaves for Stripe Checkout and comes back to
  * `returnTo` (this page by default). Yearly is the better deal and pays the card fee once.
  */
-const UpgradeButtons = ({ returnTo }: { returnTo?: string }) => {
+const UpgradeButtons = ({ returnTo, onBeforeCheckout }: { returnTo?: string; onBeforeCheckout?: () => void }) => {
   const toast = useToast();
   const [busy, setBusy] = useState<'month' | 'year' | null>(null);
 
   const choose = async (interval: 'month' | 'year') => {
     setBusy(interval);
     try {
+      onBeforeCheckout?.();
       await startCheckout(interval, returnTo);
       // The page navigates to Stripe; keep the button spinning until it does.
     } catch (e) {

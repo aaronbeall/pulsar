@@ -45,7 +45,8 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
   const [streaming, setStreaming] = useState<StreamingReply | null>(null);
   const [savingReplyId, setSavingReplyId] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const aiGate = useAIGate();
+  // Back from signing in or subscribing in the AI gate, the drafted message sends by itself.
+  const aiGate = useAIGate({ key: `chat:${routine.id}`, kind: 'edit', onResume: () => handleSend() });
   const decide = useRoutineChangeActions(routine.id);
   // ?review=<change id>, so Back closes the review.
   const reviewDialog = useUrlModal('review', { isStale: id => !(routine.changes || []).some(c => c.id === id) });
