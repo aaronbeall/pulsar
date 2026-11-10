@@ -213,7 +213,7 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
                 <Text fontSize="sm" color={mutedColor}>
                   {allowanceUsed
                     ? "You've used your free AI. Pulsar AI for $3.99 a month adds 20 routine plans and 200 edits every month."
-                    : 'AI included with a subscription. No key or OpenAI account needed.'}
+                    : 'AI included with a subscription.'}
                 </Text>
               </Box>
             )}
