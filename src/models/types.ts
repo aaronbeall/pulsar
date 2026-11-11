@@ -119,8 +119,16 @@ export interface Workout {
   liked?: boolean;
   disliked?: boolean;
   favorite?: boolean;
+  /** How the finished workout felt, from the "How was it?" card. */
+  effort?: WorkoutEffort;
+  /** How its length felt. */
+  lengthFeel?: WorkoutLengthFeel;
+  /** A note the user left about it. */
   feedback?: string;
 }
+
+export type WorkoutEffort = 'easy' | 'right' | 'hard';
+export type WorkoutLengthFeel = 'short' | 'right' | 'long';
 
 export interface WorkoutExercise extends ScheduledExercise {
   weight?: number;

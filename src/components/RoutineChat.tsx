@@ -110,7 +110,7 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
       const history = priorHistory.map(m => ({ role: m.role, message: m.message }));
       const state = usePulsarStore.getState();
       const response = await provider.suggestRoutineChange(current, scheduleForPrompt, history, text, {
-        preferences: learnPreferences(state.exercises, state.workouts),
+        preferences: learnPreferences(state.exercises, state.workouts, state.routines),
         onCommentary: (partial, done) => setStreaming({ text: partial, done }),
       });
 

@@ -12,7 +12,7 @@
 
 import type { DayOfWeek } from '../../models/types';
 import { CatalogExercise, ExerciseTag, Slot, exerciseCatalog } from './exerciseCatalog';
-import { Activity, Equipment, Focus, Goal, Level, Limit, Profile, needsLowImpact, primaryGoal, rankedGoals } from './profile';
+import { Activity, Equipment, Focus, Goal, Level, Limit, Profile, effectiveLevel, needsLowImpact, primaryGoal, rankedGoals } from './profile';
 
 export interface PlannedExercise {
   name: string;
@@ -295,7 +295,7 @@ function buildFilters(profile: Profile): Filters {
   if (profile.conditions.includes('senior')) excludeTags.add('hang');
   // Not wanting to get down on the floor rules out floor work, not just one exercise.
   if (profile.avoid.includes('floor')) excludeTags.add('floor');
-  const level = profile.level ?? (profile.conditions.length > 0 ? 'beginner' : 'intermediate');
+  const level = effectiveLevel(profile);
   return {
     liked: new Set(profile.likedExercises.map(nameKey)),
     disliked: new Set(profile.dislikedExercises.map(nameKey)),
@@ -524,9 +524,15 @@ function buildNotes(profile: Profile, days: PlannedDay[], minutes: number): stri
   const notes: string[] = [];
   const dayNames = days.map(d => d.day);
   notes.push(`${listText(dayNames)}, about ${minutes} minutes${dayNames.length > 1 ? ' each' : ''}`);
-  if (profile.learned?.days && profile.learned?.minutes) notes.push('Your usual days and workout length, from your recent workouts');
-  else if (profile.learned?.days) notes.push('Your usual days, from your recent workouts');
-  else if (profile.learned?.minutes) notes.push('About as long as your recent workouts');
+  const learned = profile.learned ?? {};
+  const usualLength = learned.minutes && !learned.length;
+  if (learned.days && usualLength) notes.push('Your usual days and workout length, from your recent workouts');
+  else if (learned.days) notes.push('Your usual days, from your recent workouts');
+  else if (usualLength) notes.push('About as long as your recent workouts');
+  if (profile.learned?.length === 'shorter') notes.push('Shorter sessions, since your recent workouts felt too long');
+  if (profile.learned?.length === 'longer') notes.push('Longer sessions, since your recent workouts felt too short');
+  if (profile.learned?.level === 'easier') notes.push('A step easier, since your recent workouts felt too hard');
+  if (profile.learned?.level === 'harder') notes.push('A step harder, since your recent workouts felt too easy');
   if (profile.blockedDays.length) notes.push(`${listText(profile.blockedDays)} kept free`);
   if (profile.equipmentAssumed) notes.push('No equipment mentioned, so it uses your bodyweight only');
   for (const limit of profile.limits) notes.push(LIMIT_NOTE[limit]);

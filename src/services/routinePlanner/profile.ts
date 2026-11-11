@@ -65,8 +65,11 @@ export interface Profile {
   dislikedExercises: string[];
   /** Learned: exercises the user keeps skipping, left out. */
   skippedExercises: string[];
-  /** Which of the schedule fields came from the user's history rather than their answers. */
-  learned?: { days?: boolean; minutes?: boolean };
+  /**
+   * What came from the user's history rather than their answers: the schedule fields, and
+   * whether how recent workouts felt moved the level or the session length.
+   */
+  learned?: { days?: boolean; minutes?: boolean; level?: 'easier' | 'harder'; length?: 'shorter' | 'longer' };
 }
 
 export function emptyProfile(): Profile {
@@ -105,6 +108,11 @@ export function primaryGoal(profile: Profile): Goal {
 /** Goals in order of weight, highest first. */
 export function rankedGoals(profile: Profile): Goal[] {
   return GOALS.filter(g => (profile.goals[g] ?? 0) > 0).sort((a, b) => (profile.goals[b] ?? 0) - (profile.goals[a] ?? 0));
+}
+
+/** The level the planner works at: what the answers say, else beginner with a condition, else intermediate. */
+export function effectiveLevel(profile: Profile): Level {
+  return profile.level ?? (profile.conditions.length > 0 ? 'beginner' : 'intermediate');
 }
 
 /** True when impact moves (jumping, running) should be left out. */

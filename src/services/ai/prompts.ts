@@ -72,6 +72,13 @@ export function describePreferences(p: LearnedPreferences | undefined): string {
     p.skippedExercises.length ? `- Exercises they often skip in workouts: ${p.skippedExercises.join(', ')}` : '',
     p.usualDays.length ? `- Days they've usually trained on lately: ${p.usualDays.join(', ')}` : '',
     p.usualMinutes ? `- Their workouts usually take about ${p.usualMinutes} minutes` : '',
+    p.likedRoutines?.length ? `- Routines they liked: ${p.likedRoutines.join(', ')}` : '',
+    p.dislikedRoutines?.length ? `- Routines they disliked: ${p.dislikedRoutines.join(', ')}` : '',
+    p.effort === 'easier' ? '- Their recent workouts have felt too hard, so go a bit easier' : '',
+    p.effort === 'harder' ? '- Their recent workouts have felt too easy, so push a bit harder' : '',
+    p.length === 'shorter' ? '- Their recent workouts have felt too long, so keep sessions shorter' : '',
+    p.length === 'longer' ? '- Their recent workouts have felt too short, so sessions can be longer' : '',
+    p.workoutNotes?.length ? `- Their latest notes on finished workouts: ${p.workoutNotes.map(n => JSON.stringify(n)).join('; ')}` : '',
   ].filter(Boolean);
   if (!lines.length) return '';
   return [

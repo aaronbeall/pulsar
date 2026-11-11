@@ -20,6 +20,7 @@ import { getWorkoutTiming } from '../utils/workoutTiming';
 import { findExercisesForDay, findWorkoutForDay, getStreakInfo, getTodayDayOfWeek } from '../utils/workoutUtils';
 import { formatSessionName } from '../utils/sessionName';
 import ActivitySummaryCard from '../components/ActivitySummaryCard';
+import WorkoutFeedbackCard from '../components/WorkoutFeedbackCard';
 
 export const WorkoutSession: React.FC = () => {
   const { sessionId } = useParams();
@@ -455,6 +456,16 @@ export const WorkoutSession: React.FC = () => {
         )}
         {workout.completedAt && workout.exercises.some(ex => !ex.completedAt) && (
           <IncompleteWorkoutBanner routineId={routine.id} />
+        )}
+        {workout.completedAt && (
+          <WorkoutFeedbackCard
+            key={workout.id}
+            workout={workout}
+            onChange={async updated => {
+              setWorkout(updated);
+              await updateWorkout(updated);
+            }}
+          />
         )}
       </VStack>
     </Flex>

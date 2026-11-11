@@ -41,7 +41,8 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   it), shown as the editable "Your plan" screen (`components/RoutinePlanBuilder.tsx`), with
   the keyword template search (`services/templateSearch.ts`) as "Ready-made routines". Both
   builders learn from the user (`utils/learnedPreferences.ts`: liked, disliked and often-skipped
-  exercises, usual days and workout length), as soft preferences that what the user asks for
+  exercises, usual days and workout length, and how recent workouts felt from the "How was it?"
+  card; routine ratings and workout notes go to the AI only), as soft preferences that what the user asks for
   always overrides; the AI gets them through `describePreferences` in `prompts.ts`. Don't
   reintroduce a fake "AI" fallback. Allowances and prices live in `worker/ai/plans.ts`.
 - **Never put a real API key behind a `VITE_`-prefixed env var again.** The existing

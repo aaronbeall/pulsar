@@ -201,4 +201,32 @@ describe('planRoutine with what it learned', () => {
     expect(said.minutes).toBe(45);
     expect(said.learned).toEqual({});
   });
+
+  it('goes a step easier and shorter when recent workouts felt too hard and too long', () => {
+    const p = learnedFrom({ effort: 'easier', length: 'shorter' });
+    expect(p.level).toBe('beginner');
+    expect(p.minutes).toBe(35);
+    const notes = planRoutine(p).notes;
+    expect(notes).toContain('A step easier, since your recent workouts felt too hard');
+    expect(notes).toContain('Shorter sessions, since your recent workouts felt too long');
+    expect(notes).not.toContain('About as long as your recent workouts');
+  });
+
+  it('adjusts from the usual length', () => {
+    expect(learnedFrom({ usualMinutes: 60, length: 'longer' }).minutes).toBe(70);
+    expect(learnedFrom({ usualMinutes: 20, length: 'shorter' }).minutes).toBe(15);
+  });
+
+  it('goes a step harder when recent workouts felt too easy', () => {
+    const p = learnedFrom({ effort: 'harder' });
+    expect(p.level).toBe('advanced');
+    expect(planRoutine(p).notes).toContain('A step harder, since your recent workouts felt too easy');
+  });
+
+  it('keeps the level and length the answers give', () => {
+    const p = learnedFrom({ effort: 'easier', length: 'shorter' }, ['get stronger', 'nothing', '3 days, 45 min', "I'm advanced"]);
+    expect(p.level).toBe('advanced');
+    expect(p.minutes).toBe(45);
+    expect(p.learned).toEqual({});
+  });
 });

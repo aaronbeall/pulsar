@@ -28,16 +28,23 @@ const count = (value: unknown, field: string): number | undefined => {
 };
 
 const MAX_PREFERENCE_NAMES = 20;
+const MAX_WORKOUT_NOTES = 3;
+const MAX_WORKOUT_NOTE = 300;
 
 /** The learned preferences the app may send (utils/learnedPreferences.ts), checked like the rest. */
 function preferencesFrom(value: unknown): LearnedPreferences | undefined {
   if (value === undefined || value === null) return undefined;
   if (typeof value !== 'object') throw new BadRequest('preferences must be an object');
   const p = value as Record<string, unknown>;
-  const names = (v: unknown, field: string): string[] => {
+  const names = (v: unknown, field: string, max = MAX_PREFERENCE_NAMES, length = MAX_NAME): string[] => {
     if (v === undefined) return [];
-    if (!Array.isArray(v) || v.length > MAX_PREFERENCE_NAMES) throw new BadRequest(`preferences.${field} must be a short list`);
-    return v.map((n, i) => text(n, MAX_NAME, `preferences.${field}[${i}]`));
+    if (!Array.isArray(v) || v.length > max) throw new BadRequest(`preferences.${field} must be a short list`);
+    return v.map((n, i) => text(n, length, `preferences.${field}[${i}]`));
+  };
+  const oneOf = <T extends string>(v: unknown, options: T[], field: string): T | undefined => {
+    if (v === undefined || v === null) return undefined;
+    if (!options.includes(v as T)) throw new BadRequest(`preferences.${field} must be one of ${options.join(', ')}`);
+    return v as T;
   };
   const usualDays = names(p.usualDays, 'usualDays');
   if (usualDays.some(d => !DAYS_OF_WEEK.includes(d as never))) throw new BadRequest('preferences.usualDays must be days');
@@ -48,6 +55,11 @@ function preferencesFrom(value: unknown): LearnedPreferences | undefined {
     skippedExercises: names(p.skippedExercises, 'skippedExercises'),
     usualDays: usualDays as LearnedPreferences['usualDays'],
     usualMinutes: usualMinutes && usualMinutes <= 300 ? Math.round(usualMinutes) : undefined,
+    likedRoutines: names(p.likedRoutines, 'likedRoutines'),
+    dislikedRoutines: names(p.dislikedRoutines, 'dislikedRoutines'),
+    effort: oneOf(p.effort, ['easier', 'harder'], 'effort'),
+    length: oneOf(p.length, ['shorter', 'longer'], 'length'),
+    workoutNotes: names(p.workoutNotes, 'workoutNotes', MAX_WORKOUT_NOTES, MAX_WORKOUT_NOTE),
   };
 }
 

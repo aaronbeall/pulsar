@@ -9,7 +9,15 @@ import NumericStepper from './NumericStepper';
 import type { DayOfWeek } from '../models/types';
 import { parseAnswers } from '../services/routinePlanner/parseAnswers';
 import { applyLearned } from '../services/routinePlanner/learned';
-import { hasPreferences, type LearnedPreferences } from '../utils/learnedPreferences';
+import type { LearnedPreferences } from '../utils/learnedPreferences';
+
+/** True when the planner has something of the user's history to go on (routine ratings and notes are for the AI only). */
+function usesHistory(p: LearnedPreferences | undefined): boolean {
+  return !!p && (
+    p.likedExercises.length > 0 || p.dislikedExercises.length > 0 || p.skippedExercises.length > 0 ||
+    p.usualDays.length > 0 || p.usualMinutes !== undefined || !!p.effort || !!p.length
+  );
+}
 import { PlannedExercise, RoutinePlan, defaultDaysPerWeek, defaultMinutes, planRoutine } from '../services/routinePlanner/planRoutine';
 import {
   ALL_EQUIPMENT, Activity, Condition, Equipment, Focus, GOALS, GYM_EQUIPMENT, Goal, Level, Limit, Profile, primaryGoal,
@@ -122,7 +130,8 @@ export const RoutinePlanBuilder: React.FC<RoutinePlanBuilderProps> = ({ response
     // Once the user sets the schedule themselves, it no longer comes from their history.
     const learned = { ...p.learned };
     if ('daysPerWeek' in change || 'preferredDays' in change || 'blockedDays' in change) learned.days = false;
-    if ('minutes' in change) learned.minutes = false;
+    if ('minutes' in change) { learned.minutes = false; learned.length = undefined; }
+    if ('level' in change) learned.level = undefined;
     return { ...p, ...change, learned };
   });
 
@@ -177,8 +186,8 @@ export const RoutinePlanBuilder: React.FC<RoutinePlanBuilderProps> = ({ response
       </Flex>
       <Heading size="lg" mb={1}>Your plan</Heading>
       <Text fontSize="sm" color="gray.500" mb={4}>
-        {hasPreferences(preferences)
-          ? "The Pulsar Planner read your answers and what you've liked and skipped. Tap anything it got wrong and your week rebuilds."
+        {usesHistory(preferences)
+          ? "The Pulsar Planner read your answers and learned from your workouts and likes. Tap anything it got wrong and your week rebuilds."
           : 'The Pulsar Planner read your answers. Tap anything it got wrong and your week rebuilds.'}
       </Text>
 

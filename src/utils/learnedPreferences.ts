@@ -1,11 +1,12 @@
 // What Pulsar has learned about the user from how they use the app: the exercises they like
-// and dislike, the ones they keep skipping, and when and how long they usually train. Both
+// and dislike, the ones they keep skipping, the routines they rated, how their recent workouts
+// felt, and when and how long they usually train. Both
 // routine builders use it: the Pulsar Planner (services/routinePlanner) and Pulsar AI (sent
 // with plan and chat requests, see services/ai/prompts.ts). It's read fresh from local data
 // every time and never stored anywhere else. Pure logic, no React — see the tests.
 
 import { DAYS_OF_WEEK } from '../constants/days';
-import type { DayOfWeek, Exercise, Workout } from '../models/types';
+import type { DayOfWeek, Exercise, Routine, Workout } from '../models/types';
 
 export interface LearnedPreferences {
   /** Exercises the user liked or starred. */
@@ -18,10 +19,24 @@ export interface LearnedPreferences {
   usualDays: DayOfWeek[];
   /** How long the user's workouts usually take, in minutes (rounded to 5). */
   usualMinutes?: number;
+  /** Routines the user liked or starred, by name. */
+  likedRoutines?: string[];
+  /** Routines the user marked as disliked, by name. */
+  dislikedRoutines?: string[];
+  /** Set when recent workouts keep feeling too hard ('easier') or too easy ('harder'). */
+  effort?: 'easier' | 'harder';
+  /** Set when recent workouts keep feeling too long ('shorter') or too short ('longer'). */
+  length?: 'shorter' | 'longer';
+  /** The user's latest notes on finished workouts, newest first. */
+  workoutNotes?: string[];
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_NAMES = 15;
+const MAX_NOTES = 3;
+const MAX_NOTE_LENGTH = 200;
+/** How many of the latest rated workouts a trend is read from. */
+const RECENT_RATINGS = 5;
 const WEEK_ORDER: DayOfWeek[] = [...DAYS_OF_WEEK.slice(1), DAYS_OF_WEEK[0]];
 
 export function emptyPreferences(): LearnedPreferences {
@@ -31,7 +46,8 @@ export function emptyPreferences(): LearnedPreferences {
 export function hasPreferences(p: LearnedPreferences | undefined): p is LearnedPreferences {
   return !!p && (
     p.likedExercises.length > 0 || p.dislikedExercises.length > 0 || p.skippedExercises.length > 0 ||
-    p.usualDays.length > 0 || p.usualMinutes !== undefined
+    p.usualDays.length > 0 || p.usualMinutes !== undefined ||
+    !!p.likedRoutines?.length || !!p.dislikedRoutines?.length || !!p.effort || !!p.length || !!p.workoutNotes?.length
   );
 }
 
@@ -41,7 +57,18 @@ function median(values: number[]): number {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-export function learnPreferences(exercises: Exercise[], workouts: Workout[], now = Date.now()): LearnedPreferences {
+/**
+ * What the latest ratings lean towards: `toward` when at least two of the last few rated
+ * workouts say so and they outnumber the opposite rating.
+ */
+function trend<T extends string>(ratings: (T | undefined)[], toward: T, against: T): boolean {
+  const recent = ratings.filter((r): r is T => !!r).slice(0, RECENT_RATINGS);
+  const yes = recent.filter(r => r === toward).length;
+  const no = recent.filter(r => r === against).length;
+  return yes >= 2 && yes > no && yes * 2 >= recent.length;
+}
+
+export function learnPreferences(exercises: Exercise[], workouts: Workout[], routines: Routine[] = [], now = Date.now()): LearnedPreferences {
   const names = new Map(exercises.map(e => [e.id, e.name]));
   const likedExercises = exercises.filter(e => (e.liked || e.favorite) && !e.disliked).map(e => e.name).slice(0, MAX_NAMES);
   const dislikedExercises = exercises.filter(e => e.disliked).map(e => e.name).slice(0, MAX_NAMES);
@@ -86,5 +113,24 @@ export function learnPreferences(exercises: Exercise[], workouts: Workout[], now
     .filter(m => m >= 5 && m <= 180);
   const usualMinutes = lengths.length >= 3 ? Math.max(10, Math.round(median(lengths) / 5) * 5) : undefined;
 
-  return { likedExercises, dislikedExercises, skippedExercises, usualDays, usualMinutes };
+  // Routine ratings, from the routine cards.
+  const likedRoutines = routines.filter(r => (r.liked || r.favorite) && !r.disliked).map(r => r.name).slice(0, MAX_NAMES);
+  const dislikedRoutines = routines.filter(r => r.disliked).map(r => r.name).slice(0, MAX_NAMES);
+
+  // How recent workouts felt ("How was it?"), from the last 30 days, newest first.
+  const rated = finished.filter(w => now - w.startedAt <= 30 * DAY_MS).sort((a, b) => b.startedAt - a.startedAt);
+  const efforts = rated.map(w => w.effort);
+  const lengths_ = rated.map(w => w.lengthFeel);
+  const effort = trend(efforts, 'hard', 'easy') ? 'easier' as const : trend(efforts, 'easy', 'hard') ? 'harder' as const : undefined;
+  const length = trend(lengths_, 'long', 'short') ? 'shorter' as const : trend(lengths_, 'short', 'long') ? 'longer' as const : undefined;
+  const workoutNotes = rated
+    .map(w => w.feedback?.trim().replace(/\s+/g, ' '))
+    .filter((n): n is string => !!n)
+    .slice(0, MAX_NOTES)
+    .map(n => n.length > MAX_NOTE_LENGTH ? `${n.slice(0, MAX_NOTE_LENGTH - 1)}…` : n);
+
+  return {
+    likedExercises, dislikedExercises, skippedExercises, usualDays, usualMinutes,
+    likedRoutines, dislikedRoutines, effort, length, workoutNotes,
+  };
 }

@@ -36,6 +36,7 @@ describe('messagesFor with learned preferences', () => {
   const preferences = {
     likedExercises: ['Goblet Squat'], dislikedExercises: ['Push-up'], skippedExercises: ['Burpee'],
     usualDays: ['Monday', 'Thursday'], usualMinutes: 40,
+    likedRoutines: ['Upper Lower'], effort: 'easier', length: 'shorter', workoutNotes: ['my knee hurt on lunges'],
   };
 
   it('adds them to the routine prompt as soft preferences', () => {
@@ -44,6 +45,10 @@ describe('messagesFor with learned preferences', () => {
     expect(user).toContain('Exercises they often skip in workouts: Burpee');
     expect(user).toContain('Days they\'ve usually trained on lately: Monday, Thursday');
     expect(user).toContain('Anything they ask for in their answers or messages comes first');
+    expect(user).toContain('Routines they liked: Upper Lower');
+    expect(user).toContain('felt too hard, so go a bit easier');
+    expect(user).toContain('felt too long, so keep sessions shorter');
+    expect(user).toContain('"my knee hurt on lunges"');
   });
 
   it('adds them to the change prompt', () => {
@@ -59,5 +64,8 @@ describe('messagesFor with learned preferences', () => {
     expect(() => messagesFor('plan', { answers, preferences: { usualDays: ['Someday'] } })).toThrow();
     expect(() => messagesFor('plan', { answers, preferences: { likedExercises: Array(50).fill('x') } })).toThrow();
     expect(() => messagesFor('plan', { answers, preferences: 'all of them' })).toThrow();
+    expect(() => messagesFor('plan', { answers, preferences: { effort: 'max' } })).toThrow();
+    expect(() => messagesFor('plan', { answers, preferences: { workoutNotes: ['a', 'b', 'c', 'd'] } })).toThrow();
+    expect(() => messagesFor('plan', { answers, preferences: { workoutNotes: ['x'.repeat(400)] } })).toThrow();
   });
 });
