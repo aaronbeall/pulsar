@@ -1,0 +1,9 @@
+# Cloudflare static asset headers (ignored by the Vite dev server).
+# The service worker and its manifest must be re-checked on every load so app updates arrive.
+/sw.js
+  Cache-Control: no-cache
+/manifest.webmanifest
+  Cache-Control: no-cache
+# Hashed build output never changes.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
