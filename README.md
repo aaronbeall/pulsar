@@ -22,8 +22,9 @@ from WWW to root" template, on a proxied `www` DNS record) sends it to the bare 
 
 - `npm run cf:dev` builds and serves the site the way Cloudflare will, on
   http://localhost:8787. `npm run dev` is still the fast loop for app work.
-- `.github/workflows/cloudflare.yml` deploys `main` to production and uploads each PR as a
-  preview version with its own URL (`pr-<n>-pulsar.<account>.workers.dev`), posted on the PR.
+- `.github/workflows/cloudflare.yml` deploys `main` to production and then to staging, and
+  deploys each PR as a Cloudflare Preview with its own URL, posted on the PR. See "Staging and
+  PR previews" below.
 - One-time setup: create the API token (template "Edit Cloudflare Workers") and add repo
   secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Without them the workflow skips
   deploying.
@@ -52,7 +53,7 @@ only when it is.
      `openssl rand -base64 32`), then `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
   3. If sign-in should also work on another origin (say the workers.dev URL), add it to
      `AUTH_ORIGINS` in `wrangler.jsonc` and register its callback URL with Google.
-- PR previews hide sign-in: each has its own host, which Google won't redirect back to.
+- Staging and PR previews have sign-in too; see "Staging and PR previews" below.
 
 **Hosted AI.** Signed-in accounts get Pulsar AI without their own key: `/api/ai/plan` and
 `/api/ai/edit` (`worker/ai/`) build the prompt with the app's own prompt code, reserve one
@@ -96,3 +97,54 @@ retries) subscription switches the account to the Pulsar AI tier in `worker/ai/p
 - The deploy workflow creates the D1 database if needed and applies migrations on `main`
   only, so a PR's migration never touches production before it merges.
 
+### Staging and PR previews
+
+Staging (`staging.pulsarworkouts.app`) and every PR preview run the real API with Google
+sign-in, hosted AI and Stripe test checkout, without touching production's database, keys or
+money.
+
+| | Production | Staging | PR preview |
+| --- | --- | --- | --- |
+| Address | `pulsarworkouts.app` | `staging.pulsarworkouts.app` | Cloudflare Preview `pr-<n>`, linked on the PR |
+| Worker | `pulsar` | `pulsar-staging` (`env.staging` in `wrangler.jsonc`) | A Preview of `pulsar` (`previews` in `wrangler.jsonc`) |
+| Database | `pulsar` | `pulsar-staging` | `pulsar-staging` (shared) |
+| Secrets | Cloudflare Worker settings | `STAGING_*` GitHub secrets | `STAGING_*` GitHub secrets |
+| Stripe | Test now, live at launch | Always test mode | Always test mode |
+| Deploys | Push to `main` | Push to `main`, or the manual run | Every push to the PR |
+
+- **Sign-in on previews.** Google only redirects to registered addresses, so previews sign in
+  through staging with Better Auth's `oAuthProxy` plugin (`AUTH_PROXY_URL`): Google returns to
+  staging, which hands the profile back to the preview, encrypted with the shared
+  `BETTER_AUTH_SECRET`. Only staging's callback is registered with Google.
+- **Stripe on previews.** Checkout returns to the address that started it; Stripe's test
+  webhook goes to staging, which writes to the same database the preview reads.
+- **Database changes.** A PR's preview deploy applies its new migrations to `pulsar-staging`.
+  When a PR that changed `worker/migrations/` is closed without merging, the workflow empties
+  `pulsar-staging` and rebuilds it from main's migrations (`scripts/reset-staging-db.sh`).
+  This signs everyone out of staging and clears test data. Production only gets a migration
+  when its PR merges. Keep migrations additive (add, don't drop or rename) so other open
+  previews keep working; remove old columns in a later PR.
+- **Manual runs.** Actions > Cloudflare > Run workflow, on any branch: `deploy-staging`,
+  `deploy-production` or `reset-staging-database`.
+- Staging and previews show a badge in the app header, install as "Pulsar Staging" (previews:
+  "Pulsar Workouts (PR #n)"), and send `X-Robots-Tag: noindex`.
+
+Setup, once:
+
+1. **Google Cloud console**, in production's OAuth client: add the redirect URI
+   `https://staging.pulsarworkouts.app/api/auth/callback/google`.
+2. **Stripe, test mode**: Developers > Webhooks > add
+   `https://staging.pulsarworkouts.app/api/billing/webhook` with the same events as
+   production's, and copy its signing secret.
+3. **OpenAI**: a separate "Pulsar staging" project with its own key and a low monthly budget.
+4. **GitHub** > Settings > Secrets and variables > Actions, repository secrets:
+   - `STAGING_BETTER_AUTH_SECRET`: a new random string (`openssl rand -base64 32`), not
+     production's
+   - `STAGING_GOOGLE_CLIENT_ID`, `STAGING_GOOGLE_CLIENT_SECRET`: production's OAuth client
+   - `STAGING_OPENAI_API_KEY`: the staging key
+   - `STAGING_STRIPE_SECRET_KEY`: the test-mode `sk_test_...`
+   - `STAGING_STRIPE_WEBHOOK_SECRET`: the staging webhook's `whsec_...`
+
+The first deploy creates the `pulsar-staging` database, the `pulsar-staging` Worker and the
+`staging.pulsarworkouts.app` domain. Staging and previews deploy without these secrets too,
+just without sign-in, hosted AI or checkout.
