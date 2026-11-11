@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/pulsar/pr-26/sw.js', { scope: '/pulsar/pr-26/app/' })})}
