@@ -45,18 +45,19 @@ test('"Make my routine!" asks for a key, then builds the routine with AI', async
   expect(JSON.stringify(requests[0].messages)).toContain('bad knees');
 });
 
-test('the key prompt offers templates as the non-AI way forward', async ({ page }) => {
+test('the key prompt offers building without AI as the way forward', async ({ page }) => {
   await page.goto('/app/workout/setup');
   await answerSetupQuestions(page, ['lose weight', 'treadmill', '', '']);
   await page.getByRole('button', { name: 'Make my routine!' }).click();
 
   const prompt = page.getByRole('dialog');
   await expect(prompt.getByRole('button', { name: 'Not now' })).toHaveCount(0);
-  await prompt.getByRole('button', { name: /Match me to a template/ }).click();
+  await prompt.getByRole('button', { name: /Build it without AI/ }).click();
 
-  await expect(page.getByRole('heading', { name: 'Choose a Routine Template' })).toBeVisible();
-  // Templates are ranked against the answers.
-  await expect(page.getByRole('heading', { name: 'Fat Loss HIIT', exact: true })).toBeVisible();
+  // The plan is built from the answers.
+  await expect(page.getByRole('heading', { name: 'Your plan' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '3-Day Fat Burn' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Treadmill' })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('routine chat asks for a key, sends the message, and applies an accepted change', async ({ page }) => {

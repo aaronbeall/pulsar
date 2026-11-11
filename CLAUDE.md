@@ -36,7 +36,10 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   `hooks/useAIGate.tsx`'s `requireAI(action, { kind: 'plan' | 'edit', ... })`, which shows
   `components/AIAccessDialog.tsx` (sign in for the free allowance, the subscription, or a
   key) and then continues the action. The no-AI alternative for routine creation is the
-  keyword template search (`services/templateSearch.ts`). Don't reintroduce a fake "AI"
+  rule-based planner (`services/routinePlanner/`: `parseAnswers` reads the free-text answers
+  into a Profile, handling negation like "not Thursday"; `planRoutine` assembles a week from
+  it), shown as the editable "Your plan" screen (`components/RoutinePlanBuilder.tsx`), with
+  the keyword template search (`services/templateSearch.ts`) as "Browse templates". Don't reintroduce a fake "AI"
   fallback. Allowances and prices live in `worker/ai/plans.ts`.
 - **Never put a real API key behind a `VITE_`-prefixed env var again.** The existing
   Google CSE key is already public in the client bundle (acceptable for a free-tier image

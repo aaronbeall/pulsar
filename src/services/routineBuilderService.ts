@@ -11,6 +11,7 @@ import { dailyWorkoutTemplates } from './dailyWorkoutTemplates';
 import { findFreeExerciseDbEntry, getFreeExerciseDbImageUrls, isTimedCategory } from './freeExerciseDb';
 import { workoutPrompts } from '../constants/prompts';
 import { getActiveAIProvider, AIProvider, AIError, StreamOptions } from './ai';
+import type { RoutinePlan } from './routinePlanner/planRoutine';
 
 /**
  * Create a new Exercise from a template (ExerciseTemplate).
@@ -367,6 +368,43 @@ export const generateRoutine = async (
   if (!provider) throw new AIError('no_key', 'Pulsar AI isn\'t set up. Sign in or add your OpenAI key in Settings.');
   return generateRoutineWithAI(provider, responses, exercises, addExercise, options);
 };
+
+/**
+ * Create a Routine from a plan the no-AI planner built (services/routinePlanner), adding any
+ * missing exercises to the store. The wizard's answers become the routine's chat, closed
+ * with the plan's notes, so a later AI chat knows what the user asked for.
+ */
+export async function createRoutineFromPlan(
+  plan: RoutinePlan,
+  responses: string[],
+  exercises: Exercise[],
+  addExercise: (ex: Exercise) => Promise<void>,
+  name = plan.name,
+): Promise<{ routine: Routine, exercises: Exercise[] }> {
+  let known = [...exercises];
+  const allNewExercises: Exercise[] = [];
+  const dailySchedule = [];
+  for (const day of plan.days) {
+    const { scheduled, newExercises } = await resolveAIExercises(day.exercises, known, addExercise);
+    known = [...known, ...newExercises];
+    allNewExercises.push(...newExercises);
+    dailySchedule.push({ day: day.day, kind: day.kind, exercises: scheduled });
+  }
+  const closing = `I built this from your answers: ${plan.notes.map(n => n.replace(/\.$/, '')).join('. ')}. Change anything you like, or ask me here.`;
+  const routine: Routine = {
+    id: uuidv4(),
+    name: name.trim() || plan.name,
+    description: plan.description,
+    active: true,
+    createdAt: Date.now(),
+    dailySchedule,
+    chatHistory: buildWizardChatHistory(responses, closing),
+    liked: false,
+    disliked: false,
+    favorite: false,
+  };
+  return { routine, exercises: allNewExercises };
+}
 
 /**
  * Create a Routine from a RoutineTemplate, adding any missing exercises to the store.
