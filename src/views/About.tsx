@@ -24,6 +24,7 @@ import {
 } from '@chakra-ui/react';
 import { FaFileContract, FaHeart, FaShieldAlt } from 'react-icons/fa';
 import logoSvg from '../assets/logo.svg';
+import { PRIVACY_URL, TERMS_URL } from '../components/LegalLinks';
 
 const REPO_URL = 'https://github.com/aaronbeall/pulsar';
 const APP_VERSION = '1.0.0';
@@ -70,6 +71,9 @@ const About: React.FC = () => {
 
           <TabPanels>
             <TabPanel px={0} fontSize="sm" color={mutedColor}>
+              <Text mb={4}>
+                A summary. The full <Link href={PRIVACY_URL} color="cyan.500">Privacy Policy</Link> has the details.
+              </Text>
               <SectionHeading>Your data stays on your device</SectionHeading>
               <Text>
                 Pulsar is free to use and doesn't need an account. Every routine, workout and
@@ -120,6 +124,9 @@ const About: React.FC = () => {
             </TabPanel>
 
             <TabPanel px={0} fontSize="sm" color={mutedColor}>
+              <Text mb={4}>
+                A summary. The full <Link href={TERMS_URL} color="cyan.500">Terms of Service</Link> apply.
+              </Text>
               <SectionHeading>Use at your own risk</SectionHeading>
               <Text>
                 Pulsar is free to use. Pulsar AI is optional, with a small free allowance and a paid

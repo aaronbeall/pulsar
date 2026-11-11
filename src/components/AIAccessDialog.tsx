@@ -31,6 +31,7 @@ import { AIKind, testApiKey } from '../services/ai';
 import { useAccount } from '../hooks/useAccount';
 import { signInWithGoogle } from '../services/account';
 import UpgradeButtons from './UpgradeButtons';
+import LegalLinks from './LegalLinks';
 
 export interface AIAccessAlternative {
   label: string;
@@ -170,13 +171,12 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
                 <Benefits items={[
                   'A routine built around your goals, schedule and equipment',
                   'Change it by asking, like "swap squats, my knees hurt"',
-                  'No OpenAI account or key needed',
                 ]} />
                 <Button leftIcon={<FaGoogle />} colorScheme="cyan" size="lg" w="full" mt={4} onClick={handleSignIn} isLoading={signingIn}>
                   Continue with Google
                 </Button>
                 <Text fontSize="xs" color={mutedColor} mt={2} textAlign="center">
-                  Your workouts stay on this device.
+                  Your workouts stay on this device. <LegalLinks />
                 </Text>
               </Box>
             ) : offerUpgrade ? (
@@ -191,7 +191,6 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
                 <Benefits items={[
                   '20 new routine plans every month',
                   '200 AI edits every month: just ask for changes',
-                  'No OpenAI account or key. Cancel anytime',
                 ]} />
                 <Box mt={4}>
                   <UpgradeButtons returnTo={returnPath()} onBeforeCheckout={() => onLeave?.('checkout')} />
@@ -218,7 +217,7 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
                 <Text fontSize="sm" color={mutedColor}>
                   {allowanceUsed
                     ? "You've used your free AI. Pulsar AI for $3.99 a month adds 20 routine plans and 200 edits every month."
-                    : 'AI included with a subscription. No key or OpenAI account needed.'}
+                    : 'AI included with a subscription.'}
                 </Text>
               </Box>
             )}
