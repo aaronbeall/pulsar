@@ -61,7 +61,7 @@ function median(values: number[]): number {
  * What the latest ratings lean towards: `toward` when at least two of the last few rated
  * workouts say so and they outnumber the opposite rating.
  */
-function trend<T extends string>(ratings: (T | undefined)[], toward: T, against: T): boolean {
+export function trend<T extends string>(ratings: (T | undefined)[], toward: T, against: T): boolean {
   const recent = ratings.filter((r): r is T => !!r).slice(0, RECENT_RATINGS);
   const yes = recent.filter(r => r === toward).length;
   const no = recent.filter(r => r === against).length;

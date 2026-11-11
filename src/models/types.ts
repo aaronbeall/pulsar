@@ -65,6 +65,8 @@ export interface RoutineChange {
     description?: string;
   };
   decisions?: Partial<Record<RoutineChangeItemKey, RoutineChangeDecision>>;
+  /** Who suggested it: Pulsar AI (the default) or the rule-based Pulsar Planner. */
+  source?: 'ai' | 'planner';
 }
 
 // An entry in a routine's change history (shown in the Activity timeline): an edit saved by
@@ -72,7 +74,7 @@ export interface RoutineChange {
 export interface RoutineRevision {
   id: string;
   date: number;
-  source: 'ai' | 'manual';
+  source: 'ai' | 'planner' | 'manual';
   summary: string;
   changeId?: string; // for 'ai' revisions, the RoutineChange the accepted items came from
 }
@@ -99,6 +101,8 @@ export interface Routine {
   liked?: boolean;
   disliked?: boolean;
   favorite?: boolean;
+  /** When the user last acted on (or dismissed) an offer to adjust it from workout feedback. */
+  feedbackHandledAt?: number;
 }
 
 export interface ScheduledExercise {
