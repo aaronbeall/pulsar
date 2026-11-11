@@ -10,20 +10,22 @@ export interface HomeBackgroundImage {
   src: string;
   title: string;
   // Absent for a today's-exercise pick (Change 2) — that's a user's own data, not one of
-  // the curated CC-licensed photos below, so there's nothing to credit in Settings.
+  // the curated CC-licensed photos below, so there's nothing to credit.
   author?: string;
   license?: string;
+  licenseUrl?: string;
   sourceUrl?: string;
 }
 
 // All from Wikimedia Commons, CC BY / CC BY-SA (attribution required — credited in
-// Settings rather than overlaid on the image itself, to keep the home view uncluttered).
+// About > Credits rather than overlaid on the image itself, to keep the home view uncluttered).
 const WORKOUT_BACKGROUNDS: HomeBackgroundImage[] = [
   {
     src: workout1,
     title: 'Uphill',
     author: 'Don McCullough',
     license: 'CC BY 2.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by/2.0/',
     sourceUrl: 'https://commons.wikimedia.org/wiki/File:Uphill_-_Explored_-_Flickr_-_Don_McCullough.jpg',
   },
   {
@@ -31,6 +33,7 @@ const WORKOUT_BACKGROUNDS: HomeBackgroundImage[] = [
     title: 'Runner 2',
     author: 'opheliarossetti',
     license: 'CC BY-SA 3.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
     sourceUrl: 'https://commons.wikimedia.org/wiki/File:Runner_2.jpg',
   },
   {
@@ -38,6 +41,7 @@ const WORKOUT_BACKGROUNDS: HomeBackgroundImage[] = [
     title: 'Cyclist in silhouette at sunset, Marchant Park',
     author: 'John Robert McPherson',
     license: 'CC BY-SA 4.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
     sourceUrl: 'https://commons.wikimedia.org/wiki/File:Ficus_microcarpa_and_cyclist_in_silhouette_at_sunset_Marchant_Park_Aspley_P1080052.jpg',
   },
 ];
@@ -48,6 +52,7 @@ const REST_BACKGROUNDS: HomeBackgroundImage[] = [
     title: 'Sunrise in Dalkey, Dublin',
     author: 'Giuseppe Milo',
     license: 'CC BY 3.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by/3.0/',
     sourceUrl: 'https://commons.wikimedia.org/wiki/File:Sunrise_In_Dalkey_Dublin_Ireland_Seascape_Photography_(194456677).jpeg',
   },
   {
@@ -55,6 +60,7 @@ const REST_BACKGROUNDS: HomeBackgroundImage[] = [
     title: 'Bull Island at sunrise, Dublin',
     author: 'Giuseppe Milo',
     license: 'CC BY 3.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by/3.0/',
     sourceUrl: 'https://commons.wikimedia.org/wiki/File:Bull_Island_At_Sunrise_Dublin_Ireland_Landscape_Photography_(197048387).jpeg',
   },
   {
@@ -62,6 +68,7 @@ const REST_BACKGROUNDS: HomeBackgroundImage[] = [
     title: 'Sunrise in Bull Island, Dublin',
     author: 'Giuseppe Milo',
     license: 'CC BY 3.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by/3.0/',
     sourceUrl: 'https://commons.wikimedia.org/wiki/File:Sunrise_In_Bull_Island_Dublin_Ireland_Landscape_Photography_(196665097).jpeg',
   },
 ];

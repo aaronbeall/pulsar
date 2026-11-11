@@ -1,7 +1,7 @@
 # Pulsar — Agent Guidance
 
 Personalized workout tracker PWA. React 18 + TypeScript + Vite, Chakra UI v2, Zustand,
-IndexedDB (`idb`), deployed static to GitHub Pages. See `NOTES.md` for a full
+IndexedDB (`idb`), deployed to Cloudflare (one Worker for the site, app and API). See `NOTES.md` for a full
 architecture/findings write-up, `PLAN-ai-features.md` for the full BYOK → hosted AI
 roadmap (start here), and `PLAN-ai-subscription.md` for the auth/billing/proxy details
 that roadmap's later phases depend on — read all three before proposing changes in those
@@ -87,10 +87,10 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   PWA scope and start URL all point there). The homepage is plain HTML/CSS/TS in `index.html` +
   `home/`, with no React; see `home/README.md`. Links into the app from outside it must include
   `app/`.
-- **Hosting is moving to Cloudflare.** One Worker (`wrangler.jsonc`, `worker/`) serves the
+- **Hosting is Cloudflare.** One Worker (`wrangler.jsonc`, `worker/`) serves the
   homepage, the app and the API from the same origin, so login cookies need no CORS. Static
-  files are served before the Worker runs; API routes go under `/api/`. GitHub Pages
-  workflows stay only until the Cloudflare deploy is confirmed live. See README "Deploying".
+  files are served before the Worker runs; API routes go under `/api/`. PR previews are
+  Worker preview versions at `pr-<n>-pulsar.<account>.workers.dev`. See README "Deploying".
 - **Naming: the official product name is "Pulsar Workouts"; the brand is "Pulsar".** Use
   "Pulsar Workouts" where the full name matters (page titles, the PWA manifest `name`, legal,
   store, OAuth and payment listings) and keep "Pulsar" for the logo, short name and in-app

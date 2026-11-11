@@ -12,13 +12,13 @@ with `?dev=1` to turn it on and `?dev=0` to turn it off. See [DEV-FEATURES.md](D
 
 ## Deploying
 
-The site is moving from GitHub Pages to Cloudflare. Both run until the Cloudflare deploy is
-confirmed live; then the GitHub Pages workflows go away.
-
-**Cloudflare (new).** One Worker, `pulsar`, serves everything: the homepage at `/`, the app
-at `/app/`, and the API at `/api/` (only `/api/health` so far). Config is `wrangler.jsonc`;
+The site runs on Cloudflare at `pulsarworkouts.app`. One Worker, `pulsar`, serves everything: the homepage at `/`, the app
+at `/app/`, and the API at `/api/`. Config is `wrangler.jsonc`;
 the Worker is `worker/`. Static files from the Vite build are served first; the Worker only
 sees paths with no file, and sends app routes to the app's page (`worker/fallback.ts`).
+`www.pulsarworkouts.app` isn't served by the Worker: a Cloudflare Redirect Rule (the "Redirect
+from WWW to root" template, on a proxied `www` DNS record) sends it to the bare domain with a
+301, so the app, its data and sign-in all live on one origin.
 
 - `npm run cf:dev` builds and serves the site the way Cloudflare will, on
   http://localhost:8787. `npm run dev` is still the fast loop for app work.
@@ -96,6 +96,3 @@ retries) subscription switches the account to the Pulsar AI tier in `worker/ai/p
 - The deploy workflow creates the D1 database if needed and applies migrations on `main`
   only, so a PR's migration never touches production before it merges.
 
-**GitHub Pages (old).** `deploy-pages.yml` and `pr-preview.yml` publish to the `gh-pages`
-branch under `/pulsar/`. IndexedDB is per origin, so moving domains means exporting a backup
-on the old site and restoring it on the new one.

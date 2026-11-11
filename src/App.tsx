@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box,
-  Divider,
   Drawer,
   DrawerBody,
   DrawerCloseButton,
@@ -13,15 +12,13 @@ import {
   IconButton,
   Heading,
   useColorMode,
-  useColorModeValue,
-  useToast,
   Image,
   Text,
   Container,
   useToken,
 } from '@chakra-ui/react';
 import { IconType } from 'react-icons';
-import { FaBars, FaSun, FaMoon, FaHome, FaDumbbell, FaCog, FaChartLine, FaDownload, FaInfoCircle } from 'react-icons/fa';
+import { FaBars, FaHome, FaDumbbell, FaChartLine } from 'react-icons/fa';
 import { useUrlModal } from './hooks/useUrlModal';
 import { Routes, Route, Link, useLocation, Link as RouterLink, Navigate } from 'react-router-dom';
 import Home from './views/Home';
@@ -30,7 +27,8 @@ import Settings from './views/Settings';
 import Activity from './views/Activity';
 import About from './views/About';
 import { usePulsarStoreInit } from './store/pulsarStore';
-import { useInstallPromptInit, useInstallPromptStore } from './store/installPromptStore';
+import { useInstallPromptInit } from './store/installPromptStore';
+import AppMenu from './components/AppMenu';
 import logoSvg from './assets/logo.svg';
 import { requestPersistentStorage } from './utils/storagePersistence';
 import { useCheckoutReturn } from './hooks/useCheckoutReturn';
@@ -41,7 +39,7 @@ const App: React.FC = () => {
   useCheckoutReturn(); // Thank-you toast and account refresh after Stripe Checkout, on any page
   // Ask the browser not to evict our IndexedDB data. Fire-and-forget: Settings shows the result.
   useEffect(() => { requestPersistentStorage(); }, []);
-  const { colorMode, setColorMode } = useColorMode();
+  const { colorMode } = useColorMode();
   const [colorScheme, setColorScheme] = useState<string>(() => {
     return localStorage.getItem('colorScheme') || 'red';
   });
@@ -49,33 +47,10 @@ const App: React.FC = () => {
   const [headerBgColor] = useToken('colors', [`${colorScheme}.500`]);
   // The side menu lives in the URL (?menu=1) so Back closes it.
   const menu = useUrlModal('menu');
-  const toast = useToast();
-  const { deferredPrompt, isInstalled, isIOS, promptInstall } = useInstallPromptStore();
-  const canPromptInstall = !!deferredPrompt;
-  const showInstallItem = !isInstalled && (canPromptInstall || isIOS);
-  const menuItemHoverBg = useColorModeValue('gray.100', 'gray.700');
 
   const handleColorSchemeChange = (scheme: string) => {
     setColorScheme(scheme);
     localStorage.setItem('colorScheme', scheme);
-  };
-
-  const handleInstallClick = async () => {
-    if (canPromptInstall) {
-      const outcome = await promptInstall();
-      if (outcome === 'accepted') {
-        toast({ title: 'Installing Pulsar...', status: 'success', duration: 2000, isClosable: true });
-      }
-    } else if (isIOS) {
-      toast({
-        title: 'Install Pulsar',
-        description: 'Tap the Share icon, then "Add to Home Screen".',
-        status: 'info',
-        duration: 6000,
-        isClosable: true,
-      });
-    }
-    menu.close();
   };
 
   const navItems: { to: string; label: string; icon: IconType; isActive: (path: string) => boolean }[] = [
@@ -233,86 +208,7 @@ const App: React.FC = () => {
             Menu
           </DrawerHeader>
           <DrawerBody px={0} py={4}>
-            <Text px={4} mb={2} fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase" letterSpacing="wide">
-              Appearance
-            </Text>
-            <Flex px={4} gap={2} mb={4}>
-              {(['light', 'dark'] as const).map((mode) => {
-                const active = colorMode === mode;
-                return (
-                  <Flex
-                    key={mode}
-                    as="button"
-                    flex={1}
-                    direction="column"
-                    align="center"
-                    gap={1}
-                    py={3}
-                    borderRadius="lg"
-                    borderWidth="2px"
-                    borderColor={active ? `${colorScheme}.500` : 'transparent'}
-                    bg={active ? `${colorScheme}.50` : menuItemHoverBg}
-                    _dark={{ bg: active ? `${colorScheme}.900` : 'gray.700' }}
-                    transition="border-color 0.2s"
-                    onClick={() => setColorMode(mode)}
-                  >
-                    <Icon as={mode === 'light' ? FaSun : FaMoon} boxSize={5} color={active ? `${colorScheme}.500` : undefined} />
-                    <Text fontSize="sm" fontWeight={active ? 'bold' : 'medium'} textTransform="capitalize">
-                      {mode}
-                    </Text>
-                  </Flex>
-                );
-              })}
-            </Flex>
-
-            <Divider mb={2} />
-
-            <Flex
-              as="button"
-              w="100%"
-              align="center"
-              gap={3}
-              px={4}
-              py={3}
-              transition="background-color 0.2s"
-              _hover={{ bg: menuItemHoverBg }}
-              onClick={() => menu.leaveTo('/settings')}
-            >
-              <Icon as={FaCog} boxSize={4} color="gray.500" />
-              <Text fontSize="sm" fontWeight="medium">Settings</Text>
-            </Flex>
-
-            <Flex
-              as="button"
-              w="100%"
-              align="center"
-              gap={3}
-              px={4}
-              py={3}
-              transition="background-color 0.2s"
-              _hover={{ bg: menuItemHoverBg }}
-              onClick={() => menu.leaveTo('/about')}
-            >
-              <Icon as={FaInfoCircle} boxSize={4} color="gray.500" />
-              <Text fontSize="sm" fontWeight="medium">About</Text>
-            </Flex>
-
-            {showInstallItem && (
-              <Flex
-                as="button"
-                w="100%"
-                align="center"
-                gap={3}
-                px={4}
-                py={3}
-                transition="background-color 0.2s"
-                _hover={{ bg: menuItemHoverBg }}
-                onClick={handleInstallClick}
-              >
-                <Icon as={FaDownload} boxSize={4} color="gray.500" />
-                <Text fontSize="sm" fontWeight="medium">Install App</Text>
-              </Flex>
-            )}
+            <AppMenu menu={menu} colorScheme={colorScheme} />
           </DrawerBody>
         </DrawerContent>
       </Drawer>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Badge,
   Box,
   Button,
   Flex,
@@ -8,7 +9,6 @@ import {
   Heading,
   Icon,
   Input,
-  Link,
   Select,
   Text,
   VStack,
@@ -16,10 +16,10 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FaCode, FaExclamationTriangle, FaImages, FaKey, FaPalette, FaRobot } from 'react-icons/fa';
+import { FaCode, FaExclamationTriangle, FaKey, FaPalette } from 'react-icons/fa';
 import { useAIGate } from '../hooks/useAIGate';
+import { useAccount } from '../hooks/useAccount';
 import { deleteDB } from 'idb'; // Import deleteDB to delete IndexedDB
-import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
 import { DEFAULT_OPENAI_MODEL, useOpenAiApiKey, useOpenAiModel } from '../store/aiSettingsStore';
 import { testApiKey } from '../services/ai';
 import BackupRestoreCard from '../components/BackupRestoreCard';
@@ -44,6 +44,11 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
   const [testingKey, setTestingKey] = useState(false);
   const [model, setModel] = useOpenAiModel();
   const aiGate = useAIGate();
+  const account = useAccount();
+  // Where Pulsar AI is on offer (sign-in, free allowance, subscription), the key is the
+  // alternative to it. Elsewhere it's the only way to AI.
+  const offersPulsarAI = account.hostedAI;
+  const hasHostedAllowance = account.hostedAI && !!account.user && !!account.ai;
   const devMode = isDevMode();
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
@@ -59,7 +64,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
     toast({
       title: ok ? 'API key looks good' : 'Key test failed',
       description: ok
-        ? 'AI-generated routines and chat-suggested edits are enabled.'
+        ? 'Pulsar AI will use your key for routine plans and edits.'
         : 'OpenAI rejected that key, or could not be reached. Check the key and your connection.',
       status: ok ? 'success' : 'error',
       duration: 3000,
@@ -102,6 +107,64 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
         Settings
       </Heading>
 
+      <AccountCard />
+
+      <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm" data-testid="own-key-card">
+        <Flex align="center" gap={2} mb={1}>
+          <Icon as={FaKey} color="cyan.500" />
+          <Heading size="sm">Your own OpenAI key</Heading>
+          {offersPulsarAI && <Badge ml="auto" colorScheme="gray" fontSize="0.65rem">Optional</Badge>}
+        </Flex>
+        <Text fontSize="sm" color={mutedColor} mb={3}>
+          {offersPulsarAI
+            ? 'An alternative to a Pulsar AI subscription: Pulsar AI runs on your own OpenAI API key, and OpenAI bills you for what you use, usually a few cents a month. No account needed.'
+            : 'Pulsar AI builds routines from your answers and suggests changes in each routine\'s chat, using your own OpenAI API key. OpenAI bills you for what you use, usually a few cents a month.'}
+        </Text>
+        {apiKey ? (
+          <VStack align="stretch" spacing={3}>
+            <FormControl>
+              <FormLabel fontSize="sm" mb={1}>OpenAI API key</FormLabel>
+              {/* Bank-style mask: only the last 4 characters are ever shown. */}
+              <Input
+                value={maskApiKey(apiKey)}
+                isReadOnly
+                fontFamily="mono"
+                letterSpacing="wider"
+                aria-label="OpenAI API key, masked"
+                data-testid="masked-api-key"
+              />
+            </FormControl>
+            {hasHostedAllowance && (
+              <Text fontSize="xs" color={mutedColor} data-testid="key-wins-note">
+                While a key is set, Pulsar AI uses it instead of your {account.ai?.tier === 'pulsar_ai' ? 'subscription' : 'free allowance'}.
+                Remove it to go back.
+              </Text>
+            )}
+            <Flex gap={2} wrap="wrap">
+              <Button size="sm" onClick={handleTestKey} isLoading={testingKey}>
+                Test key
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => aiGate.openKeySetup()}>
+                Change key
+              </Button>
+              <Button size="sm" variant="ghost" colorScheme="red" onClick={() => setApiKey(null)}>
+                Remove key
+              </Button>
+            </Flex>
+          </VStack>
+        ) : (
+          <VStack align="stretch" spacing={2}>
+            <Button variant="outline" leftIcon={<FaKey />} onClick={() => aiGate.openKeySetup()} alignSelf="flex-start">
+              Add OpenAI key
+            </Button>
+            <Text fontSize="xs" color={mutedColor}>
+              Your key stays on this device and is sent only to OpenAI.
+            </Text>
+          </VStack>
+        )}
+        {aiGate.gate}
+      </Box>
+
       <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
         <Flex align="center" gap={2} mb={4}>
           <Icon as={FaPalette} color="cyan.500" />
@@ -141,54 +204,6 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
             </Select>
           </Flex>
         </VStack>
-      </Box>
-
-      <AccountCard />
-
-      <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
-        <Flex align="center" gap={2} mb={3}>
-          <Icon as={FaRobot} color="cyan.500" />
-          <Heading size="sm">AI</Heading>
-        </Flex>
-        {apiKey ? (
-          <VStack align="stretch" spacing={3}>
-            <FormControl>
-              <FormLabel fontSize="sm" mb={1}>OpenAI API key</FormLabel>
-              {/* Bank-style mask: only the last 4 characters are ever shown. */}
-              <Input
-                value={maskApiKey(apiKey)}
-                isReadOnly
-                fontFamily="mono"
-                letterSpacing="wider"
-                aria-label="OpenAI API key, masked"
-                data-testid="masked-api-key"
-              />
-            </FormControl>
-            <Flex gap={2} wrap="wrap">
-              <Button size="sm" onClick={handleTestKey} isLoading={testingKey}>
-                Test key
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => aiGate.openKeySetup()}>
-                Change key
-              </Button>
-              <Button size="sm" variant="ghost" colorScheme="red" onClick={() => setApiKey(null)}>
-                Remove key
-              </Button>
-            </Flex>
-          </VStack>
-        ) : (
-          <VStack align="stretch" spacing={3}>
-            <Text fontSize="sm" color={mutedColor}>
-              Pulsar AI builds routines from your answers and suggests changes in each routine's
-              chat. When you first use it, you'll be asked for your own OpenAI key. You can also
-              add it now.
-            </Text>
-            <Button variant="outline" colorScheme="cyan" leftIcon={<FaKey />} onClick={() => aiGate.openKeySetup()} alignSelf="flex-start">
-              Add OpenAI key
-            </Button>
-          </VStack>
-        )}
-        {aiGate.gate}
       </Box>
 
       <BackupRestoreCard />
@@ -243,31 +258,6 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
         </Box>
       )}
 
-      <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
-        <Flex align="center" gap={2} mb={3}>
-          <Icon as={FaImages} color="cyan.500" />
-          <Heading size="sm">Photo Credits</Heading>
-        </Flex>
-        <Text fontSize="xs" color={mutedColor} mb={2}>
-          Home screen background photos, from Wikimedia Commons:
-        </Text>
-        <VStack align="start" spacing={1} mb={4}>
-          {ALL_HOME_BACKGROUNDS.map(bg => (
-            <Text key={bg.sourceUrl} fontSize="xs" color={mutedColor}>
-              <Link href={bg.sourceUrl} isExternal color="cyan.500">{bg.title}</Link>
-              {' '}by {bg.author}, {bg.license}
-            </Text>
-          ))}
-        </VStack>
-
-        <Text fontSize="xs" color={mutedColor}>
-          Exercise photos come from{' '}
-          <Link href="https://github.com/yuhonas/free-exercise-db" isExternal color="cyan.500">free-exercise-db</Link>
-          {', with additional photos found via '}
-          <Link href="https://commons.wikimedia.org" isExternal color="cyan.500">Wikimedia Commons</Link>
-          {' search.'}
-        </Text>
-      </Box>
     </Flex>
   );
 };

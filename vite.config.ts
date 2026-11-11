@@ -2,9 +2,9 @@ import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 import { VitePWA } from 'vite-plugin-pwa';
+import license from 'rollup-plugin-license';
 
-// Set only in PR preview builds (see .github/workflows/pr-preview.yml), which deploy to a
-// pr-<n>/ subpath of the live site.
+// Set only in PR preview builds (see .github/workflows/cloudflare.yml).
 const previewPr = process.env.VITE_PREVIEW_PR;
 
 const base = process.env.BASE || '/';
@@ -15,7 +15,7 @@ const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Client-side routes live under <base>app/, so deep links like <base>app/workout must load
- * the app's page in the dev and preview servers, the way 404.html does on GitHub Pages.
+ * the app's page in the dev and preview servers, the way the Worker's fallback does in production.
  */
 function appRouteFallback(): Plugin {
   const rewrite = (req: { url?: string }, _res: unknown, next: () => void) => {
@@ -32,11 +32,82 @@ function appRouteFallback(): Plugin {
   };
 }
 
+/**
+ * Writes <outDir>/third-party-licenses.txt: every open-source package bundled into the built
+ * pages, with its license text, as MIT/ISC/Apache require when the code is redistributed. The
+ * About page's Credits tab links to it. Build-only; the Worker's own dependencies (hono,
+ * better-auth) run on the server and aren't shipped to browsers.
+ */
+// A few packages ship a license field but no LICENSE file; the MIT terms still require the
+// notice, so write the standard text out with their author's name.
+function fallbackLicenseText(spdx: string | null, holder = 'the authors', year = ''): string {
+  if (spdx !== 'MIT') return `Licensed under ${spdx ?? 'an unknown license'}.`;
+  return `MIT License
+
+Copyright (c) ${year ? `${year} ` : ''}${holder}
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+associated documentation files (the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge, publish, distribute,
+sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.`;
+}
+
+function thirdPartyLicenses(): Plugin {
+  return {
+    ...license({
+      thirdParty: {
+        output: {
+          file: resolve(__dirname, 'dist', 'third-party-licenses.txt'),
+          template: (deps) => [
+            'Pulsar Workouts: open-source software notices',
+            '',
+            'Pulsar Workouts includes the following open-source packages. Each is used under the',
+            'license shown, and its copyright and license notice is reproduced below.',
+            '',
+            ...[...deps]
+              .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
+              .map((d) => [
+                '='.repeat(80),
+                `${d.name}@${d.version} (${d.license ?? 'unknown license'})`,
+                d.homepage || (typeof d.repository === 'string' ? d.repository : d.repository?.url) || '',
+                '-'.repeat(80),
+                (d.licenseText ?? fallbackLicenseText(d.license, d.author?.name)).trim(),
+                ...(d.noticeText ? ['', d.noticeText.trim()] : []),
+                '',
+              ].join('\n')),
+            '='.repeat(80),
+            'Not npm packages, so listed by hand:',
+            '',
+            'Font Awesome Free icons (via react-icons), by Fonticons, Inc. https://fontawesome.com',
+            'Icons licensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/',
+            '',
+            'Workbox service worker runtime, Copyright 2018 Google LLC. https://github.com/GoogleChrome/workbox',
+            `Licensed under MIT:\n\n${fallbackLicenseText('MIT', 'Google LLC', '2018')}`,
+            '',
+          ].join('\n'),
+        },
+      },
+    }),
+    apply: 'build',
+  } as Plugin;
+}
+
 export default defineConfig({
   base,
   plugins: [
     react(),
     appRouteFallback(),
+    thirdPartyLicenses(),
     VitePWA({
       registerType: 'autoUpdate',
       // The service worker is served from <base>sw.js but only controls the app.
