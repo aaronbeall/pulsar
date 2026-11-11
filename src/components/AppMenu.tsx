@@ -153,7 +153,7 @@ const AccountSummary = ({ menu }: { menu: UrlModal }) => {
               ) : apiKey ? (
                 'Using your own OpenAI key'
               ) : (
-                `${plansLeft} ${plansLeft === 1 ? 'plan' : 'plans'} and ${editsLeft} AI ${editsLeft === 1 ? 'message' : 'messages'} left`
+                `${plansLeft} ${plansLeft === 1 ? 'plan' : 'plans'} and ${editsLeft} ${editsLeft === 1 ? 'edit' : 'edits'} left`
               )}
             </Text>
             {ai && !subscribed && account.billing && !apiKey && (

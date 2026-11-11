@@ -64,7 +64,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
     toast({
       title: ok ? 'API key looks good' : 'Key test failed',
       description: ok
-        ? 'Pulsar AI will use your key for routine plans and chat.'
+        ? 'Pulsar AI will use your key for routine plans and edits.'
         : 'OpenAI rejected that key, or could not be reached. Check the key and your connection.',
       status: ok ? 'success' : 'error',
       duration: 3000,
