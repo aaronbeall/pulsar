@@ -30,8 +30,17 @@ test('builds a routine from free-text answers without AI', async ({ page }) => {
   await page.getByRole('button', { name: 'Thursday: any' }).click(); // any → train
   await expect(week.getByText('Thursday', { exact: true })).toBeVisible();
 
+  // A fun name idea, from what's in the plan, fills in the name.
+  const ideas = page.getByRole('group', { name: 'Name ideas' });
+  const idea = ideas.getByRole('button').first();
+  const nickname = (await idea.textContent())!;
+  expect(nickname).not.toBe('More names');
+  await idea.click();
+  await expect(page.getByRole('textbox', { name: 'Routine name' })).toHaveValue(nickname);
+  await ideas.getByRole('button', { name: 'More names' }).click();
+
   await page.getByRole('button', { name: 'Create routine' }).click();
   await expect(page).toHaveURL(/\/workout\/routine\/[\w-]+$/);
-  await expect(page.getByText('4-Day Muscle Builder').first()).toBeVisible();
+  await expect(page.getByText(nickname).first()).toBeVisible();
   await expect(page.getByText('Thursday', { exact: true })).toBeVisible();
 });

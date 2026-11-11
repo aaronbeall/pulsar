@@ -74,7 +74,7 @@ const UPPER_SLOTS = new Set<Slot>(['hPush', 'vPush', 'chestIso', 'shoulderIso', 
 const COMPOUND_SLOTS = new Set<Slot>(['squat', 'hinge', 'lunge', 'hPush', 'vPush', 'hPull', 'vPull']);
 
 /** Small seeded random number generator (mulberry32), so a seed always builds the same week. */
-function rng(seed: number) {
+export function rng(seed: number) {
   let a = (seed * 2654435761) >>> 0 || 0x9e3779b9;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;

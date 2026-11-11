@@ -9,6 +9,7 @@ import NumericStepper from './NumericStepper';
 import type { DayOfWeek } from '../models/types';
 import { parseAnswers } from '../services/routinePlanner/parseAnswers';
 import { applyLearned } from '../services/routinePlanner/learned';
+import { planNicknames } from '../services/routinePlanner/nicknames';
 import type { LearnedPreferences } from '../utils/learnedPreferences';
 
 /** True when the planner has something of the user's history to go on (routine ratings and notes are for the AI only). */
@@ -176,6 +177,9 @@ export const RoutinePlanBuilder: React.FC<RoutinePlanBuilderProps> = ({ response
   };
 
   const name = customName ?? plan.name;
+  // Fun name ideas from what's in the plan, like the ready-made routines' nicknames.
+  const [nameSeed, setNameSeed] = useState(0);
+  const nicknames = useMemo(() => planNicknames(plan, profile, nameSeed), [plan, profile, nameSeed]);
 
   return (
     <Box maxW="600px" mx="auto" px={{ base: 0, sm: 4 }} pb={6}>
@@ -371,6 +375,20 @@ export const RoutinePlanBuilder: React.FC<RoutinePlanBuilderProps> = ({ response
       <Box mt={6}>
         <Text fontSize="sm" fontWeight={700} mb={2}>Name your routine</Text>
         <Input value={name} onChange={e => setCustomName(e.target.value)} size="lg" mb={3} aria-label="Routine name" />
+        <Wrap spacing={2} mb={4} role="group" aria-label="Name ideas">
+          {nicknames.map(nick => (
+            <WrapItem key={nick}>
+              <Button size="sm" borderRadius="full" variant={name === nick ? 'solid' : 'outline'} colorScheme="cyan" onClick={() => setCustomName(nick)}>
+                {nick}
+              </Button>
+            </WrapItem>
+          ))}
+          <WrapItem>
+            <Button size="sm" borderRadius="full" variant="ghost" colorScheme="purple" leftIcon={<FaRandom />} onClick={() => setNameSeed(s => s + 1)}>
+              More names
+            </Button>
+          </WrapItem>
+        </Wrap>
         <Button colorScheme="cyan" size="lg" w="100%" leftIcon={<FaPlus />} onClick={() => onCreate(plan, name)} isDisabled={plan.days.length === 0}>
           Create routine
         </Button>
