@@ -1,5 +1,6 @@
 // About.tsx
-// Static "About & Legal" page: app info, privacy policy, terms of use, and credits.
+// Static "About & Legal" page: app info, credits (the default tab), privacy summary and terms
+// summary. Credits is where every third-party attribution lives; keep it complete.
 // Keep this in step with what the app actually does: workouts are local-only, an account is
 // optional and only for Pulsar AI (worker/auth.ts), and subscriptions go through Stripe
 // (worker/billing/). See CLAUDE.md.
@@ -25,8 +26,13 @@ import {
 import { FaFileContract, FaHeart, FaShieldAlt } from 'react-icons/fa';
 import logoSvg from '../assets/logo.svg';
 import { PRIVACY_URL, TERMS_URL } from '../components/LegalLinks';
+import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
 
 const REPO_URL = 'https://github.com/aaronbeall/pulsar';
+const MAKER_URL = 'https://metamodernmonkey.com';
+const SUPPORT_EMAIL = 'support@pulsarworkouts.app';
+// Written by the build (thirdPartyLicenses() in vite.config.ts), at the site root.
+const LICENSES_URL = `${import.meta.env.BASE_URL}third-party-licenses.txt`;
 const APP_VERSION = '1.0.0';
 
 const SectionHeading: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -64,12 +70,66 @@ const About: React.FC = () => {
       <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
         <Tabs colorScheme="cyan" size="sm" isFitted>
           <TabList>
+            <Tab><FaHeart style={{ marginRight: 6 }} /> Credits</Tab>
             <Tab><FaShieldAlt style={{ marginRight: 6 }} /> Privacy</Tab>
             <Tab><FaFileContract style={{ marginRight: 6 }} /> Terms</Tab>
-            <Tab><FaHeart style={{ marginRight: 6 }} /> Credits</Tab>
           </TabList>
 
           <TabPanels>
+            <TabPanel px={0} fontSize="sm" color={mutedColor}>
+              <SectionHeading>Made by</SectionHeading>
+              <Text>
+                <Link href={MAKER_URL} isExternal color="cyan.500">Meta Modern Monkey</Link>
+                {' '}· <Link href={REPO_URL} isExternal color="cyan.500">source code on GitHub</Link>
+              </Text>
+              <Text mt={1}>
+                Questions or feedback:{' '}
+                <Link href={`mailto:${SUPPORT_EMAIL}`} color="cyan.500">{SUPPORT_EMAIL}</Link>
+              </Text>
+
+              <SectionHeading>Exercise data & photos</SectionHeading>
+              <Text>
+                Exercises and their photos come from{' '}
+                <Link href="https://github.com/yuhonas/free-exercise-db" isExternal color="cyan.500">
+                  free-exercise-db
+                </Link>
+                , released into the public domain (
+                <Link href="https://unlicense.org" isExternal color="cyan.500">Unlicense</Link>
+                ). Some exercise photos are found with a search of{' '}
+                <Link href="https://commons.wikimedia.org" isExternal color="cyan.500">Wikimedia Commons</Link>
+                ; each belongs to its author and is used under the license shown on its Commons page.
+              </Text>
+
+              <SectionHeading>Home screen photos</SectionHeading>
+              <Text mb={2}>From Wikimedia Commons, scaled down for the app:</Text>
+              <UnorderedList spacing={1} pl={2}>
+                {ALL_HOME_BACKGROUNDS.map(bg => (
+                  <ListItem key={bg.sourceUrl}>
+                    <Link href={bg.sourceUrl} isExternal color="cyan.500">{bg.title}</Link>
+                    {' '}by {bg.author},{' '}
+                    <Link href={bg.licenseUrl} isExternal color="cyan.500">{bg.license}</Link>
+                  </ListItem>
+                ))}
+              </UnorderedList>
+
+              <SectionHeading>Icons</SectionHeading>
+              <Text>
+                <Link href="https://fontawesome.com" isExternal color="cyan.500">Font Awesome Free</Link>
+                {' '}icons by Fonticons, Inc.,{' '}
+                <Link href="https://creativecommons.org/licenses/by/4.0/" isExternal color="cyan.500">CC BY 4.0</Link>
+                , through react-icons.
+              </Text>
+
+              <SectionHeading>Built with</SectionHeading>
+              <Text>
+                React, Chakra UI, Emotion, Framer Motion, React Router, TanStack Query, Zustand,
+                Immer, date-fns, idb, react-beautiful-dnd, react-confetti, uuid and Workbox, used
+                under the MIT, ISC, BSD and Apache 2.0 licenses. Every package and its license
+                notice is in the{' '}
+                <Link href={LICENSES_URL} isExternal color="cyan.500">open-source licenses</Link> list.
+              </Text>
+            </TabPanel>
+
             <TabPanel px={0} fontSize="sm" color={mutedColor}>
               <Text mb={4}>
                 A summary. The full <Link href={PRIVACY_URL} color="cyan.500">Privacy Policy</Link> has the details.
@@ -151,28 +211,6 @@ const About: React.FC = () => {
               </Text>
             </TabPanel>
 
-            <TabPanel px={0} fontSize="sm" color={mutedColor}>
-              <SectionHeading>Made by</SectionHeading>
-              <Text>
-                Aaron Beall — {' '}
-                <Link href={REPO_URL} isExternal color="cyan.500">source code on GitHub</Link>.
-              </Text>
-
-              <SectionHeading>Exercise data & photos</SectionHeading>
-              <Text>
-                <Link href="https://github.com/yuhonas/free-exercise-db" isExternal color="cyan.500">
-                  free-exercise-db
-                </Link>{' '}
-                — an open, public-domain exercise dataset.
-              </Text>
-
-              <SectionHeading>Built with</SectionHeading>
-              <Text>
-                React, TypeScript, Vite, Chakra UI, Zustand, react-router, and other open-source
-                libraries — see the full list on{' '}
-                <Link href={REPO_URL} isExternal color="cyan.500">GitHub</Link>.
-              </Text>
-            </TabPanel>
           </TabPanels>
         </Tabs>
       </Box>

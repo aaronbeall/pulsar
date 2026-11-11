@@ -17,6 +17,9 @@ test('the bottom nav and menu reach every screen', async ({ page }) => {
   await page.getByRole('button', { name: 'Open menu' }).click();
   await page.getByRole('button', { name: 'About' }).click();
   await expect(page).toHaveURL(/\/about$/);
+  // Credits is the first tab and opens by default.
+  await expect(page.getByRole('tab', { name: 'Credits' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('link', { name: 'Meta Modern Monkey' })).toBeVisible();
 
   await navTab(page, 'Home').click();
   await expect(page.getByText('Welcome to Pulsar!')).toBeVisible();
