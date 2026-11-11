@@ -80,3 +80,37 @@ test('free accounts can upgrade from Settings', async ({ page }) => {
   await toStripe;
   expect(calls[0].body.interval).toBe('month');
 });
+
+test('the menu shows the signed-in account and its plan', async ({ page }) => {
+  await mockAccount(page, 'pulsar_ai', { plan: 2, edit: 10 });
+  await page.goto('/app/');
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  const account = page.getByTestId('menu-account');
+  await expect(account).toContainText('Ada');
+  await expect(account.getByTestId('menu-plan')).toContainText('Pulsar AI');
+  await expect(account.getByTestId('menu-plan')).toContainText('18 plans and 190 edits left');
+  await expect(account.getByRole('button', { name: 'Get Pulsar AI' })).toHaveCount(0);
+  await account.getByRole('button', { name: 'Account settings' }).click();
+  await expect(page).toHaveURL(/\/app\/settings$/);
+});
+
+test('a free account can get Pulsar AI from the menu', async ({ page }) => {
+  await mockAccount(page, 'free', { plan: 1, edit: 0 });
+  await page.goto('/app/');
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  const account = page.getByTestId('menu-account');
+  await expect(account.getByTestId('menu-plan')).toContainText('Free Pulsar AI');
+  await expect(account.getByTestId('menu-plan')).toContainText('0 plans and 2 edits left');
+  await account.getByRole('button', { name: 'Get Pulsar AI' }).click();
+  await expect(page).toHaveURL(/\/app\/settings$/);
+  await expect(page.getByTestId('account-card').getByTestId('upgrade')).toBeVisible();
+});
+
+test('with a subscription, Settings presents the OpenAI key as the alternative', async ({ page }) => {
+  await mockAccount(page, 'pulsar_ai');
+  await page.goto('/app/settings');
+  const keyCard = page.getByTestId('own-key-card');
+  await expect(keyCard.getByRole('heading', { name: 'Your own OpenAI key' })).toBeVisible();
+  await expect(keyCard).toContainText('An alternative to a Pulsar AI subscription');
+  await expect(keyCard.getByRole('button', { name: 'Add OpenAI key' })).toBeVisible();
+});
