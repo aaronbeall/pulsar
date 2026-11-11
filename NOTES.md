@@ -386,3 +386,10 @@ app does template matching and nothing else.
   from an Enter keypress, so it sets `initialFocusRef` to the key field; otherwise focus
   lands on the close button and the same Enter dismisses the dialog.
 
+
+## Pulsar Planner, learning and routine adjustment — 2026-11-11
+
+The template matcher is replaced (as the no-AI path) by the rule-based Pulsar Planner, both
+routine builders learn from the user, and finished workouts can offer to adjust a routine.
+The whole design (parser, planner, learned signals, feedback trend, adjustment paths, tests)
+is written up in `PLANNER.md`.

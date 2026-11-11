@@ -43,7 +43,9 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   builders learn from the user (`utils/learnedPreferences.ts`: liked, disliked and often-skipped
   exercises, usual days and workout length, and how recent workouts felt from the "How was it?"
   card; routine ratings and workout notes go to the AI only), as soft preferences that what the user asks for
-  always overrides; the AI gets them through `describePreferences` in `prompts.ts`. Don't
+  always overrides; the AI gets them through `describePreferences` in `prompts.ts`. When a
+  routine's rated workouts keep feeling off, the finished workout offers to adjust it (Pulsar AI
+  first, the Planner's rule-based change as the fallback). See `PLANNER.md` for all of it. Don't
   reintroduce a fake "AI" fallback. Allowances and prices live in `worker/ai/plans.ts`.
 - **Never put a real API key behind a `VITE_`-prefixed env var again.** The existing
   Google CSE key is already public in the client bundle (acceptable for a free-tier image

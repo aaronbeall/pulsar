@@ -98,7 +98,7 @@ export const WorkoutSetup: React.FC = () => {
         reason: 'Building a routine from your answers uses Pulsar AI.',
         alternative: {
           label: 'Use the free Pulsar Planner',
-          description: 'It reads your answers and builds a week around your days, gear and injuries, and what you\'ve liked and skipped. Runs on your phone, no AI.',
+          description: 'It reads your answers and builds a week around your days, gear and injuries, and what it\'s learned from your workouts. Runs on your phone, no AI.',
           icon: FaListUl,
           onClick: () => planBuilder.open(),
         },

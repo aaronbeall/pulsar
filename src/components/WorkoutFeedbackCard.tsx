@@ -79,7 +79,7 @@ export default function WorkoutFeedbackCard({ workout, onChange }: {
           fontSize="md"
         />
         <Text fontSize="sm" color="gray.500">
-          {rated ? 'Thanks! Your next plan will take this into account.' : 'Pulsar uses this to tune your next plan.'}
+          {rated ? 'Thanks! Pulsar will use this to tune your routines.' : 'Pulsar uses this to tune your routines.'}
         </Text>
       </Flex>
     </SectionCard>

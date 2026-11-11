@@ -62,7 +62,7 @@ test('finishing a workout early flags the skipped exercises', async ({ page }) =
   await page.getByRole('group', { name: 'Length' }).getByRole('button', { name: 'Too long' }).click();
   await page.getByRole('textbox', { name: 'Notes on this workout' }).fill('Squats hurt my knee');
   await page.getByRole('textbox', { name: 'Notes on this workout' }).blur();
-  await expect(page.getByText('Thanks! Your next plan will take this into account.')).toBeVisible();
+  await expect(page.getByText('Thanks! Pulsar will use this to tune your routines.')).toBeVisible();
   await page.reload();
   await expect(page.getByRole('group', { name: 'Effort' }).getByRole('button', { name: 'Too hard' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('group', { name: 'Length' }).getByRole('button', { name: 'Too long' })).toHaveAttribute('aria-pressed', 'true');
