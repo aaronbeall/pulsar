@@ -4,6 +4,7 @@ import { AIKind, hasActiveAIProvider } from '../services/ai';
 import { useAccount } from './useAccount';
 import { useUrlModal } from './useUrlModal';
 import { clearAIResume, peekAIResume, saveAIResume } from '../utils/aiResume';
+import { CHECKOUT_POLL_MS, CHECKOUT_POLL_TRIES } from './useCheckoutReturn';
 
 interface GateRequest {
   /** Which allowance the action spends: a new routine plan, or a chat edit. */
@@ -24,7 +25,7 @@ export interface AIResumeOptions {
 
 // After checkout, how long to wait for Stripe's webhook to show up in the account before
 // leaving the user to tap again.
-const CHECKOUT_WAIT_MS = 20_000;
+const CHECKOUT_WAIT_MS = CHECKOUT_POLL_MS * CHECKOUT_POLL_TRIES + 5_000;
 
 /**
  * Gate an AI action behind AI access, paywall-style. `requireAI(action)` runs the action

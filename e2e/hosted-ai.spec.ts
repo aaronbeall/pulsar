@@ -166,6 +166,52 @@ test('chat edits use the hosted allowance, then the gate says it is used up', as
   expect(api.aiRequests).toHaveLength(1);
 });
 
+test('after subscribing from the gate, the chat message sends by itself and the app says thanks', async ({ page }) => {
+  let tier: 'free' | 'pulsar_ai' = 'free';
+  let meCallsAfterReturn = 0;
+  let returned = false;
+  const aiRequests: string[] = [];
+  const checkoutBodies: any[] = [];
+  await page.route('**/api/me', (route) => {
+    // Stripe's webhook lands a few seconds after the redirect back.
+    if (returned && ++meCallsAfterReturn >= 3) tier = 'pulsar_ai';
+    const limits = tier === 'free' ? { plan: 1, edit: 2 } : { plan: 20, edit: 200 };
+    const used = tier === 'free' ? { plan: 1, edit: 2 } : { plan: 0, edit: 0 };
+    return route.fulfill({
+      json: {
+        signInAvailable: true, hostedAI: true, billing: true,
+        user: { id: 'u1', name: 'Ada', email: 'ada@example.com', image: null },
+        ai: { tier, plan: { used: used.plan, limit: limits.plan }, edit: { used: used.edit, limit: limits.edit }, resetsAt: null },
+        subscription: tier === 'pulsar_ai' ? { status: 'active', interval: 'year', currentPeriodEnd: Date.UTC(2027, 10, 2), cancelAtPeriodEnd: false } : null,
+      },
+    });
+  });
+  await page.route('**/api/billing/checkout', (route) => {
+    checkoutBodies.push(route.request().postDataJSON());
+    return route.fulfill({ json: { url: 'https://checkout.stripe.com/c/pay/e2e' } });
+  });
+  await page.route('https://checkout.stripe.com/**', (route) => route.fulfill({ contentType: 'text/html', body: '<title>Stripe</title>' }));
+  await page.route('**/api/ai/edit', (route) => {
+    aiRequests.push(route.request().postDataJSON().message);
+    return route.fulfill({ contentType: 'text/event-stream', body: sse(JSON.stringify(EDIT)) });
+  });
+
+  await createRoutineFromTemplate(page);
+  const chat = page.getByPlaceholder('Suggest changes or ask a question...');
+  await chat.fill('Add a mobility day on Friday');
+  await chat.press('Enter');
+  await page.getByRole('dialog').getByRole('button', { name: /\$29\.99\/year/ }).click();
+  await page.waitForURL(/checkout\.stripe\.com/);
+
+  // Stripe sends the user back to success_url: the page they started on, plus ?subscribed=1.
+  const back = checkoutBodies[0].returnTo as string;
+  returned = true;
+  await page.goto(back + (back.includes('?') ? '&' : '?') + 'subscribed=1');
+  await expect(page.getByText('Welcome to Pulsar AI')).toBeVisible();
+  await expect(page.getByText('Added a Friday mobility day.')).toBeVisible({ timeout: 15_000 });
+  expect(aiRequests).toEqual(['Add a mobility day on Friday']);
+});
+
 test('when the server says to slow down, chat explains it instead of opening the gate', async ({ page }) => {
   await mockHostedAI(page, { signedIn: true });
   await createRoutineFromTemplate(page);
