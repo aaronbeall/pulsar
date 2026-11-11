@@ -165,3 +165,19 @@ test('chat edits use the hosted allowance, then the gate says it is used up', as
   await expect(gate.getByPlaceholder('sk-...')).toBeVisible();
   expect(api.aiRequests).toHaveLength(1);
 });
+
+test('when the server says to slow down, chat explains it instead of opening the gate', async ({ page }) => {
+  await mockHostedAI(page, { signedIn: true });
+  await createRoutineFromTemplate(page);
+  // Registered last, so it wins over the mock's normal reply.
+  const message = "That's a lot of AI requests in a few minutes. Wait a moment and try again.";
+  await page.route('**/api/ai/edit', (route) =>
+    route.fulfill({ status: 429, headers: { 'Retry-After': '120' }, json: { code: 'burst_limit', message, retryAfter: 120 } }),
+  );
+
+  const chat = page.getByPlaceholder('Suggest changes or ask a question...');
+  await chat.fill('Add a mobility day on Friday');
+  await chat.press('Enter');
+  await expect(page.getByText(message)).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});

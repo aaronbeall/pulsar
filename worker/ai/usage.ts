@@ -1,5 +1,8 @@
 import { getSubscription, isActive } from '../billing/subscription';
-import { AIKind, ESTIMATED_COST_MICROS, TIER_LIMITS, Tier, TokenUsage, costMicros, dayStart, periodEnd, periodStart } from './plans';
+import {
+  AIKind, BURST_LIMIT, DenyReason, ESTIMATED_COST_MICROS, TIER_LIMITS, Tier, TokenUsage,
+  burstRetryAfter, burstWindowStart, costMicros, dayStart, denyReason, periodEnd, periodStart,
+} from './plans';
 
 // Allowance bookkeeping in D1 (table ai_usage, migration 0002). A call is reserved before
 // OpenAI is called and settled after, so concurrent requests can't overspend: the reserve
@@ -14,7 +17,7 @@ export interface UsageSummary {
   resetsAt: number | null;
 }
 
-export type DenyReason = 'allowance_used' | 'daily_limit' | 'cost_cap';
+export type { DenyReason };
 
 /** The account's tier: Pulsar AI while its subscription is active, otherwise free. */
 export async function getTier(db: D1Database, userId: string): Promise<Tier> {
@@ -48,7 +51,7 @@ export async function reserve(
   kind: AIKind,
   model: string,
   now = Date.now()
-): Promise<{ id: string } | { denied: DenyReason }> {
+): Promise<{ id: string } | { denied: DenyReason; retryAfter?: number }> {
   const limits = TIER_LIMITS[tier];
   const since = periodStart(tier, now);
   const today = dayStart(now);
@@ -59,22 +62,44 @@ export async function reserve(
        SELECT ?1, ?2, ?3, 'reserved', ?4, ?5, ?6
        WHERE (SELECT COUNT(*) FROM ai_usage WHERE userId = ?2 AND kind = ?3 AND status != 'failed' AND createdAt >= ?7) < ?8
          AND (?9 IS NULL OR (SELECT COUNT(*) FROM ai_usage WHERE userId = ?2 AND kind = 'edit' AND ?3 = 'edit' AND status != 'failed' AND createdAt >= ?10) < ?9)
-         AND (SELECT COALESCE(SUM(costMicros), 0) FROM ai_usage WHERE userId = ?2 AND status != 'failed' AND createdAt >= ?7) < ?11`
+         AND (SELECT COALESCE(SUM(costMicros), 0) FROM ai_usage WHERE userId = ?2 AND status != 'failed' AND createdAt >= ?7) < ?11
+         AND (SELECT COUNT(*) FROM ai_usage WHERE userId = ?2 AND status != 'failed' AND createdAt > ?12) < ?13`
     )
     .bind(
       id, userId, kind, model, ESTIMATED_COST_MICROS[kind], now,
       since, limits[kind],
       kind === 'edit' ? limits.editsPerDay : null, today,
-      limits.costCapMicros
+      limits.costCapMicros,
+      burstWindowStart(now), BURST_LIMIT.calls
     )
     .run();
   if (result.meta.changes === 1) return { id };
 
   // Refused: work out which limit did it, for the message the app shows.
-  const summary = await usageSummary(db, userId, tier, now);
-  if (summary[kind].used >= summary[kind].limit) return { denied: 'allowance_used' };
-  if (kind === 'edit' && limits.editsPerDay !== null) return { denied: 'daily_limit' };
-  return { denied: 'cost_cap' };
+  const counts = await db
+    .prepare(
+      `SELECT
+         SUM(CASE WHEN kind = ?2 AND createdAt >= ?3 THEN 1 ELSE 0 END) AS kindUsed,
+         SUM(CASE WHEN kind = 'edit' AND createdAt >= ?4 THEN 1 ELSE 0 END) AS editsToday,
+         SUM(CASE WHEN createdAt >= ?3 THEN costMicros ELSE 0 END) AS cost
+       FROM ai_usage WHERE userId = ?1 AND status != 'failed' AND createdAt >= MIN(?3, ?4, ?5)`
+    )
+    .bind(userId, kind, since, today, burstWindowStart(now))
+    .first<{ kindUsed: number | null; editsToday: number | null; cost: number | null }>();
+  const window = await db
+    .prepare(`SELECT createdAt FROM ai_usage WHERE userId = ? AND status != 'failed' AND createdAt > ? ORDER BY createdAt DESC LIMIT ?`)
+    .bind(userId, burstWindowStart(now), BURST_LIMIT.calls)
+    .all<{ createdAt: number }>();
+  const windowTimes = window.results.map((r) => r.createdAt);
+  const reason =
+    denyReason(tier, kind, {
+      kindUsed: counts?.kindUsed ?? 0,
+      inWindow: windowTimes.length,
+      editsToday: counts?.editsToday ?? 0,
+      costMicros: counts?.cost ?? 0,
+    }) ?? 'burst_limit'; // a concurrent call took the last slot between the two queries
+  if (reason === 'burst_limit') return { denied: reason, retryAfter: Math.max(1, burstRetryAfter(windowTimes, now)) };
+  return { denied: reason };
 }
 
 /** Record what the call really used. Without usage (the reply was cut off) the estimate stays. */
