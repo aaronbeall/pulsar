@@ -44,8 +44,10 @@
   // from production: previews use the staging database, staging's secrets (passed by the
   // workflow from STAGING_* GitHub secrets) and Stripe test mode, and sign in through staging.
   "previews": {
+    // Previews need the database's id (Wrangler doesn't look it up by name for them). It's
+    // pulsar-staging, which the first PR run created; recreating it means updating both ids.
     "d1_databases": [
-      { "binding": "DB", "database_name": "pulsar-staging", "migrations_dir": "worker/migrations" }
+      { "binding": "DB", "database_name": "pulsar-staging", "database_id": "371bcacd-07b5-4f56-8fb4-9a09baa7b98f", "migrations_dir": "worker/migrations" }
     ],
     "vars": {
       // Preview addresses are <name>-pulsar.<account>.workers.dev; they can't each be
@@ -67,7 +69,7 @@
     "staging": {
       "routes": [{ "pattern": "staging.pulsarworkouts.app", "custom_domain": true }],
       "d1_databases": [
-        { "binding": "DB", "database_name": "pulsar-staging", "migrations_dir": "worker/migrations" }
+        { "binding": "DB", "database_name": "pulsar-staging", "database_id": "371bcacd-07b5-4f56-8fb4-9a09baa7b98f", "migrations_dir": "worker/migrations" }
       ],
       "vars": {
         "AUTH_ORIGINS": "https://staging.pulsarworkouts.app",
