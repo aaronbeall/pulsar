@@ -137,7 +137,7 @@ const AccountSummary = ({ menu }: { menu: UrlModal }) => {
               <Flex align="center" gap={2} minW={0}>
                 <Icon as={apiKey ? FaKey : FaCrown} boxSize={3.5} color={subscribed && !apiKey ? 'yellow.500' : apiKey ? 'cyan.500' : muted} />
                 <Text fontSize="sm" fontWeight="semibold" noOfLines={1}>
-                  {subscribed ? 'Pulsar AI' : ai ? 'Free Pulsar AI' : 'Pulsar AI'}
+                  {ai && !subscribed && !apiKey ? 'Free Pulsar AI' : 'Pulsar AI'}
                 </Text>
               </Flex>
               {subscribed && sub?.interval && (
