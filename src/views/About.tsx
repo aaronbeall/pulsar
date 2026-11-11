@@ -25,7 +25,7 @@ import {
 } from '@chakra-ui/react';
 import { FaFileContract, FaHeart, FaShieldAlt } from 'react-icons/fa';
 import logoSvg from '../assets/logo.svg';
-import { PRIVACY_URL, TERMS_URL } from '../components/LegalLinks';
+import { HOMEPAGE_URL, PRIVACY_URL, TERMS_URL } from '../components/LegalLinks';
 import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
 
 const REPO_URL = 'https://github.com/aaronbeall/pulsar';
@@ -58,10 +58,10 @@ const About: React.FC = () => {
       </Heading>
 
       <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
-        <Flex align="center" gap={3}>
+        <Flex as="a" href={HOMEPAGE_URL} target="_blank" rel="noopener" aria-label="Pulsar website" align="center" gap={3} data-group>
           <Image src={logoSvg} alt="" boxSize="40px" />
           <Box>
-            <Heading size="md">Pulsar</Heading>
+            <Heading size="md" _groupHover={{ textDecoration: 'underline' }}>Pulsar</Heading>
             <Text fontSize="sm" color={mutedColor}>Personalized workouts, simplified · v{APP_VERSION}</Text>
           </Box>
         </Flex>
