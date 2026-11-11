@@ -551,7 +551,7 @@ function buildNotes(profile: Profile, days: PlannedDay[], minutes: number): stri
   const likedNames = profile.likedExercises.filter(n => planned.has(nameKey(n)));
   if (likedNames.length) notes.push(`Includes ${listText(likedNames)}, since you liked ${likedNames.length > 1 ? 'them' : 'it'}`);
   const liked = profile.likes.filter(l => days.some(d => d.exercises.some(e => exerciseCatalog.find(c => c.name === e.name)?.tags.includes(l))));
-  if (liked.length) notes.push(`Includes ${listText(liked.map(l => ACTIVITY_LABEL[l]))}, since you like it`);
+  if (liked.length) notes.push(`Includes ${listText(liked.map(l => ACTIVITY_LABEL[l]))}, as you asked`);
   return notes;
 }
 
