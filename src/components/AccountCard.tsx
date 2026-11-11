@@ -131,7 +131,7 @@ const AccountCard = () => {
               </Flex>
               <VStack align="stretch" spacing={3}>
                 <AllowanceMeter label="Routine plans" {...account.ai.plan} premium={account.ai.tier === 'pulsar_ai'} />
-                <AllowanceMeter label="AI edits" {...account.ai.edit} premium={account.ai.tier === 'pulsar_ai'} />
+                <AllowanceMeter label="AI messages" {...account.ai.edit} premium={account.ai.tier === 'pulsar_ai'} />
               </VStack>
             </Box>
           )}
@@ -153,7 +153,7 @@ const AccountCard = () => {
           {account.billing && account.hostedAI && account.ai?.tier !== 'pulsar_ai' && (
             <Box data-testid="upgrade">
               <Text fontSize="sm" mb={2}>
-                Pulsar AI: 20 routine plans and 200 AI edits every month. Cancel anytime.
+                Pulsar AI: 20 routine plans and 200 AI messages every month. Cancel anytime.
               </Text>
               <UpgradeButtons />
             </Box>
@@ -171,7 +171,7 @@ const AccountCard = () => {
         <VStack align="stretch" spacing={3}>
           <Text fontSize="sm" color={mutedColor}>
             {account.hostedAI
-              ? 'Sign in to try Pulsar AI free: 1 routine plan and 2 AI edits, no OpenAI key needed.'
+              ? 'Sign in to try Pulsar AI free: 1 routine plan and 2 AI messages, no OpenAI key needed.'
               : 'Sign in to keep a Pulsar account.'}{' '}
             Your account holds only your name, email and AI usage. Your routines and workouts stay on this
             device.

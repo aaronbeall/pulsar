@@ -61,7 +61,7 @@ for (const kind of ['plan', 'edit'] as AIKind[]) {
       const messagesByReason = {
         allowance_used: tier === 'free' ? "You've used your free Pulsar AI." : "You've used this month's Pulsar AI.",
         burst_limit: "That's a lot of AI requests in a few minutes. Wait a moment and try again.",
-        daily_limit: "You've reached today's limit for AI edits. Try again tomorrow.",
+        daily_limit: "You've reached today's limit for AI messages. Try again tomorrow.",
         cost_cap: "You've reached this month's Pulsar AI limit.",
       };
       const retryAfter = 'retryAfter' in reservation ? reservation.retryAfter : undefined;

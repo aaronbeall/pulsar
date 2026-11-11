@@ -16,9 +16,8 @@ interface PulsarDB extends DBSchema {
   };
 }
 
-// PR preview builds are served from the same origin as the live app (a pr-<n>/ subpath on
-// GitHub Pages), and IndexedDB is per-origin, so give each preview its own database to keep
-// test data from touching real workout history.
+// PR preview builds get their own database name. Each Cloudflare preview already has its own
+// origin, so this is belt and braces against test data ever mixing with real history.
 const PREVIEW_PR = import.meta.env.VITE_PREVIEW_PR;
 export const DB_NAME = PREVIEW_PR ? `PulsarDB-pr-${PREVIEW_PR}` : 'PulsarDB';
 const DB_VERSION = 1;

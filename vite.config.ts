@@ -4,8 +4,7 @@ import { resolve } from 'node:path';
 import { VitePWA } from 'vite-plugin-pwa';
 import license from 'rollup-plugin-license';
 
-// Set only in PR preview builds (see .github/workflows/pr-preview.yml), which deploy to a
-// pr-<n>/ subpath of the live site.
+// Set only in PR preview builds (see .github/workflows/cloudflare.yml).
 const previewPr = process.env.VITE_PREVIEW_PR;
 
 const base = process.env.BASE || '/';
@@ -16,7 +15,7 @@ const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Client-side routes live under <base>app/, so deep links like <base>app/workout must load
- * the app's page in the dev and preview servers, the way 404.html does on GitHub Pages.
+ * the app's page in the dev and preview servers, the way the Worker's fallback does in production.
  */
 function appRouteFallback(): Plugin {
   const rewrite = (req: { url?: string }, _res: unknown, next: () => void) => {

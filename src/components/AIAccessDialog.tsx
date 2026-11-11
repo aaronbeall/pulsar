@@ -166,7 +166,7 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
                   <Heading size="md">Try Pulsar AI free</Heading>
                 </Flex>
                 <Text fontSize="sm" color={mutedColor} mb={3}>
-                  Your first routine plan and 2 AI edits are on us. Just sign in.
+                  Your first routine plan and 2 AI messages are on us. Just sign in.
                 </Text>
                 <Benefits items={[
                   'A routine built around your goals, schedule and equipment',
@@ -190,7 +190,7 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
                 </Text>
                 <Benefits items={[
                   '20 new routine plans every month',
-                  '200 AI edits every month: just ask for changes',
+                  '200 AI messages every month: ask for changes or anything else',
                 ]} />
                 <Box mt={4}>
                   <UpgradeButtons returnTo={returnPath()} onBeforeCheckout={() => onLeave?.('checkout')} />
@@ -216,7 +216,7 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
                 </Flex>
                 <Text fontSize="sm" color={mutedColor}>
                   {allowanceUsed
-                    ? "You've used your free AI. Pulsar AI for $3.99 a month adds 20 routine plans and 200 edits every month."
+                    ? "You've used your free AI. Pulsar AI for $3.99 a month adds 20 routine plans and 200 AI messages every month."
                     : 'AI included with a subscription.'}
                 </Text>
               </Box>
