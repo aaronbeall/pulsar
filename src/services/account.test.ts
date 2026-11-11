@@ -9,7 +9,7 @@ describe('parseAccountState', () => {
   });
 
   it('reads a signed-out visitor', () => {
-    expect(parseAccountState({ signInAvailable: true, user: null })).toEqual({ signInAvailable: true, hostedAI: false, billing: false, user: null, ai: null, subscription: null });
+    expect(parseAccountState({ signInAvailable: true, user: null })).toEqual({ signInAvailable: true, hostedAI: false, billing: false, user: null, ai: null, subscription: null, tester: false });
   });
 
   it('reads a signed-in user and fills missing fields', () => {
@@ -20,7 +20,14 @@ describe('parseAccountState', () => {
       user: { id: 'u1', name: 'Ada', email: 'a@b.c', image: null },
       ai: null,
       subscription: null,
+      tester: false,
     });
+  });
+
+  it('reads the tester flag only for a signed-in user', () => {
+    expect(parseAccountState({ signInAvailable: true, user: { id: 'u1' }, tester: true }).tester).toBe(true);
+    expect(parseAccountState({ signInAvailable: true, user: { id: 'u1' }, tester: 'yes' }).tester).toBe(false);
+    expect(parseAccountState({ signInAvailable: true, user: null, tester: true }).tester).toBe(false);
   });
 
   it('reads the hosted AI allowance and counts what is left', () => {

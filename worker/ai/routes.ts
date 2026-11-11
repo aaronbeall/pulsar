@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { currentUser } from '../session';
+import { isTester } from '../testers';
 import { AIKind } from './plans';
+import { findRecording, replayStream } from './replay';
 import { BadRequest, messagesFor } from './request';
 import { usageTap } from './stream';
 import { getTier, release, reserve, settle, spentToday, usageSummary, UsageSummary } from './usage';
@@ -37,19 +39,25 @@ for (const kind of ['plan', 'edit'] as AIKind[]) {
     const env = c.env;
     if (!hostedAIAvailable(env)) return error('unavailable', 'Pulsar AI is not available here.', 503);
 
-    const userId = (await currentUser(env, c.req.raw))?.id;
-    if (!userId) return error('signin_required', 'Sign in to use Pulsar AI.', 401);
+    const user = await currentUser(env, c.req.raw);
+    if (!user) return error('signin_required', 'Sign in to use Pulsar AI.', 401);
+    const userId = user.id;
+    // Tester accounts get recorded replies instead of OpenAI (see replay.ts), so they cost
+    // nothing; their allowance is still counted, so its limits can be tested.
+    const tester = isTester(env, user.email);
 
     let messages;
+    let input: unknown;
     try {
-      messages = messagesFor(kind, await c.req.json().catch(() => null));
+      input = await c.req.json().catch(() => null);
+      messages = messagesFor(kind, input);
     } catch (e) {
       if (e instanceof BadRequest) return error('bad_request', e.message, 400);
       throw e;
     }
 
     // Global circuit breaker: fail closed rather than let a spike or bug run up the bill.
-    if ((await spentToday(env.DB)) >= dailyBudgetMicros(env)) {
+    if (!tester && (await spentToday(env.DB)) >= dailyBudgetMicros(env)) {
       return error('busy', 'Pulsar AI is very busy right now. Try again later.', 503);
     }
 
@@ -72,6 +80,19 @@ for (const kind of ['plan', 'edit'] as AIKind[]) {
         { usage, ...(retryAfter ? { retryAfter } : {}) },
         retryAfter ? { 'Retry-After': String(retryAfter) } : {}
       );
+    }
+
+    if (tester) {
+      const recording = findRecording(kind, input);
+      if (!recording) {
+        await release(env.DB, reservation.id);
+        return error('upstream', 'No recorded AI reply to replay.', 502);
+      }
+      // Settled as free, so tester calls never count toward the daily budget or cost caps.
+      const tap = usageTap(() => c.executionCtx.waitUntil(settle(env.DB, reservation.id, model, { inputTokens: 0, cachedTokens: 0, outputTokens: 0 })));
+      return new Response(replayStream(recording).pipeThrough(tap), {
+        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', 'X-Pulsar-Replay': recording.id },
+      });
     }
 
     let upstream: Response;

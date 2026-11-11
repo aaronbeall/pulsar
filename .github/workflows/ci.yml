@@ -49,3 +49,24 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  e2e-fullstack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22  # wrangler needs Node 22+
+          cache: npm
+      - run: npm ci
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Full-stack end-to-end tests
+        run: npm run test:e2e:fullstack
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-fullstack
+          path: playwright-report-fullstack/
+          retention-days: 7
