@@ -59,7 +59,7 @@ const SESSION_LABEL: Record<Session, string> = {
 };
 
 const FOCUS_SLOTS: Record<Focus, Slot[]> = {
-  chest: ['chestIso', 'hPush'],
+  chest: ['chestIso', 'chestIso'],
   back: ['hPull', 'rearDelt'],
   shoulders: ['shoulderIso', 'rearDelt'],
   arms: ['biceps', 'triceps'],

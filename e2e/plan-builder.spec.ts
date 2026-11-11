@@ -16,7 +16,7 @@ test('builds a routine from free-text answers without AI', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Build muscle' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('button', { name: 'Dumbbells' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('button', { name: 'Thursday: keep free' })).toBeVisible();
-  await expect(page.getByText('Knees injury')).toBeVisible();
+  await expect(page.getByText('Bad knees', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Remove No running' })).toBeVisible();
 
   // The week it built: four days, none on Thursday.

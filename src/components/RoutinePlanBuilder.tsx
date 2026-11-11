@@ -46,7 +46,7 @@ const WEEK: Array<[DayOfWeek, string]> = [
 type WatchOut = { kind: 'limit'; value: Limit } | { kind: 'avoid'; value: Activity } | { kind: 'condition'; value: Condition };
 
 function watchOutLabel(w: WatchOut): string {
-  if (w.kind === 'limit') return `${LIMIT_LABEL[w.value]} injury`;
+  if (w.kind === 'limit') return `Bad ${LIMIT_LABEL[w.value].toLowerCase()}`;
   if (w.kind === 'avoid') return AVOID_LABEL[w.value] ?? `No ${w.value}`;
   return CONDITION_LABEL[w.value];
 }
