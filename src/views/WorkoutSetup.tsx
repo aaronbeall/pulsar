@@ -33,7 +33,9 @@ export const WorkoutSetup: React.FC = () => {
   const showTemplateChooser = templateChooser.isOpen;
   const inputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
-  const aiGate = useAIGate();
+  // Signing in or subscribing from the AI gate leaves the site; coming back, building continues
+  // by itself (the answers and step are kept in session drafts above).
+  const aiGate = useAIGate({ key: 'setup-plan', kind: 'plan', onResume: () => handleNext() });
 
   const addExercise = usePulsarStore(s => s.addExercise);
   const addRoutine = usePulsarStore(s => s.addRoutine);

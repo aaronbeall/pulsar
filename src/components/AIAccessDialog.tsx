@@ -50,6 +50,9 @@ interface AIAccessDialogProps {
   /** Called once AI access is in place (a verified key was saved). The caller continues the action. */
   onUnlocked: () => void;
   onClose: () => void;
+  /** Called just before leaving the site to unlock AI (Google sign-in or Stripe Checkout), so
+   *  the action can continue when the user comes back. */
+  onLeave?: (via: 'signin' | 'checkout') => void;
   /** The non-AI way to move forward with the same task, e.g. "Create from a template". Offered
    *  instead of a bare "Not now": the close button already covers dismissing. */
   alternative?: AIAccessAlternative;
@@ -62,7 +65,7 @@ interface AIAccessDialogProps {
 // - signed in with the allowance used: Pulsar AI subscription (coming soon);
 // - always: the user's own OpenAI key.
 // Open it through hooks/useAIGate.tsx rather than directly.
-/** This page without the dialog open: the action can't resume after leaving the site. */
+/** This page without the dialog open, to come back to after sign-in or checkout. */
 function returnPath() {
   const params = new URLSearchParams(window.location.search);
   params.delete('ai');
@@ -70,7 +73,7 @@ function returnPath() {
   return window.location.pathname + (query ? `?${query}` : '');
 }
 
-const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, onUnlocked, onClose, alternative }) => {
+const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, onUnlocked, onClose, onLeave, alternative }) => {
   const [existingKey, setApiKey] = useOpenAiApiKey();
   const account = useAccount();
   const [signingIn, setSigningIn] = useState(false);
@@ -111,8 +114,9 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
   const handleSignIn = async () => {
     setSigningIn(true);
     try {
-      // Come back to this page without the dialog open: the action can't resume after the
-      // round trip to Google, so the user taps it again (answers and drafts are kept).
+      // Come back to this page without the dialog open; the gate continues the action from
+      // there once the account has allowance (hooks/useAIGate.tsx).
+      onLeave?.('signin');
       await signInWithGoogle(returnPath());
     } catch (e) {
       setSigningIn(false);
@@ -189,7 +193,7 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
                   '200 AI edits every month: just ask for changes',
                 ]} />
                 <Box mt={4}>
-                  <UpgradeButtons returnTo={returnPath()} />
+                  <UpgradeButtons returnTo={returnPath()} onBeforeCheckout={() => onLeave?.('checkout')} />
                 </Box>
               </Box>
             ) : allowanceUsed && subscribed ? (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Avatar, Box, Button, Flex, Heading, Icon, Link, Text, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
 import { FaCrown, FaGoogle, FaUserCircle } from 'react-icons/fa';
 import { useAccount } from '../hooks/useAccount';
@@ -46,23 +46,6 @@ const AccountCard = () => {
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
 
-  // Back from Stripe Checkout (?subscribed=1): Stripe's webhook can land a moment after the
-  // redirect, so check the account a few times until the subscription shows up.
-  const justSubscribed = new URLSearchParams(window.location.search).get('subscribed') === '1';
-  const { refresh } = account;
-  useEffect(() => {
-    if (!justSubscribed) return;
-    toast({ title: 'Welcome to Pulsar AI', description: 'Thanks for subscribing!', status: 'success', duration: 5000, isClosable: true });
-    const url = new URL(window.location.href);
-    url.searchParams.delete('subscribed');
-    window.history.replaceState(window.history.state, '', url.toString());
-    let tries = 0;
-    const timer = window.setInterval(() => {
-      refresh();
-      if (++tries >= 5) window.clearInterval(timer);
-    }, 2000);
-    return () => window.clearInterval(timer);
-  }, [justSubscribed, refresh, toast]);
 
   if (!account.signInAvailable) return null;
 

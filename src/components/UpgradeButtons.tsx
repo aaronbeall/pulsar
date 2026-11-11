@@ -11,7 +11,7 @@ const ENERGY = 'linear-gradient(100deg, #7c3aed 0%, #c026d3 55%, #e11d48 100%)';
  * The two ways to buy Pulsar AI. Each leaves for Stripe Checkout and comes back to
  * `returnTo` (this page by default). Yearly is the better deal and pays the card fee once.
  */
-const UpgradeButtons = ({ returnTo }: { returnTo?: string }) => {
+const UpgradeButtons = ({ returnTo, onBeforeCheckout }: { returnTo?: string; onBeforeCheckout?: () => void }) => {
   const toast = useToast();
   const [busy, setBusy] = useState<'month' | 'year' | null>(null);
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
@@ -22,6 +22,7 @@ const UpgradeButtons = ({ returnTo }: { returnTo?: string }) => {
   const choose = async (interval: 'month' | 'year') => {
     setBusy(interval);
     try {
+      onBeforeCheckout?.();
       await startCheckout(interval, returnTo);
       // The page navigates to Stripe; keep the button spinning until it does.
     } catch (e) {

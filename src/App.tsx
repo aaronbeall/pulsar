@@ -33,10 +33,12 @@ import { usePulsarStoreInit } from './store/pulsarStore';
 import { useInstallPromptInit, useInstallPromptStore } from './store/installPromptStore';
 import logoSvg from './assets/logo.svg';
 import { requestPersistentStorage } from './utils/storagePersistence';
+import { useCheckoutReturn } from './hooks/useCheckoutReturn';
 
 const App: React.FC = () => {
   usePulsarStoreInit(); // Load all data from DB into Zustand store on app mount
   useInstallPromptInit(); // Listen for PWA installability as early as possible
+  useCheckoutReturn(); // Thank-you toast and account refresh after Stripe Checkout, on any page
   // Ask the browser not to evict our IndexedDB data. Fire-and-forget: Settings shows the result.
   useEffect(() => { requestPersistentStorage(); }, []);
   const { colorMode, setColorMode } = useColorMode();
