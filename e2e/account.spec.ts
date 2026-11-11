@@ -27,6 +27,23 @@ test('without an account API, Settings shows no account card', async ({ page }) 
   await expect(page.getByTestId('account-card')).toHaveCount(0);
 });
 
+test('without an account API, the menu shows no account', async ({ page }) => {
+  await page.goto('/app/');
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  await expect(page.getByRole('button', { name: 'Settings' })).toBeVisible();
+  await expect(page.getByTestId('menu-account')).toHaveCount(0);
+});
+
+test('signing in from the menu sends the browser to Google', async ({ page }) => {
+  const calls = await mockAccountApi(page, null);
+  await page.goto('/app/');
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  const googleRequest = page.waitForRequest((req) => req.url().startsWith('https://accounts.google.com/'));
+  await page.getByTestId('menu-account').getByRole('button', { name: 'Sign in with Google' }).click();
+  await googleRequest;
+  expect(calls).toEqual(['sign-in/social']);
+});
+
 test('signing in sends the browser to Google', async ({ page }) => {
   const calls = await mockAccountApi(page, null);
   await page.goto('/app/settings');

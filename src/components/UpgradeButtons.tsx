@@ -5,7 +5,7 @@ import LegalLinks from './LegalLinks';
 
 // The brand's "energy" gradient (the homepage's call-to-action colors), so buying stands
 // apart from the app's everyday cyan buttons.
-const ENERGY = 'linear-gradient(100deg, #7c3aed 0%, #c026d3 55%, #e11d48 100%)';
+export const ENERGY_GRADIENT = 'linear-gradient(100deg, #7c3aed 0%, #c026d3 55%, #e11d48 100%)';
 
 /**
  * The two ways to buy Pulsar AI. Each leaves for Stripe Checkout and comes back to
@@ -35,7 +35,7 @@ const UpgradeButtons = ({ returnTo, onBeforeCheckout }: { returnTo?: string; onB
     <Stack spacing={2}>
       <Button
         h="auto" minH="64px" w="full" px={4} py={3} borderRadius="xl"
-        bgImage={ENERGY} color="white"
+        bgImage={ENERGY_GRADIENT} color="white"
         boxShadow="0 8px 24px -6px rgba(217, 70, 239, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.15)"
         _hover={{ filter: 'brightness(1.08)' }} _active={{ filter: 'brightness(0.95)' }}
         onClick={() => choose('year')} isLoading={busy === 'year'} isDisabled={busy !== null}
@@ -52,7 +52,7 @@ const UpgradeButtons = ({ returnTo, onBeforeCheckout }: { returnTo?: string; onB
         h="auto" minH="56px" w="full" px={4} py={3} borderRadius="xl"
         border="2px solid transparent" color={ink}
         // A gradient border around a plain surface: the same colors, one step quieter.
-        bg={`linear-gradient(${surface}, ${surface}) padding-box, ${ENERGY} border-box`}
+        bg={`linear-gradient(${surface}, ${surface}) padding-box, ${ENERGY_GRADIENT} border-box`}
         _hover={{ opacity: 0.9 }}
         onClick={() => choose('month')} isLoading={busy === 'month'} isDisabled={busy !== null}
       >
