@@ -1,0 +1,49 @@
+/* Shared by every static page on the site (the homepage, privacy, terms): the brand's
+   colors and type, the page reset, and the PULSAR wordmark. Page styles @import this first;
+   Vite inlines it into each page's stylesheet at build time. */
+
+:root {
+  --bg: #07040f;
+  --bg-2: #0e0820;
+  --ink: #f4efff;
+  --ink-dim: #b9add6;
+  --violet: #8b5cf6;
+  --magenta: #d946ef;
+  --red: #ef4444;
+  --brand: #6200ee;
+  --mark: #a78bfa;
+  --line: rgba(255, 255, 255, 0.08);
+  --energy: linear-gradient(100deg, #a78bfa 0%, #d946ef 45%, #ef4444 100%);
+  --gutter: 20px;
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; }
+
+/* The PULSAR wordmark: the logo mark (an inline SVG drawn in currentColor) and the name. */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  font-size: 18px;
+}
+
+.brand svg { width: 30px; height: 30px; color: var(--mark); filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.8)); }

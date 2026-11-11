@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Avatar, Box, Button, Flex, Heading, Icon, Text, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
-import { FaGoogle, FaUserCircle } from 'react-icons/fa';
+import { Avatar, Box, Button, Flex, Heading, Icon, Link, Text, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
+import { FaCrown, FaGoogle, FaUserCircle } from 'react-icons/fa';
 import { useAccount } from '../hooks/useAccount';
 import { deleteAccount, openBillingPortal, signInWithGoogle, signOut } from '../services/account';
 import UpgradeButtons from './UpgradeButtons';
+import { PRIVACY_URL, TERMS_URL } from './LegalLinks';
 
 /**
  * Settings > Account: optional Google sign-in. Hidden where the site has no sign-in (GitHub
@@ -11,8 +12,31 @@ import UpgradeButtons from './UpgradeButtons';
  */
 const formatDate = (ms: number) => new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
-const allowanceLine = ({ used, limit }: { used: number; limit: number }, one: string, many: string) =>
-  `${Math.max(0, limit - used)} of ${limit} ${limit === 1 ? one : many} left`;
+/** One AI allowance as a labelled meter of what's left: "Routine plans · 18 of 20 left". */
+const AllowanceMeter = ({ label, used, limit, premium }: { label: string; used: number; limit: number; premium: boolean }) => {
+  const left = Math.max(0, limit - used);
+  const fraction = limit > 0 ? left / limit : 0;
+  const track = useColorModeValue('gray.100', 'whiteAlpha.200');
+  const muted = useColorModeValue('gray.600', 'gray.400');
+  const fill = left === 0 ? 'red.400' : premium ? undefined : 'cyan.400';
+  return (
+    <Box role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={limit} aria-valuenow={left} aria-valuetext={`${left} of ${limit} left`}>
+      <Flex justify="space-between" align="baseline" mb={1.5}>
+        <Text fontSize="sm" fontWeight="medium">{label}</Text>
+        <Text fontSize="sm" color={muted}>
+          <Text as="span" fontSize="lg" fontWeight="bold" color={left === 0 ? 'red.400' : undefined}>{left}</Text> of {limit} left
+        </Text>
+      </Flex>
+      <Box h="10px" bg={track} borderRadius="full" overflow="hidden">
+        <Box
+          h="full" w={`${fraction * 100}%`} minW={left > 0 ? '10px' : 0} borderRadius="full" bg={fill}
+          bgImage={fill ? undefined : 'linear-gradient(90deg, #7c3aed, #c026d3 55%, #e11d48)'}
+          transition="width 0.4s ease"
+        />
+      </Box>
+    </Box>
+  );
+};
 
 const AccountCard = () => {
   const account = useAccount();
@@ -112,18 +136,20 @@ const AccountCard = () => {
             </Box>
           </Flex>
           {account.hostedAI && account.ai && (
-            <Box data-testid="ai-allowance">
-              <Text fontSize="sm" fontWeight="semibold" mb={1}>
-                {account.ai.tier === 'free' ? 'Free Pulsar AI' : 'Pulsar AI'}
-              </Text>
-              <Text fontSize="sm" color={mutedColor}>
-                {allowanceLine(account.ai.plan, 'routine plan', 'routine plans')}
-                {' · '}
-                {allowanceLine(account.ai.edit, 'AI edit', 'AI edits')}
-              </Text>
-              {account.ai.resetsAt && (
-                <Text fontSize="xs" color={mutedColor}>Resets {formatDate(account.ai.resetsAt)}</Text>
-              )}
+            <Box data-testid="ai-allowance" borderWidth="1px" borderColor={cardBorder} borderRadius="lg" p={3}>
+              <Flex align="center" justify="space-between" mb={3} gap={2}>
+                <Flex align="center" gap={2}>
+                  <Icon as={FaCrown} color={account.ai.tier === 'pulsar_ai' ? 'yellow.500' : mutedColor} />
+                  <Text fontWeight="semibold">{account.ai.tier === 'free' ? 'Free Pulsar AI' : 'Pulsar AI'}</Text>
+                </Flex>
+                <Text fontSize="xs" color={mutedColor}>
+                  {account.ai.resetsAt ? `Resets ${formatDate(account.ai.resetsAt)}` : 'One-time'}
+                </Text>
+              </Flex>
+              <VStack align="stretch" spacing={3}>
+                <AllowanceMeter label="Routine plans" {...account.ai.plan} premium={account.ai.tier === 'pulsar_ai'} />
+                <AllowanceMeter label="AI edits" {...account.ai.edit} premium={account.ai.tier === 'pulsar_ai'} />
+              </VStack>
             </Box>
           )}
           {account.subscription && account.ai?.tier === 'pulsar_ai' && (
@@ -164,7 +190,7 @@ const AccountCard = () => {
             {account.hostedAI
               ? 'Sign in to try Pulsar AI free: 1 routine plan and 2 AI edits, no OpenAI key needed.'
               : 'Sign in to keep a Pulsar account.'}{' '}
-            Your account holds only your name and email. Your routines and workouts stay on this
+            Your account holds only your name, email and AI usage. Your routines and workouts stay on this
             device.
           </Text>
           <Button
@@ -177,6 +203,11 @@ const AccountCard = () => {
           >
             Sign in with Google
           </Button>
+          <Text fontSize="xs" color={mutedColor}>
+            By signing in you agree to the{' '}
+            <Link href={TERMS_URL} textDecoration="underline">Terms of Service</Link> and{' '}
+            <Link href={PRIVACY_URL} textDecoration="underline">Privacy Policy</Link>.
+          </Text>
         </VStack>
       )}
     </Box>
