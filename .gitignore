@@ -32,6 +32,7 @@ workbox-config.js
 # Playwright
 test-results/
 playwright-report/
+playwright-report-fullstack/
 blob-report/
 
 # Cloudflare Wrangler local state

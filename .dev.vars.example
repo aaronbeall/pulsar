@@ -16,3 +16,6 @@ STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 STRIPE_PRICE_MONTHLY=
 STRIPE_PRICE_YEARLY=
+# Tester accounts (comma-separated emails): their hosted AI is answered from the recorded
+# replies instead of OpenAI, and in dev mode they get Settings > Developer > Account tools.
+TESTER_EMAILS=

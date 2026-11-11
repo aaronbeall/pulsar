@@ -26,6 +26,8 @@ you can keep `npx vite preview --port 4173` open between runs (rebuild after app
 - `navigation.spec.ts`: bottom nav and menu reach every screen, and dark mode persists.
 - `homepage.spec.ts`: the marketing homepage (the site root) renders, fits a phone width, works with
   reduced motion, and its "Open the app" link lands in the app.
+- `recorded-ai.spec.ts`: every recorded plan, edit and question (below) through both AI paths,
+  the user's own key and hosted Pulsar AI.
 - `back-button.spec.ts`: Back closes modals (menu, routine dialogs, Activity drawer deep link,
   stacked day-template dialogs, finish confirmation, setup's template chooser, AI key prompt).
 
@@ -55,3 +57,44 @@ you can keep `npx vite preview --port 4173` open between runs (rebuild after app
 - **No uncaught page errors**: any error thrown in the page fails the test.
 
 Each test gets a fresh browser context, so IndexedDB and localStorage start empty.
+
+## Recorded AI replies
+
+`worker/ai/recordings/replies.json` holds real OpenAI replies for typical requests (the cases
+are in `worker/ai/recordings/cases.ts`: three plans, three edits and a question). Tests replay
+them with the `aiReplay` fixture instead of hand-writing a reply:
+
+```ts
+test('plan', async ({ page, aiReplay }) => {
+  await aiReplay.openai(page, 'plan-dumbbells-knees');  // bring-your-own-key calls
+  await aiReplay.hosted(page, 'edit-friday-rest');      // hosted /api/ai/* calls
+});
+```
+
+Each recording remembers a fingerprint of the exact prompt it answered. When the prompts
+(`src/services/ai/prompts.ts`) or a case change, `npm test` (`worker/ai/replay.test.ts`) and any
+test replaying it fail with "re-record". To re-record (a few cents):
+
+- `OPENAI_API_KEY=sk-... npm run ai:record` records the missing and stale ones (`-- --all` for
+  everything, `-- --only id1,id2` for some), then commit `replies.json`; or
+- run the **Record AI replies** workflow from the Actions tab on your branch. It needs the repo
+  secret `OPENAI_API_KEY` and commits the result to that branch. (A push by the workflow doesn't
+  start CI by itself; push again or re-run CI.)
+
+Recordings whose `model` is `hand-written` are stand-ins that were never recorded; the first
+`npm run ai:record` replaces them. The same recordings answer tester accounts' hosted AI on the
+live site (see `TESTER_EMAILS` in the README).
+
+## Full-stack tests
+
+`npm run test:e2e:fullstack` (`playwright.fullstack.config.ts`, specs in `e2e-fullstack/`) runs
+the app on the real Worker (`wrangler dev`) with a fresh local D1 database, so sign-in, allowance
+counting, the Account tools and subscribing/cancelling go through the real server code:
+
+- Sign-in is email and password, which the Worker only offers with `E2E_EMAIL_SIGNIN=1` on
+  localhost (Google can't be used in a test).
+- The Worker's settings come from `e2e-fullstack/worker.env` (never `.dev.vars`). Tester
+  accounts get recorded replies; any other account's AI goes to a dead address, so the run can
+  never reach OpenAI.
+- Stripe is `e2e-fullstack/fake-stripe.mjs`: the Worker's Stripe API calls, plus stand-in
+  Checkout and Portal pages that send the Worker signed webhooks, as Stripe would.

@@ -3,7 +3,9 @@ import { createAuth, signInAvailable } from './auth';
 import { aiRoutes, aiStatus } from './ai/routes';
 import { billingAvailable, billingRoutes } from './billing/routes';
 import { getSubscription } from './billing/subscription';
+import { devRoutes } from './dev/routes';
 import { currentUser } from './session';
+import { isTester } from './testers';
 import { fallbackFor } from './fallback';
 
 // The site's Worker. Cloudflare serves files from dist/ before this runs, so it only sees
@@ -36,11 +38,14 @@ app.get('/api/me', async (c) => {
     user,
     ai,
     subscription,
+    // Only ever true: other accounts aren't told the setting exists.
+    ...(user && isTester(c.env, user.email) ? { tester: true } : {}),
   });
 });
 
 app.route('/api/ai', aiRoutes);
 app.route('/api/billing', billingRoutes);
+app.route('/api/dev', devRoutes);
 
 app.notFound(async (c) => {
   const url = new URL(c.req.url);

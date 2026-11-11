@@ -39,9 +39,14 @@ export interface AccountState {
   /** The signed-in account's hosted AI allowance, or null. */
   ai: AIAllowance | null;
   subscription: SubscriptionInfo | null;
+  /**
+   * A tester account (TESTER_EMAILS on the server): its hosted AI replays recorded replies, and
+   * in dev mode Settings shows Account tools for it.
+   */
+  tester: boolean;
 }
 
-export const NO_ACCOUNT: AccountState = { signInAvailable: false, hostedAI: false, billing: false, user: null, ai: null, subscription: null };
+export const NO_ACCOUNT: AccountState = { signInAvailable: false, hostedAI: false, billing: false, user: null, ai: null, subscription: null, tester: false };
 
 /** Hosted AI calls of this kind the account has left (0 when signed out). */
 export function allowanceLeft(state: AccountState, kind: AIKind): number {
@@ -87,10 +92,10 @@ function parseSubscription(value: unknown): SubscriptionInfo | null {
 
 export function parseAccountState(body: unknown): AccountState {
   if (!body || typeof body !== 'object') return NO_ACCOUNT;
-  const { signInAvailable, hostedAI, billing, user, ai, subscription } = body as Record<string, any>;
+  const { signInAvailable, hostedAI, billing, user, ai, subscription, tester } = body as Record<string, any>;
   if (signInAvailable !== true) return NO_ACCOUNT;
   const base = { signInAvailable: true, hostedAI: hostedAI === true, billing: billing === true };
-  if (!user || typeof user.id !== 'string') return { ...base, user: null, ai: null, subscription: null };
+  if (!user || typeof user.id !== 'string') return { ...base, user: null, ai: null, subscription: null, tester: false };
   return {
     ...base,
     user: {
@@ -101,6 +106,7 @@ export function parseAccountState(body: unknown): AccountState {
     },
     ai: parseAllowance(ai),
     subscription: parseSubscription(subscription),
+    tester: tester === true,
   };
 }
 
@@ -174,4 +180,17 @@ export async function openBillingPortal() {
   const data = (await postApi('billing/portal')) as { url?: string } | null;
   if (!data?.url) throw new Error('The billing portal is unavailable right now.');
   window.location.assign(data.url);
+}
+
+/** Pretend subscription states the Account tools can switch a tester account to. */
+export type PretendSubscription = 'none' | 'active' | 'cancelling' | 'past_due' | 'canceled';
+
+/** Tester accounts only (worker/dev/routes.ts): give back or use up the whole AI allowance. */
+export async function changeTesterUsage(action: 'reset' | 'use-up') {
+  await postApi('dev/usage', { action });
+}
+
+/** Tester accounts only: pretend to have a subscription in this state (none removes it). */
+export async function setPretendSubscription(state: PretendSubscription, interval: 'month' | 'year' = 'month') {
+  await postApi('dev/subscription', { state, interval });
 }

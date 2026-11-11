@@ -18,6 +18,9 @@ export function createAuth(env: Env, origin: string) {
     secret: env.BETTER_AUTH_SECRET,
     database: env.DB,
     trustedOrigins: [origin],
+    // Email and password exist only for the full-stack e2e tests (e2e-fullstack/), which can't
+    // sign in with Google. Off unless E2E_EMAIL_SIGNIN=1, and never on a real host.
+    emailAndPassword: { enabled: e2eEmailSignIn(env, origin) },
     socialProviders: signInAvailable(env, origin)
       ? {
           google: {
@@ -66,6 +69,12 @@ export type Auth = ReturnType<typeof createAuth>;
 export function signInAvailable(env: Env, origin: string) {
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.BETTER_AUTH_SECRET) return false;
   return originAllowed(env.AUTH_ORIGINS, origin);
+}
+
+/** Email sign-in for the full-stack e2e run: needs E2E_EMAIL_SIGNIN=1 and a localhost origin. */
+export function e2eEmailSignIn(env: Env, origin: string) {
+  const { hostname } = new URL(origin);
+  return (env as { E2E_EMAIL_SIGNIN?: string }).E2E_EMAIL_SIGNIN === '1' && (hostname === 'localhost' || hostname === '127.0.0.1');
 }
 
 export function originAllowed(allowList: string | undefined, origin: string) {

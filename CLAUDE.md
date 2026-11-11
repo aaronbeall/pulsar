@@ -77,6 +77,11 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   see `e2e/README.md`). They run at a phone viewport with a pinned clock, no outside network,
   and OpenAI calls blocked unless mocked with `mockOpenAI`. When a UI change breaks a flow
   they cover, update the spec in the same change; when adding a new main flow, add one.
+- **AI in tests runs on recorded replies.** `worker/ai/recordings/` holds real OpenAI replies
+  (`npm run ai:record`), replayed by the e2e `aiReplay` fixture for both AI paths and by the
+  Worker for tester accounts (`TESTER_EMAILS`). Changing the prompts makes them stale and
+  `npm test` says to re-record. `npm run test:e2e:fullstack` runs the real Worker with a local
+  D1, email sign-in and a fake Stripe. See `e2e/README.md`.
 - **The site root is the marketing homepage; the app lives at `<base>app/`** (router basename,
   PWA scope and start URL all point there). The homepage is plain HTML/CSS/TS in `index.html` +
   `home/`, with no React; see `home/README.md`. Links into the app from outside it must include

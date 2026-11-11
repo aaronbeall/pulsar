@@ -66,7 +66,12 @@ Allowances (free: 1 plan + 2 edits per account) and model prices are in
   `AI_DAILY_BUDGET_USD` in `wrangler.jsonc`, a daily spend across all accounts after which
   hosted AI answers "busy" until midnight UTC.
 - Local testing without spending: point `OPENAI_URL` in `.dev.vars` at a fake server that
-  answers like OpenAI's streaming API.
+  answers like OpenAI's streaming API, or sign in with a tester account.
+- Tester accounts: `npx wrangler secret put TESTER_EMAILS` with a comma-separated list of
+  emails (a secret, so personal emails stay out of the repo). Those accounts' hosted AI is
+  answered from the recorded replies (`worker/ai/recordings/`, see `e2e/README.md`) instead of
+  OpenAI, costs nothing and skips the daily budget, but still counts against the allowance. In
+  dev mode (`?dev=1`) they also get Settings › Developer › Account tools (see `DEV-FEATURES.md`).
 
 **Pulsar AI subscriptions (Stripe).** $3.99/month or $29.99/year through Stripe Checkout with
 [Managed Payments](https://docs.stripe.com/payments/managed-payments), so Stripe is the
