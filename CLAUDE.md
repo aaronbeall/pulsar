@@ -83,8 +83,12 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   `app/`.
 - **Hosting is Cloudflare.** One Worker (`wrangler.jsonc`, `worker/`) serves the
   homepage, the app and the API from the same origin, so login cookies need no CORS. Static
-  files are served before the Worker runs; API routes go under `/api/`. PR previews are
-  Worker preview versions at `pr-<n>-pulsar.<account>.workers.dev`. See README "Deploying".
+  files are served before the Worker runs; API routes go under `/api/`. Merging to main
+  deploys production, then staging (`staging.pulsarworkouts.app`, Worker `pulsar-staging`);
+  each PR gets a Cloudflare Preview. Staging and previews share the `pulsar-staging` database,
+  `STAGING_*` secrets and Stripe test mode, and previews sign in through staging
+  (`oAuthProxy`). A PR's migrations reach staging on push and production only on merge, so
+  keep migrations additive. See README "Staging and PR previews".
 - **Naming: the official product name is "Pulsar Workouts"; the brand is "Pulsar".** Use
   "Pulsar Workouts" where the full name matters (page titles, the PWA manifest `name`, legal,
   store, OAuth and payment listings) and keep "Pulsar" for the logo, short name and in-app
@@ -93,7 +97,7 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   migrations in `worker/migrations/`). The app reads `/api/me` through
   `hooks/useAccount.ts` (`services/account.ts`); where there's no API it behaves as if
   sign-in doesn't exist. The server stores identity, plan and AI usage only, never workout
-  data or prompt text. Previews hide sign-in (`AUTH_ORIGINS`).
+  data or prompt text. `AUTH_ORIGINS` lists where sign-in is offered.
 - **Pulsar AI subscriptions are Stripe Checkout with Managed Payments** (`worker/billing/`):
   Stripe is the merchant of record, the webhook (`/api/billing/webhook`, signature checked by
   hand in `signature.ts`) keeps the `subscription` table in step, and an active subscription

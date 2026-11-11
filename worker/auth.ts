@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { APIError } from 'better-auth/api';
+import { oAuthProxy } from 'better-auth/plugins';
 import { canDeleteAccount, getSubscription } from './billing/subscription';
 
 /**
@@ -9,6 +10,12 @@ import { canDeleteAccount, getSubscription } from './billing/subscription';
  *
  * Google is the only sign-in method. Without its client id and secret the server still runs,
  * and /api/me reports that sign-in isn't available, so the app hides it.
+ *
+ * Staging and PR previews set `AUTH_PROXY_URL` (staging's address). Google only redirects to
+ * registered addresses, so a preview sends sign-in through staging's callback, and staging
+ * hands the Google profile back to the preview (encrypted with the shared BETTER_AUTH_SECRET),
+ * which signs the user in on its own origin. Staging itself skips the proxy. Production
+ * doesn't set it.
  */
 export function createAuth(env: Env, origin: string) {
   return betterAuth({
@@ -51,6 +58,7 @@ export function createAuth(env: Env, origin: string) {
       // Google-only and there's no password to re-enter.
       freshAge: 60 * 60 * 24 * 90,
     },
+    plugins: env.AUTH_PROXY_URL ? [oAuthProxy({ productionURL: env.AUTH_PROXY_URL })] : [],
     telemetry: { enabled: false },
   });
 }
@@ -60,8 +68,10 @@ export type Auth = ReturnType<typeof createAuth>;
 /**
  * Whether Google sign-in can work on this origin: the secrets are set, and the origin is one
  * whose callback URL is registered with Google. PR previews each get their own host, which
- * Google won't redirect back to, so they hide sign-in instead of failing at Google.
+ * Google won't redirect back to, so they hide sign-in instead of failing at Google, unless
+ * they sign in through staging (`AUTH_PROXY_URL`, see createAuth).
  * `AUTH_ORIGINS` (wrangler.jsonc vars) lists the allowed origins; localhost is always allowed.
+ * An entry may use `*` for one or more host characters, like `https://*.example.workers.dev`.
  */
 export function signInAvailable(env: Env, origin: string) {
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET || !env.BETTER_AUTH_SECRET) return false;
@@ -74,5 +84,12 @@ export function originAllowed(allowList: string | undefined, origin: string) {
   return (allowList ?? '')
     .split(',')
     .map((o) => o.trim().replace(/\/$/, ''))
-    .includes(origin);
+    .filter(Boolean)
+    .some((allowed) => (allowed.includes('*') ? wildcardOrigin(allowed).test(origin) : allowed === origin));
+}
+
+/** `https://*.example.dev` as a regex: each `*` stands for host characters only (no dots). */
+function wildcardOrigin(pattern: string) {
+  const escaped = pattern.split('*').map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  return new RegExp(`^${escaped.join('[a-z0-9-]+')}$`, 'i');
 }
