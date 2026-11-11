@@ -35,7 +35,7 @@ async function callHosted(path: 'plan' | 'edit', body: unknown, onContent?: (con
       const message = err.message || `Pulsar AI request failed (${res.status}).`;
       if (res.status === 401) throw new AIError('signin_required', message);
       if (err.code === 'allowance_used' || err.code === 'cost_cap') throw new AIError('allowance_used', message);
-      if (err.code === 'daily_limit') throw new AIError('rate_limited', message);
+      if (err.code === 'daily_limit' || err.code === 'burst_limit') throw new AIError('rate_limited', message);
       if (err.code === 'busy') throw new AIError('busy', message);
       throw new AIError('network', message);
     }

@@ -27,8 +27,8 @@ export async function aiStatus(env: Env, userId: string): Promise<UsageSummary |
   return usageSummary(env.DB, userId, await getTier(env.DB, userId));
 }
 
-const error = (code: string, message: string, status: number, extra: Record<string, unknown> = {}) =>
-  Response.json({ code, message, ...extra }, { status, headers: { 'Cache-Control': 'no-store' } });
+const error = (code: string, message: string, status: number, extra: Record<string, unknown> = {}, headers: Record<string, string> = {}) =>
+  Response.json({ code, message, ...extra }, { status, headers: { 'Cache-Control': 'no-store', ...headers } });
 
 export const aiRoutes = new Hono<Env_>();
 
@@ -60,10 +60,18 @@ for (const kind of ['plan', 'edit'] as AIKind[]) {
       const usage = await usageSummary(env.DB, userId, tier);
       const messagesByReason = {
         allowance_used: tier === 'free' ? "You've used your free Pulsar AI." : "You've used this month's Pulsar AI.",
+        burst_limit: "That's a lot of AI requests in a few minutes. Wait a moment and try again.",
         daily_limit: "You've reached today's limit for AI edits. Try again tomorrow.",
         cost_cap: "You've reached this month's Pulsar AI limit.",
       };
-      return error(reservation.denied, messagesByReason[reservation.denied], 429, { usage });
+      const retryAfter = 'retryAfter' in reservation ? reservation.retryAfter : undefined;
+      return error(
+        reservation.denied,
+        messagesByReason[reservation.denied],
+        429,
+        { usage, ...(retryAfter ? { retryAfter } : {}) },
+        retryAfter ? { 'Retry-After': String(retryAfter) } : {}
+      );
     }
 
     let upstream: Response;

@@ -211,3 +211,19 @@ test('after subscribing from the gate, the chat message sends by itself and the 
   await expect(page.getByText('Added a Friday mobility day.')).toBeVisible({ timeout: 15_000 });
   expect(aiRequests).toEqual(['Add a mobility day on Friday']);
 });
+
+test('when the server says to slow down, chat explains it instead of opening the gate', async ({ page }) => {
+  await mockHostedAI(page, { signedIn: true });
+  await createRoutineFromTemplate(page);
+  // Registered last, so it wins over the mock's normal reply.
+  const message = "That's a lot of AI requests in a few minutes. Wait a moment and try again.";
+  await page.route('**/api/ai/edit', (route) =>
+    route.fulfill({ status: 429, headers: { 'Retry-After': '120' }, json: { code: 'burst_limit', message, retryAfter: 120 } }),
+  );
+
+  const chat = page.getByPlaceholder('Suggest changes or ask a question...');
+  await chat.fill('Add a mobility day on Friday');
+  await chat.press('Enter');
+  await expect(page.getByText(message)).toBeVisible();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+});
