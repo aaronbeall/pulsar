@@ -5,8 +5,8 @@ entries (`rollupOptions.input` in `vite.config.ts`) and deploy together:
 
 | | Homepage | App |
 | --- | --- | --- |
-| Live | `https://aaronbeall.github.io/pulsar/` | `https://aaronbeall.github.io/pulsar/app/` |
-| PR previews | `.../pulsar/pr-<n>/` | `.../pulsar/pr-<n>/app/` |
+| Live | `https://pulsarworkouts.app/` | `https://pulsarworkouts.app/app/` |
+| PR previews | `https://pr-<n>-pulsar.<account>.workers.dev/` | `.../app/` |
 | Local (`npm run dev`) | `/` | `/app/` |
 
 - The homepage's page is the root `index.html`; its styles, script and images are in this
@@ -17,10 +17,8 @@ entries (`rollupOptions.input` in `vite.config.ts`) and deploy together:
 - The PWA's manifest `start_url` and `scope` and the service worker's scope are `<base>app/`,
   so the installed app opens straight into the app and the homepage is never cached by it.
 - App deep links (`<base>app/workout/...`) are served the app's page by a small Vite plugin in
-  dev and preview, and by `404.html` on GitHub Pages (`scripts/make-pages-404.mjs`), which
+  dev and preview, and by the Worker's fallback (`worker/fallback.ts`) on Cloudflare, which
   sends any other missing path to the homepage.
-- With a custom domain, set `PAGES_BASE` to `/` and the same layout becomes
-  `pulsarworkouts.app/` and `pulsarworkouts.app/app/`.
 
 ## Files
 

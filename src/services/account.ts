@@ -1,6 +1,6 @@
 // The visitor's Pulsar account, from the site's own API (worker/index.ts). Accounts are
-// optional: the app works fully without one, and where there's no API (GitHub Pages, the
-// Vite dev server without PULSAR_API) sign-in simply isn't offered.
+// optional: the app works fully without one, and where there's no API (the Vite dev
+// server without PULSAR_API) sign-in simply isn't offered.
 
 export interface AccountUser {
   id: string;
