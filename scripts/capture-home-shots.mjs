@@ -108,6 +108,19 @@ try {
   await page.evaluate(() => window.scrollBy(0, -120));
   await shot(page, 'review');
 
+  // The Pulsar Planner, for the "No AI" step: its own page, so the AI routine stays as is.
+  {
+    const planner = await newPage(browser);
+    await planner.goto(`${BASE}/app/workout/setup`);
+    await answerSetup(planner, ['lose weight and tone my arms', 'dumbbells, bands', '3 days a week, not Thursdays, 45 min', 'bad knees, hate burpees']);
+    await planner.getByRole('button', { name: 'Use the free Planner' }).click();
+    await planner.getByRole('heading', { name: 'Your plan' }).waitFor();
+    await planner.getByText('Extra focus').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    await planner.evaluate(() => window.scrollBy(0, -90));
+    await shot(planner, 'planner');
+    await planner.context().close();
+  }
+
   // The routine editor, for the "do it yourself" step.
   await page.goto(routineUrl);
   await page.getByRole('button', { name: 'Edit', exact: true }).click();

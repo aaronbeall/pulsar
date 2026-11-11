@@ -59,6 +59,14 @@ export interface Profile {
   avoid: Activity[];
   conditions: Condition[];
   level?: Level;
+  /** Learned from the app (see utils/learnedPreferences.ts): exercises to favor. */
+  likedExercises: string[];
+  /** Learned: exercises the user marked as disliked, left out. */
+  dislikedExercises: string[];
+  /** Learned: exercises the user keeps skipping, left out. */
+  skippedExercises: string[];
+  /** Which of the schedule fields came from the user's history rather than their answers. */
+  learned?: { days?: boolean; minutes?: boolean };
 }
 
 export function emptyProfile(): Profile {
@@ -74,6 +82,9 @@ export function emptyProfile(): Profile {
     likes: [],
     avoid: [],
     conditions: [],
+    likedExercises: [],
+    dislikedExercises: [],
+    skippedExercises: [],
   };
 }
 

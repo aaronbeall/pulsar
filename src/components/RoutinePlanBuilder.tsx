@@ -8,6 +8,8 @@ import { FaArrowLeft, FaBook, FaPlus, FaRandom, FaRedo, FaTimes, FaCheck } from 
 import NumericStepper from './NumericStepper';
 import type { DayOfWeek } from '../models/types';
 import { parseAnswers } from '../services/routinePlanner/parseAnswers';
+import { applyLearned } from '../services/routinePlanner/learned';
+import { hasPreferences, type LearnedPreferences } from '../utils/learnedPreferences';
 import { PlannedExercise, RoutinePlan, defaultDaysPerWeek, defaultMinutes, planRoutine } from '../services/routinePlanner/planRoutine';
 import {
   ALL_EQUIPMENT, Activity, Condition, Equipment, Focus, GOALS, GYM_EQUIPMENT, Goal, Level, Limit, Profile, primaryGoal,
@@ -43,11 +45,15 @@ const WEEK: Array<[DayOfWeek, string]> = [
   ['Monday', 'M'], ['Tuesday', 'T'], ['Wednesday', 'W'], ['Thursday', 'T'], ['Friday', 'F'], ['Saturday', 'S'], ['Sunday', 'S'],
 ];
 
-type WatchOut = { kind: 'limit'; value: Limit } | { kind: 'avoid'; value: Activity } | { kind: 'condition'; value: Condition };
+type WatchOut =
+  | { kind: 'limit'; value: Limit } | { kind: 'avoid'; value: Activity } | { kind: 'condition'; value: Condition }
+  | { kind: 'disliked'; value: string } | { kind: 'skipped'; value: string };
 
 function watchOutLabel(w: WatchOut): string {
   if (w.kind === 'limit') return `Bad ${LIMIT_LABEL[w.value].toLowerCase()}`;
   if (w.kind === 'avoid') return AVOID_LABEL[w.value] ?? `No ${w.value}`;
+  if (w.kind === 'disliked') return `Disliked: ${w.value}`;
+  if (w.kind === 'skipped') return `Often skipped: ${w.value}`;
   return CONDITION_LABEL[w.value];
 }
 
@@ -94,15 +100,17 @@ const Section: React.FC<{ title: string; hint?: string; children: React.ReactNod
 interface RoutinePlanBuilderProps {
   /** The setup wizard's answers, in question order. */
   responses: string[];
+  /** What the app has learned from the user's likes, dislikes and workouts. */
+  preferences?: LearnedPreferences;
   onCreate: (plan: RoutinePlan, name: string) => void;
   onBrowseTemplates: () => void;
   onBack: () => void;
   onStartOver: () => void;
 }
 
-export const RoutinePlanBuilder: React.FC<RoutinePlanBuilderProps> = ({ responses, onCreate, onBrowseTemplates, onBack, onStartOver }) => {
+export const RoutinePlanBuilder: React.FC<RoutinePlanBuilderProps> = ({ responses, preferences, onCreate, onBrowseTemplates, onBack, onStartOver }) => {
   const [profile, setProfile] = useState<Profile>(() => {
-    const parsed = parseAnswers(responses);
+    const parsed = applyLearned(parseAnswers(responses), preferences);
     // Pin the defaults, so the chips show what the plan uses.
     return { ...parsed, daysPerWeek: defaultDaysPerWeek(parsed), minutes: defaultMinutes(parsed) };
   });
@@ -110,7 +118,13 @@ export const RoutinePlanBuilder: React.FC<RoutinePlanBuilderProps> = ({ response
   const [customName, setCustomName] = useState<string | null>(null);
   const [addingWatchOut, setAddingWatchOut] = useState(false);
   const plan = useMemo(() => planRoutine(profile, seed), [profile, seed]);
-  const update = (change: Partial<Profile>) => setProfile(p => ({ ...p, ...change }));
+  const update = (change: Partial<Profile>) => setProfile(p => {
+    // Once the user sets the schedule themselves, it no longer comes from their history.
+    const learned = { ...p.learned };
+    if ('daysPerWeek' in change || 'preferredDays' in change || 'blockedDays' in change) learned.days = false;
+    if ('minutes' in change) learned.minutes = false;
+    return { ...p, ...change, learned };
+  });
 
   const mainGoal = primaryGoal(profile);
   const hasGoal = (g: Goal) => (profile.goals[g] ?? 0) > 0;
@@ -140,12 +154,16 @@ export const RoutinePlanBuilder: React.FC<RoutinePlanBuilderProps> = ({ response
     ...profile.limits.map(value => ({ kind: 'limit', value }) as WatchOut),
     ...profile.avoid.map(value => ({ kind: 'avoid', value }) as WatchOut),
     ...profile.conditions.map(value => ({ kind: 'condition', value }) as WatchOut),
+    ...profile.dislikedExercises.map(value => ({ kind: 'disliked', value }) as WatchOut),
+    ...profile.skippedExercises.map(value => ({ kind: 'skipped', value }) as WatchOut),
   ];
   const hasWatchOut = (w: WatchOut) => watchOuts.some(x => x.kind === w.kind && x.value === w.value);
   const toggleWatchOut = (w: WatchOut) => {
     if (w.kind === 'limit') update({ limits: toggle(profile.limits, w.value) });
     else if (w.kind === 'avoid') update({ avoid: toggle(profile.avoid, w.value), likes: profile.likes.filter(l => l !== w.value) });
-    else update({ conditions: toggle(profile.conditions, w.value) });
+    else if (w.kind === 'condition') update({ conditions: toggle(profile.conditions, w.value) });
+    else if (w.kind === 'disliked') update({ dislikedExercises: profile.dislikedExercises.filter(n => n !== w.value) });
+    else update({ skippedExercises: profile.skippedExercises.filter(n => n !== w.value) });
   };
 
   const name = customName ?? plan.name;
@@ -159,7 +177,9 @@ export const RoutinePlanBuilder: React.FC<RoutinePlanBuilderProps> = ({ response
       </Flex>
       <Heading size="lg" mb={1}>Your plan</Heading>
       <Text fontSize="sm" color="gray.500" mb={4}>
-        Built from your answers. Tap anything that's wrong and the week updates.
+        {hasPreferences(preferences)
+          ? "The Pulsar Planner read your answers and what you've liked and skipped. Tap anything it got wrong and your week rebuilds."
+          : 'The Pulsar Planner read your answers. Tap anything it got wrong and your week rebuilds.'}
       </Text>
 
       <VStack spacing={5} align="stretch" p={4} borderWidth={1} borderRadius="xl" bg="white" _dark={{ bg: 'gray.900', borderColor: 'gray.700' }}>
@@ -352,7 +372,7 @@ export const RoutinePlanBuilder: React.FC<RoutinePlanBuilderProps> = ({ response
 
       <Flex mt={6} gap={2} direction={{ base: 'column', sm: 'row' }}>
         <Button variant="ghost" size="sm" leftIcon={<FaBook />} onClick={onBrowseTemplates} w="100%">
-          Browse templates instead
+          Browse ready-made routines
         </Button>
         <Button variant="ghost" size="sm" colorScheme="gray" leftIcon={<FaRedo />} onClick={onStartOver} w="100%">
           Start over

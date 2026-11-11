@@ -39,8 +39,11 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   rule-based planner (`services/routinePlanner/`: `parseAnswers` reads the free-text answers
   into a Profile, handling negation like "not Thursday"; `planRoutine` assembles a week from
   it), shown as the editable "Your plan" screen (`components/RoutinePlanBuilder.tsx`), with
-  the keyword template search (`services/templateSearch.ts`) as "Browse templates". Don't reintroduce a fake "AI"
-  fallback. Allowances and prices live in `worker/ai/plans.ts`.
+  the keyword template search (`services/templateSearch.ts`) as "Ready-made routines". Both
+  builders learn from the user (`utils/learnedPreferences.ts`: liked, disliked and often-skipped
+  exercises, usual days and workout length), as soft preferences that what the user asks for
+  always overrides; the AI gets them through `describePreferences` in `prompts.ts`. Don't
+  reintroduce a fake "AI" fallback. Allowances and prices live in `worker/ai/plans.ts`.
 - **Never put a real API key behind a `VITE_`-prefixed env var again.** The existing
   Google CSE key is already public in the client bundle (acceptable for a free-tier image
   search) — that pattern must not be reused for an LLM key or anything metered/abusable.

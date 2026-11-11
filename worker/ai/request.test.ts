@@ -30,3 +30,34 @@ describe('messagesFor', () => {
     expect(() => messagesFor('edit', null)).toThrow(BadRequest);
   });
 });
+
+describe('messagesFor with learned preferences', () => {
+  const answers = [{ question: 'What are your goals?', answer: 'push-ups' }];
+  const preferences = {
+    likedExercises: ['Goblet Squat'], dislikedExercises: ['Push-up'], skippedExercises: ['Burpee'],
+    usualDays: ['Monday', 'Thursday'], usualMinutes: 40,
+  };
+
+  it('adds them to the routine prompt as soft preferences', () => {
+    const user = messagesFor('plan', { answers, preferences })[1].content;
+    expect(user).toContain('Exercises they disliked: Push-up');
+    expect(user).toContain('Exercises they often skip in workouts: Burpee');
+    expect(user).toContain('Days they\'ve usually trained on lately: Monday, Thursday');
+    expect(user).toContain('Anything they ask for in their answers or messages comes first');
+  });
+
+  it('adds them to the change prompt', () => {
+    const system = messagesFor('edit', { routine: { name: 'R' }, schedule: [], history: [], message: 'hi', preferences })[0].content;
+    expect(system).toContain('Exercises they liked: Goblet Squat');
+  });
+
+  it('leaves the prompt alone without them', () => {
+    expect(messagesFor('plan', { answers })[1].content).not.toContain('learned');
+  });
+
+  it('refuses malformed preferences', () => {
+    expect(() => messagesFor('plan', { answers, preferences: { usualDays: ['Someday'] } })).toThrow();
+    expect(() => messagesFor('plan', { answers, preferences: { likedExercises: Array(50).fill('x') } })).toThrow();
+    expect(() => messagesFor('plan', { answers, preferences: 'all of them' })).toThrow();
+  });
+});

@@ -3,6 +3,9 @@ import { planRoutine, chooseSessions } from './planRoutine';
 import { parseAnswers } from './parseAnswers';
 import { exerciseCatalog } from './exerciseCatalog';
 import { ALL_EQUIPMENT, Profile, emptyProfile } from './profile';
+import { applyLearned } from './learned';
+import { LearnedPreferences, emptyPreferences } from '../../utils/learnedPreferences';
+import type { DayOfWeek } from '../../models/types';
 
 const profile = (p: Partial<Profile>): Profile => ({ ...emptyProfile(), ...p });
 const catalog = new Map(exerciseCatalog.map(e => [e.name, e]));
@@ -150,5 +153,52 @@ describe('planRoutine on any answers', () => {
       expect(day.exercises.length, day.kind).toBeGreaterThanOrEqual(2);
       for (const ex of day.exercises) expect(ex.reps ?? ex.duration, ex.name).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('planRoutine with what it learned', () => {
+  const learnedFrom = (prefs: Partial<LearnedPreferences>, answers = ['get stronger', 'nothing', '3 days', '']) =>
+    applyLearned(parseAnswers(answers), { ...emptyPreferences(), ...prefs });
+  const names = (p: Profile) => planRoutine(p).days.flatMap(d => d.exercises.map(e => e.name));
+
+  it('leaves out a disliked exercise when there are others for the slot, and says so', () => {
+    const before = names(learnedFrom({}));
+    expect(before).toContain('Push-up');
+    const p = learnedFrom({ dislikedExercises: ['Push-up'] });
+    expect(names(p)).not.toContain('Push-up');
+    expect(planRoutine(p).notes).toContain('Leaves out Push-up, since you disliked it');
+  });
+
+  it('still uses a disliked exercise when the answers ask for it', () => {
+    const p = learnedFrom({ dislikedExercises: ['Push-up', 'Incline Push-Up'] }, ['give me a pushup routine', 'nothing', '3 days', '']);
+    expect(names(p)).toContain('Push-up');
+  });
+
+  it('still uses a disliked exercise when nothing else fits the slot', () => {
+    // Bodyweight only: the doorway row is the only pull.
+    expect(names(learnedFrom({ dislikedExercises: ['Doorway Row'] }))).toContain('Doorway Row');
+  });
+
+  it('leaves out often-skipped exercises', () => {
+    expect(names(learnedFrom({ skippedExercises: ['Glute Bridge'] }))).not.toContain('Glute Bridge');
+  });
+
+  it('favors liked exercises', () => {
+    const p = learnedFrom({ likedExercises: ['Pike Push-up'] }, ['get stronger', 'nothing', '3 days', "I'm advanced"]);
+    expect(names(p)).toContain('Pike Push-up');
+    expect(planRoutine(p).notes).toContain('Includes Pike Push-up, since you liked it');
+  });
+
+  it('uses the usual days and length only when the answers say nothing', () => {
+    const usual = { usualDays: ['Tuesday', 'Thursday'] as DayOfWeek[], usualMinutes: 35 };
+    const silent = applyLearned(parseAnswers(['get stronger', '', '', '']), { ...emptyPreferences(), ...usual });
+    expect(planRoutine(silent).days.map(d => d.day)).toEqual(['Tuesday', 'Thursday']);
+    expect(silent.minutes).toBe(35);
+    expect(planRoutine(silent).notes).toContain('Your usual days and workout length, from your recent workouts');
+
+    const said = applyLearned(parseAnswers(['get stronger', '', '3 days, 45 min', '']), { ...emptyPreferences(), ...usual });
+    expect(said.daysPerWeek).toBe(3);
+    expect(said.minutes).toBe(45);
+    expect(said.learned).toEqual({});
   });
 });

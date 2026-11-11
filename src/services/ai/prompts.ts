@@ -4,6 +4,7 @@
 import type { Routine } from '../../models/types';
 import { exerciseTemplates } from '../exerciseTemplates';
 import type { ChatTurn, ScheduleForPrompt, WizardAnswer } from './types';
+import type { LearnedPreferences } from '../../utils/learnedPreferences';
 
 export interface OpenAIMessage {
   role: 'system' | 'user' | 'assistant';
@@ -59,8 +60,29 @@ Respond with ONLY a JSON object matching exactly this shape:
 
 ${EXERCISE_RULES}`;
 
-export function buildRoutineMessages(qa: WizardAnswer[]): OpenAIMessage[] {
-  const userPrompt = qa.map(({ question, answer }) => `${question}\n${answer}`).join('\n\n');
+/**
+ * What the app has learned about the user, as a note for the model, or '' when there's
+ * nothing. These are soft preferences: what the user asks for always comes first.
+ */
+export function describePreferences(p: LearnedPreferences | undefined): string {
+  if (!p) return '';
+  const lines = [
+    p.likedExercises.length ? `- Exercises they liked: ${p.likedExercises.join(', ')}` : '',
+    p.dislikedExercises.length ? `- Exercises they disliked: ${p.dislikedExercises.join(', ')}` : '',
+    p.skippedExercises.length ? `- Exercises they often skip in workouts: ${p.skippedExercises.join(', ')}` : '',
+    p.usualDays.length ? `- Days they've usually trained on lately: ${p.usualDays.join(', ')}` : '',
+    p.usualMinutes ? `- Their workouts usually take about ${p.usualMinutes} minutes` : '',
+  ].filter(Boolean);
+  if (!lines.length) return '';
+  return [
+    "What the app has learned from how this user trains. Treat it as soft preferences: favor exercises they liked, and avoid ones they disliked or skip when there's a good alternative. Anything they ask for in their answers or messages comes first, even if it's on these lists. If you leave something out because of this, say so briefly.",
+    ...lines,
+  ].join('\n');
+}
+
+export function buildRoutineMessages(qa: WizardAnswer[], preferences?: LearnedPreferences): OpenAIMessage[] {
+  const learned = describePreferences(preferences);
+  const userPrompt = [qa.map(({ question, answer }) => `${question}\n${answer}`).join('\n\n'), learned].filter(Boolean).join('\n\n');
   return [
     { role: 'system', content: ROUTINE_SYSTEM_PROMPT },
     { role: 'user', content: userPrompt },
@@ -71,12 +93,14 @@ export function buildChangeMessages(
   routine: Pick<Routine, 'name' | 'description'>,
   scheduleForPrompt: ScheduleForPrompt,
   history: ChatTurn[],
-  userMessage: string
+  userMessage: string,
+  preferences?: LearnedPreferences
 ): OpenAIMessage[] {
   const context = [
     `The user's current routine is "${routine.name}".`,
     routine.description ? `Description: ${routine.description}` : '',
     `Current schedule (days not listed are rest days): ${JSON.stringify(scheduleForPrompt)}`,
+    describePreferences(preferences),
   ].filter(Boolean).join('\n');
   return [
     { role: 'system', content: `${CHANGE_SYSTEM_PROMPT}\n\n${context}` },

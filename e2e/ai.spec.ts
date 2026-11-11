@@ -52,7 +52,7 @@ test('the key prompt offers building without AI as the way forward', async ({ pa
 
   const prompt = page.getByRole('dialog');
   await expect(prompt.getByRole('button', { name: 'Not now' })).toHaveCount(0);
-  await prompt.getByRole('button', { name: /Build it without AI/ }).click();
+  await prompt.getByRole('button', { name: /Use the free Pulsar Planner/ }).click();
 
   // The plan is built from the answers.
   await expect(page.getByRole('heading', { name: 'Your plan' })).toBeVisible();

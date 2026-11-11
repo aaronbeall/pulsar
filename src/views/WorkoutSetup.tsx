@@ -14,6 +14,7 @@ import { AIError } from '../services/ai';
 import { useAIGate } from '../hooks/useAIGate';
 import { useUrlModal } from '../hooks/useUrlModal';
 import { useSessionDraft } from '../hooks/useSessionDraft';
+import { useLearnedPreferences } from '../hooks/useLearnedPreferences';
 import ThinkingIndicator from '../components/ThinkingIndicator';
 import RoutineBuildProgress, { PlannedDay } from '../components/RoutineBuildProgress';
 
@@ -45,6 +46,7 @@ export const WorkoutSetup: React.FC = () => {
   const addRoutine = usePulsarStore(s => s.addRoutine);
   const exercises = useExercises();
   const routines = usePulsarStore(s => s.routines);
+  const preferences = useLearnedPreferences();
 
   // Hoist all useColorModeValue hooks
   const orTextColor = useColorModeValue('gray.300', 'gray.600');
@@ -95,8 +97,8 @@ export const WorkoutSetup: React.FC = () => {
         kind: 'plan',
         reason: 'Building a routine from your answers uses Pulsar AI.',
         alternative: {
-          label: 'Build it without AI',
-          description: 'We read your answers and build a week to fit them: your days, equipment and anything to avoid. You can adjust it before you start.',
+          label: 'Use the free Pulsar Planner',
+          description: 'It reads your answers and builds a week around your days, gear and injuries, and what you\'ve liked and skipped. Runs on your phone, no AI.',
           icon: FaListUl,
           onClick: () => planBuilder.open(),
         },
@@ -109,6 +111,7 @@ export const WorkoutSetup: React.FC = () => {
     setBuild({ commentary: '', commentaryDone: false, plannedDays: [] });
     try {
       const { routine } = await generateRoutine(responses, exercises, addExercise, {
+        preferences,
         onCommentary: (commentary, commentaryDone) => setBuild(b => ({ ...b, commentary, commentaryDone })),
         onScheduleDays: (plannedDays) => setBuild(b => ({ ...b, plannedDays })),
       });
@@ -178,6 +181,7 @@ export const WorkoutSetup: React.FC = () => {
     return (
       <RoutinePlanBuilder
         responses={responses}
+        preferences={preferences}
         onCreate={handlePlanCreate}
         onBrowseTemplates={() => templateChooser.open()}
         onBack={planBuilder.close}
@@ -247,7 +251,7 @@ export const WorkoutSetup: React.FC = () => {
             opacity={chooseBtnOpacity}
             _hover={{ opacity: 1, bg: chooseBtnHoverBg }}
           >
-            Build it without AI
+            Use the free Planner
           </Button>
           {aiGate.gate}
         </Box>

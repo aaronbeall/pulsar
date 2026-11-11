@@ -8,6 +8,7 @@ import { useUrlModal } from '../hooks/useUrlModal';
 import { v4 as uuidv4 } from 'uuid';
 import { Routine, RoutineChange, RoutineChatMessage } from '../models/types';
 import { useExercises, usePulsarStore } from '../store/pulsarStore';
+import { learnPreferences } from '../utils/learnedPreferences';
 import { AIError, getActiveAIProvider } from '../services/ai';
 import { supersedePendingItems } from '../utils/routineChangeUtils';
 import { resolveAIExercises } from '../services/routineBuilderService';
@@ -107,7 +108,9 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
         })),
       }));
       const history = priorHistory.map(m => ({ role: m.role, message: m.message }));
+      const state = usePulsarStore.getState();
       const response = await provider.suggestRoutineChange(current, scheduleForPrompt, history, text, {
+        preferences: learnPreferences(state.exercises, state.workouts),
         onCommentary: (partial, done) => setStreaming({ text: partial, done }),
       });
 

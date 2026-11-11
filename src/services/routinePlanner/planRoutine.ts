@@ -266,7 +266,14 @@ function arrangeSessions(sessions: Session[], days: DayOfWeek[]): Session[] {
 // ---------------------------------------------------------------------------------------------
 // 3. Exercises
 
+/** Lowercase letters and digits only, so "Push-up" and "push up" compare equal. */
+const nameKey = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '').replace(/s$/, '');
+
 interface Filters {
+  liked: Set<string>;
+  /** Learned dislikes and often-skipped exercises, by nameKey. Soft: a penalty, not a ban. */
+  disliked: Set<string>;
+  skipped: Set<string>;
   /** Prefer exercises done standing (getting up and down off the floor is hard work). */
   preferStanding: boolean;
   equipment: Set<Equipment>;
@@ -290,6 +297,9 @@ function buildFilters(profile: Profile): Filters {
   if (profile.avoid.includes('floor')) excludeTags.add('floor');
   const level = profile.level ?? (profile.conditions.length > 0 ? 'beginner' : 'intermediate');
   return {
+    liked: new Set(profile.likedExercises.map(nameKey)),
+    disliked: new Set(profile.dislikedExercises.map(nameKey)),
+    skipped: new Set(profile.skippedExercises.map(nameKey)),
     preferStanding: profile.conditions.some(c => c === 'senior' || c === 'overweight' || c === 'pregnant' || c === 'arthritis'),
     equipment: new Set(profile.equipment),
     limits: new Set(profile.limits),
@@ -310,7 +320,15 @@ function isAvailable(ex: CatalogExercise, f: Filters): boolean {
 
 function scoreExercise(ex: CatalogExercise, f: Filters, goal: Goal, usedInWeek: Map<string, number>, random: () => number): number {
   let score = ex.priority * 2;
-  if (ex.tags.some(t => f.likes.has(t as Activity))) score += 4;
+  // Asked for in the answers ("a push-up routine"): that wins over anything learned.
+  const asked = ex.tags.some(t => f.likes.has(t as Activity));
+  if (asked) score += 4;
+  // Learned from the app: strong nudges, never bans, so the exercise still shows up when
+  // there's nothing else for the slot or the answers ask for it.
+  const key = nameKey(ex.name);
+  if (f.liked.has(key)) score += 5;
+  if (!asked && f.disliked.has(key)) score -= 12;
+  if (!asked && f.skipped.has(key)) score -= 8;
   // Use the equipment people have: an exercise that needs some of it beats the bodyweight version.
   const usesEquipment = ex.equipment.some(alt => alt.length > 0 && alt.every(e => f.equipment.has(e)));
   if (usesEquipment) score += 1.5;
@@ -506,6 +524,9 @@ function buildNotes(profile: Profile, days: PlannedDay[], minutes: number): stri
   const notes: string[] = [];
   const dayNames = days.map(d => d.day);
   notes.push(`${listText(dayNames)}, about ${minutes} minutes${dayNames.length > 1 ? ' each' : ''}`);
+  if (profile.learned?.days && profile.learned?.minutes) notes.push('Your usual days and workout length, from your recent workouts');
+  else if (profile.learned?.days) notes.push('Your usual days, from your recent workouts');
+  else if (profile.learned?.minutes) notes.push('About as long as your recent workouts');
   if (profile.blockedDays.length) notes.push(`${listText(profile.blockedDays)} kept free`);
   if (profile.equipmentAssumed) notes.push('No equipment mentioned, so it uses your bodyweight only');
   for (const limit of profile.limits) notes.push(LIMIT_NOTE[limit]);
@@ -519,6 +540,16 @@ function buildNotes(profile: Profile, days: PlannedDay[], minutes: number): stri
   if (profile.conditions.includes('asthma')) notes.push('Shorter intervals with rest to catch your breath. Warm up first and keep your inhaler handy');
   if (!profile.conditions.includes('pregnant') && needsLowImpact(profile) && !profile.limits.length) notes.push('Low impact: no jumping or running');
   if (profile.focus.length) notes.push(`Extra work for ${listText(profile.focus.map(f => (f === 'upper' ? 'upper body' : f === 'lower' ? 'lower body' : f)))}`);
+  // Learned exercise likes and dislikes, named only where they changed the plan.
+  const inCatalog = (name: string) => exerciseCatalog.some(c => nameKey(c.name) === nameKey(name));
+  const planned = new Set(days.flatMap(d => d.exercises.map(e => nameKey(e.name))));
+  const left = (name: string) => inCatalog(name) && !planned.has(nameKey(name));
+  const disliked = profile.dislikedExercises.filter(left);
+  if (disliked.length) notes.push(`Leaves out ${listText(disliked)}, since you disliked ${disliked.length > 1 ? 'them' : 'it'}`);
+  const skipped = profile.skippedExercises.filter(left);
+  if (skipped.length) notes.push(`Leaves out ${listText(skipped)}, since you often skip ${skipped.length > 1 ? 'them' : 'it'}`);
+  const likedNames = profile.likedExercises.filter(n => planned.has(nameKey(n)));
+  if (likedNames.length) notes.push(`Includes ${listText(likedNames)}, since you liked ${likedNames.length > 1 ? 'them' : 'it'}`);
   const liked = profile.likes.filter(l => days.some(d => d.exercises.some(e => exerciseCatalog.find(c => c.name === e.name)?.tags.includes(l))));
   if (liked.length) notes.push(`Includes ${listText(liked.map(l => ACTIVITY_LABEL[l]))}, since you like it`);
   return notes;

@@ -9,7 +9,7 @@ test('builds a routine from free-text answers without AI', async ({ page }) => {
     '4 days a week, not Thursday, 45 min',
     "I have bad knees and I hate running",
   ]);
-  await page.getByRole('button', { name: 'Build it without AI' }).click();
+  await page.getByRole('button', { name: 'Use the free Planner' }).click();
   await expect(page.getByRole('heading', { name: 'Your plan' })).toBeVisible();
 
   // What it understood, as chips.
