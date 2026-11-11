@@ -64,3 +64,17 @@ describe('pickTodaysHomeBackground', () => {
     expect(picked!.sourceUrl).toBeUndefined();
   });
 });
+
+describe('ALL_HOME_BACKGROUNDS credits', () => {
+  it('gives every curated photo the author, license, license link and source the CC licenses require', () => {
+    for (const bg of ALL_HOME_BACKGROUNDS) {
+      expect(bg.author).toBeTruthy();
+      expect(bg.license).toMatch(/^CC BY(-SA)? \d\.\d$/);
+      expect(bg.licenseUrl).toMatch(/^https:\/\/creativecommons\.org\/licenses\/by(-sa)?\/\d\.\d\/$/);
+      // The link must match the license named next to it.
+      const [, kind, version] = bg.license!.match(/^CC (BY(?:-SA)?) (\d\.\d)$/)!;
+      expect(bg.licenseUrl).toBe(`https://creativecommons.org/licenses/${kind.toLowerCase()}/${version}/`);
+      expect(bg.sourceUrl).toMatch(/^https:\/\/commons\.wikimedia\.org\/wiki\/File:/);
+    }
+  });
+});

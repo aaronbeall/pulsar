@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Avatar, Box, Button, Divider, Flex, Icon, Text, useColorMode, useColorModeValue, useToast } from '@chakra-ui/react';
 import { IconType } from 'react-icons';
 import {
-  FaChevronRight, FaCog, FaCrown, FaDownload, FaExclamationCircle, FaGoogle, FaInfoCircle, FaKey, FaMoon, FaShareSquare, FaSun,
+  FaChevronRight, FaCog, FaCrown, FaDownload, FaExclamationCircle, FaGlobe, FaGoogle, FaInfoCircle, FaKey, FaMoon, FaShareSquare, FaSun,
 } from 'react-icons/fa';
 import type { UrlModal } from '../hooks/useUrlModal';
 import { useAccount } from '../hooks/useAccount';
@@ -10,6 +10,7 @@ import { useInstallPromptStore } from '../store/installPromptStore';
 import { useOpenAiApiKey } from '../store/aiSettingsStore';
 import { signInWithGoogle } from '../services/account';
 import { ENERGY_GRADIENT } from './UpgradeButtons';
+import { HOMEPAGE_URL } from './LegalLinks';
 
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   <Text px={4} mb={2} fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase" letterSpacing="wide">
@@ -17,10 +18,12 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   </Text>
 );
 
-const MenuRow = ({ icon, label, onClick }: { icon: IconType; label: string; onClick: () => void }) => {
+/** A menu row: a button, or with `href` a link that opens in a new tab (outside the app). */
+const MenuRow = ({ icon, label, onClick, href }: { icon: IconType; label: string; onClick?: () => void; href?: string }) => {
   const hoverBg = useColorModeValue('gray.100', 'gray.700');
+  const linkProps = href ? { as: 'a' as const, href, target: '_blank', rel: 'noopener' } : { as: 'button' as const, onClick };
   return (
-    <Flex as="button" w="100%" align="center" gap={3} px={4} py={3} minH="48px" transition="background-color 0.2s" _hover={{ bg: hoverBg }} onClick={onClick}>
+    <Flex {...linkProps} w="100%" align="center" gap={3} px={4} py={3} minH="48px" transition="background-color 0.2s" _hover={{ bg: hoverBg }}>
       <Icon as={icon} boxSize={4} color="gray.500" />
       <Text fontSize="sm" fontWeight="medium">{label}</Text>
     </Flex>
@@ -207,6 +210,7 @@ const AppMenu = ({ menu, colorScheme }: AppMenuProps) => {
       <Divider mb={2} />
       <MenuRow icon={FaCog} label="Settings" onClick={() => menu.leaveTo('/settings')} />
       <MenuRow icon={FaInfoCircle} label="About" onClick={() => menu.leaveTo('/about')} />
+      <MenuRow icon={FaGlobe} label="Pulsar website" href={HOMEPAGE_URL} />
     </>
   );
 };

@@ -9,7 +9,6 @@ import {
   Heading,
   Icon,
   Input,
-  Link,
   Select,
   Text,
   VStack,
@@ -17,11 +16,10 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FaCode, FaExclamationTriangle, FaImages, FaKey, FaPalette } from 'react-icons/fa';
+import { FaCode, FaExclamationTriangle, FaKey, FaPalette } from 'react-icons/fa';
 import { useAIGate } from '../hooks/useAIGate';
 import { useAccount } from '../hooks/useAccount';
 import { deleteDB } from 'idb'; // Import deleteDB to delete IndexedDB
-import { ALL_HOME_BACKGROUNDS } from '../assets/homeBackgrounds';
 import { DEFAULT_OPENAI_MODEL, useOpenAiApiKey, useOpenAiModel } from '../store/aiSettingsStore';
 import { testApiKey } from '../services/ai';
 import BackupRestoreCard from '../components/BackupRestoreCard';
@@ -260,31 +258,6 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
         </Box>
       )}
 
-      <Box bg={cardBg} borderWidth="1px" borderColor={cardBorder} borderRadius="xl" p={{ base: 4, sm: 5 }} boxShadow="sm">
-        <Flex align="center" gap={2} mb={3}>
-          <Icon as={FaImages} color="cyan.500" />
-          <Heading size="sm">Photo Credits</Heading>
-        </Flex>
-        <Text fontSize="xs" color={mutedColor} mb={2}>
-          Home screen background photos, from Wikimedia Commons:
-        </Text>
-        <VStack align="start" spacing={1} mb={4}>
-          {ALL_HOME_BACKGROUNDS.map(bg => (
-            <Text key={bg.sourceUrl} fontSize="xs" color={mutedColor}>
-              <Link href={bg.sourceUrl} isExternal color="cyan.500">{bg.title}</Link>
-              {' '}by {bg.author}, {bg.license}
-            </Text>
-          ))}
-        </VStack>
-
-        <Text fontSize="xs" color={mutedColor}>
-          Exercise photos come from{' '}
-          <Link href="https://github.com/yuhonas/free-exercise-db" isExternal color="cyan.500">free-exercise-db</Link>
-          {', with additional photos found via '}
-          <Link href="https://commons.wikimedia.org" isExternal color="cyan.500">Wikimedia Commons</Link>
-          {' search.'}
-        </Text>
-      </Box>
     </Flex>
   );
 };
