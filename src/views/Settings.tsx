@@ -9,14 +9,14 @@ import {
   Heading,
   Icon,
   Input,
-  Select,
+  SimpleGrid,
   Text,
   VStack,
-  useColorMode,
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FaCode, FaExclamationTriangle, FaKey, FaPalette } from 'react-icons/fa';
+import { FaCheck, FaCode, FaExclamationTriangle, FaKey, FaMobileAlt, FaMoon, FaPalette, FaSun } from 'react-icons/fa';
+import type { IconType } from 'react-icons';
 import { useAIGate } from '../hooks/useAIGate';
 import { useAccount } from '../hooks/useAccount';
 import { deleteDB } from 'idb'; // Import deleteDB to delete IndexedDB
@@ -27,6 +27,7 @@ import AccountCard from '../components/AccountCard';
 import TestPresetLoader from '../components/TestPresetLoader';
 import { DB_NAME } from '../db/indexedDb';
 import { isDevMode, setDevMode } from '../utils/devMode';
+import { type ColorModePreference, useColorModePreference } from '../store/themeStore';
 
 interface SettingsProps {
   colorScheme: string;
@@ -37,8 +38,18 @@ interface SettingsProps {
 // count is fixed so the mask doesn't reveal the key's length.
 const maskApiKey = (key: string) => `${'•'.repeat(12)}${key.slice(-4)}`;
 
+const THEME_OPTIONS: { value: ColorModePreference; label: string; icon: IconType }[] = [
+  { value: 'light', label: 'Light', icon: FaSun },
+  { value: 'dark', label: 'Dark', icon: FaMoon },
+  { value: 'system', label: 'System', icon: FaMobileAlt },
+];
+
+const ACCENT_COLORS = ['red', 'orange', 'yellow', 'green', 'teal', 'cyan', 'blue', 'purple', 'pink', 'gray'];
+
 const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange }) => {
-  const { colorMode, setColorMode } = useColorMode();
+  const { preference, setPreference } = useColorModePreference();
+  const segmentTrack = useColorModeValue('gray.100', 'gray.900');
+  const segmentActive = useColorModeValue('white', 'gray.700');
   const toast = useToast();
   const [apiKey, setApiKey] = useOpenAiApiKey();
   const [testingKey, setTestingKey] = useState(false);
@@ -170,39 +181,56 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
           <Icon as={FaPalette} color="cyan.500" />
           <Heading size="sm">Appearance</Heading>
         </Flex>
-        <VStack spacing={4} align="stretch">
-          <Flex align="center" justify="space-between" gap={3}>
-            <Text fontSize="sm" fontWeight="medium">Color Scheme</Text>
-            <Select
-              value={colorScheme}
-              onChange={(e) => onColorSchemeChange(e.target.value)}
-              w={{ base: '55%', sm: '60%' }}
-              size="sm"
-              borderRadius="md"
-            >
-              {['blue', 'cyan', 'teal', 'green', 'yellow', 'orange', 'red', 'pink', 'purple', 'gray'].map(
-                (scheme) => (
-                  <option key={scheme} value={scheme}>
-                    {scheme.charAt(0).toUpperCase() + scheme.slice(1)}
-                  </option>
-                )
-              )}
-            </Select>
-          </Flex>
-          <Flex align="center" justify="space-between" gap={3}>
-            <Text fontSize="sm" fontWeight="medium">Color Mode</Text>
-            <Select
-              value={colorMode}
-              onChange={(e) => setColorMode(e.target.value)}
-              w={{ base: '55%', sm: '60%' }}
-              size="sm"
-              borderRadius="md"
-            >
-              <option value="system">System</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </Select>
-          </Flex>
+        <VStack spacing={5} align="stretch">
+          <Box>
+            <Text fontSize="sm" fontWeight="medium" mb={2} id="theme-label">Theme</Text>
+            <Flex role="radiogroup" aria-labelledby="theme-label" bg={segmentTrack} borderRadius="xl" p={1} gap={1}>
+              {THEME_OPTIONS.map(({ value, label, icon }) => {
+                const active = preference === value;
+                return (
+                  <Flex
+                    key={value} as="button" role="radio" aria-checked={active}
+                    flex={1} direction="column" align="center" justify="center" gap={1} minH="56px"
+                    borderRadius="lg" bg={active ? segmentActive : 'transparent'} boxShadow={active ? 'sm' : 'none'}
+                    color={active ? undefined : mutedColor} transition="background-color 0.2s, color 0.2s"
+                    onClick={() => setPreference(value)}
+                  >
+                    <Icon as={icon} boxSize={4} color={active ? `${colorScheme}.500` : undefined} />
+                    <Text fontSize="xs" fontWeight={active ? 'bold' : 'medium'}>{label}</Text>
+                  </Flex>
+                );
+              })}
+            </Flex>
+            {preference === 'system' && (
+              <Text fontSize="xs" color={mutedColor} mt={2}>
+                Matches your phone's light or dark setting.
+              </Text>
+            )}
+          </Box>
+          <Box>
+            <Flex align="baseline" justify="space-between" mb={2}>
+              <Text fontSize="sm" fontWeight="medium" id="accent-label">Accent color</Text>
+              <Text fontSize="xs" color={mutedColor} textTransform="capitalize">{colorScheme}</Text>
+            </Flex>
+            <SimpleGrid role="radiogroup" aria-labelledby="accent-label" columns={5} spacingY={3} justifyItems="center">
+              {ACCENT_COLORS.map((scheme) => {
+                const active = colorScheme === scheme;
+                return (
+                  <Flex
+                    key={scheme} as="button" role="radio" aria-checked={active} aria-label={scheme}
+                    align="center" justify="center" boxSize="44px" borderRadius="full"
+                    borderWidth="2px" borderColor={active ? `${scheme}.500` : 'transparent'}
+                    transition="border-color 0.2s"
+                    onClick={() => onColorSchemeChange(scheme)}
+                  >
+                    <Flex align="center" justify="center" boxSize="34px" borderRadius="full" bg={`${scheme}.500`} color="white">
+                      {active && <Icon as={FaCheck} boxSize={3.5} />}
+                    </Flex>
+                  </Flex>
+                );
+              })}
+            </SimpleGrid>
+          </Box>
         </VStack>
       </Box>
 
