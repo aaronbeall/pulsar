@@ -18,6 +18,7 @@
 export interface FreeExerciseDbEntry {
   name: string;
   category: string;
+  equipment?: string; // e.g. "barbell", "body only"
   primaryMuscles: string[];
   secondaryMuscles: string[];
   description: string;

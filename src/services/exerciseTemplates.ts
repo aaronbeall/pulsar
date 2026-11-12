@@ -6,6 +6,7 @@ export interface ExerciseTemplate {
   targetMuscles: string[];
   timed?: boolean;
   relativeWeight?: number; // 0 (lightest) to 1 (heaviest)
+  equipment?: string; // free-exercise-db equipment, when the template came from there
   imageUrl?: string; // pre-resolved image (e.g. from free-exercise-db) — skips live search
 }
 

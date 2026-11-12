@@ -2,6 +2,7 @@
 // This service now expects exercises to be passed in from the store, and add operations to use the store's addExercise.
 // Direct DB calls (getExercises, addExercise) have been removed from this file.
 
+import { inferWeighted } from '../utils/weightedExercise';
 import { Routine, RoutineChatMessage, Exercise, DayOfWeek, ScheduledExercise } from '../models/types';
 import { v4 as uuidv4 } from 'uuid';
 import { getSearchUrl, getHowToQuery, getExerciseSearchImageUrl, searchExerciseImages } from '../utils/webUtils';
@@ -32,6 +33,7 @@ export async function createNewExercise(template: ExerciseTemplate): Promise<Exe
     disliked: false,
     favorite: false,
     timed: !!template.timed,
+    weighted: inferWeighted(template),
   };
 }
 
@@ -96,6 +98,7 @@ export async function getAddedExercise(name: string, exercises: Exercise[], addE
           description: dbEntry.description,
           targetMuscles: [...dbEntry.primaryMuscles, ...dbEntry.secondaryMuscles],
           timed: isTimedCategory(dbEntry.category),
+          equipment: dbEntry.equipment,
           imageUrl,
         };
     }
@@ -408,6 +411,7 @@ export async function createRoutineFromTemplate(
                 description: dbEntry.description,
                 targetMuscles: [...dbEntry.primaryMuscles, ...dbEntry.secondaryMuscles],
                 timed: isTimedCategory(dbEntry.category),
+                equipment: dbEntry.equipment,
                 imageUrl,
               };
           }

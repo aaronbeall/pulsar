@@ -50,9 +50,10 @@ export function startSet(exercise: WorkoutExercise, now: number): WorkoutExercis
  * Record one finished set, ending at `endedAt` (for a timed set that ran out, that's its
  * scheduled end, not when the app noticed). For timed exercises `durationDoneSec` is how
  * long was actually done (the full duration when the timer ran out, less if ended early).
- * The exercise is completed once all its sets are.
+ * The exercise is completed once all its sets are. `weightKg` is the weight lifted on the set,
+ * for weighted exercises.
  */
-export function completeSet(exercise: WorkoutExercise, endedAt: number, durationDoneSec?: number): WorkoutExercise {
+export function completeSet(exercise: WorkoutExercise, endedAt: number, durationDoneSec?: number, weightKg?: number): WorkoutExercise {
   const completedSets = (exercise.completedSets ?? 0) + 1;
   const done = completedSets >= exercise.sets;
   // A set completed without a recorded start (e.g. tapped before the start was saved)
@@ -66,9 +67,25 @@ export function completeSet(exercise: WorkoutExercise, endedAt: number, duration
       ? (exercise.completedDuration ?? 0) + Math.max(0, Math.round(durationDoneSec ?? exercise.duration))
       : exercise.completedDuration,
     currentSetStartedAt: undefined,
-    setLog: [...(exercise.setLog ?? []), { startedAt: setStartedAt, endedAt }],
+    setLog: [
+      ...(exercise.setLog ?? []),
+      weightKg && weightKg > 0 ? { startedAt: setStartedAt, endedAt, weightKg } : { startedAt: setStartedAt, endedAt },
+    ],
     completedAt: done ? exercise.completedAt ?? endedAt : exercise.completedAt,
   };
+}
+
+/** Change a finished set's weight (kg, or undefined to clear it) and reps done. */
+export function editSet(exercise: WorkoutExercise, index: number, change: { weightKg?: number; reps?: number }): WorkoutExercise {
+  const log = exercise.setLog ?? [];
+  if (!log[index]) return exercise;
+  const { weightKg: _w, reps: _r, ...times } = log[index];
+  const record = {
+    ...times,
+    ...(change.weightKg && change.weightKg > 0 ? { weightKg: change.weightKg } : {}),
+    ...(change.reps !== undefined && change.reps !== exercise.reps ? { reps: change.reps } : {}),
+  };
+  return { ...exercise, setLog: log.map((rec, i) => (i === index ? record : rec)) };
 }
 
 /** 45 -> "45s", 90 -> "1:30", 3725 -> "1:02:05" */
