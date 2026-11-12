@@ -29,6 +29,7 @@ import About from './views/About';
 import { usePulsarStoreInit } from './store/pulsarStore';
 import { useInstallPromptInit } from './store/installPromptStore';
 import AppMenu from './components/AppMenu';
+import InstallAppAlert from './components/InstallAppAlert';
 import logoSvg from './assets/logo.svg';
 import { requestPersistentStorage } from './utils/storagePersistence';
 import { useCheckoutReturn } from './hooks/useCheckoutReturn';
@@ -140,6 +141,9 @@ const App: React.FC = () => {
           </Routes>
         </Container>
       </Box>
+
+      {/* Floats over every view, just above the bottom nav, until installed or dismissed. */}
+      <InstallAppAlert />
 
       <Box
         as="nav"
