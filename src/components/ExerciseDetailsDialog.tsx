@@ -7,6 +7,8 @@ import LikeDislikeButtons from "../components/LikeDislikeButtons";
 import { openUrl, openSearchQuery } from '../utils/webUtils';
 import { resolveExerciseImage, getExerciseImageCandidates } from '../services/routineBuilderService';
 import TagInput from "./TagInput";
+import LiftProgress from "./LiftProgress";
+import { isWeightedExercise } from "../utils/weightedExercise";
 import { usePulsarStore, useRoutines, useWorkouts } from '../store/pulsarStore';
 
 interface ExerciseDetailsDialogProps {
@@ -75,6 +77,19 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
     }
   };
 
+  const weighted = isWeightedExercise(edit);
+  // In edit mode this waits for Save like every other field; in view mode (opened from a
+  // workout) it's the one setting you can change, so it saves right away.
+  const handleToggleWeighted = (on: boolean) => {
+    if (mode === 'edit') {
+      handleChange('weighted', on);
+      return;
+    }
+    const updated = { ...exercise, weighted: on };
+    setEdit(prev => ({ ...prev, weighted: on }));
+    updateExercise(updated);
+  };
+
   const handleChange = (field: keyof typeof edit, value: any) => {
     setEdit(prev => ({ ...prev, [field]: value }));
     setChanged(true);
@@ -139,6 +154,15 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody px={{ base: 4, md: 8 }} pb={6}>
+          {weighted && (
+            <Box mb={6}>
+              <HStack align="center" spacing={2} mb={2}>
+                <Box w={1} h={5} bgGradient="linear(to-b, cyan.400, blue.400)" borderRadius="full" />
+                <Text fontWeight="bold" fontSize="md">Progress</Text>
+              </HStack>
+              <LiftProgress exerciseId={exerciseId} />
+            </Box>
+          )}
           <Flex direction={{ base: 'column', md: 'row' }} gap={8} align="flex-start">
             {/* Left: Image, How To, Stats */}
             <VStack
@@ -386,6 +410,18 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
                     {edit.timed ? 'Duration' : 'Reps'}
                   </Tag>
                 )}
+                <Flex as="label" align="center" justify="space-between" gap={3} mt={3} cursor="pointer">
+                  <Box>
+                    <Text fontSize="sm" fontWeight="medium">Track weight</Text>
+                    <Text fontSize="xs" color="gray.500">Log the weight for each set and chart it over time.</Text>
+                  </Box>
+                  <Switch
+                    colorScheme="cyan"
+                    isChecked={weighted}
+                    onChange={e => handleToggleWeighted(e.target.checked)}
+                    data-testid="track-weight-switch"
+                  />
+                </Flex>
                 {edit.timed !== exercise.timed && mode === "edit" && (
                   <Text fontSize="xs" color="gray.500" mt={1} ml={1}>
                     This sets the default type when adding this exercise to a routine. To change the type for an existing exercise in a routine, use that exercise's gear menu.

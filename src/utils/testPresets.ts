@@ -2,6 +2,7 @@ import { getHowToQuery, getSearchUrl } from './webUtils';
 import { addDays, startOfDay } from 'date-fns';
 import { DAYS_OF_WEEK } from '../constants/days';
 import type {
+  SetRecord,
   DayOfWeek,
   Exercise,
   Routine,
@@ -14,6 +15,7 @@ import type {
   Workout,
   WorkoutExercise,
 } from '../models/types';
+import { toKg } from './units';
 import { generateRandomName } from './nameUtils';
 import { generateRandomRoutineName } from '../services/routineBuilderService';
 import { routineTemplates } from '../services/routineTemplates';
@@ -98,6 +100,7 @@ function exercisesFor(routines: Routine[], workouts: Workout[] = []): Exercise[]
       coverImageUrl: IMG + spec.img,
       iconImageUrl: IMG + spec.img,
       ...(spec.timed ? { timed: true } : {}),
+      ...(spec.weight ? { weighted: true } : {}),
     };
   });
 }
@@ -180,7 +183,8 @@ function workout(r: Routine, date: Date, seq: number, opts: WorkoutOptions = {})
   const exercises: WorkoutExercise[] = plan.exercises.map((ex, i) => {
     const spec = EXERCISE_SPECS[ex.exerciseId];
     const base: WorkoutExercise = { ...ex };
-    if (spec.weight) base.weight = spec.weight + 5 * Math.floor(seq / 6);
+    // Lifts go up 5 lb every six sessions; now and then the last set falls a couple short.
+    const weightKg = spec.weight ? toKg(spec.weight + 5 * Math.floor(seq / 6), 'lb') : undefined;
     const pending = opts.inProgress && i >= opts.inProgress.doneExercises;
     if (pending) return base;
     if (opts.skipLast && i === plan.exercises.length - 1) {
@@ -191,7 +195,13 @@ function workout(r: Routine, date: Date, seq: number, opts: WorkoutOptions = {})
       const len = (ex.duration ?? 40 + (ex.reps ?? 10) * 2) * 1000;
       const start = t;
       t += len;
-      const rec = { startedAt: start, endedAt: t };
+      const shortSet = weightKg && ex.reps && s === ex.sets - 1 && jitter(seq * 7 + i, 5) === 0;
+      const rec: SetRecord = {
+        startedAt: start,
+        endedAt: t,
+        ...(weightKg ? { weightKg } : {}),
+        ...(shortSet ? { reps: (ex.reps as number) - 2 } : {}),
+      };
       t += (60 + jitter(seq * 10 + i * 3 + s, 45)) * 1000; // rest
       return rec;
     });

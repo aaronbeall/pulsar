@@ -23,6 +23,7 @@ export type UrlModalKey =
   | 'dayTemplates'    // RoutineEditor: pick a day template (value: day)
   | 'applyTemplate'   // RoutineEditor: overwrite a day with the picked template (value: day)
   | 'finish'          // WorkoutSession: finish workout early confirmation
+  | 'editSet'         // ExerciseProgress: fix a finished set's weight and reps (value: set index)
   | 'celebrate'       // WorkoutSession: the workout complete celebration
   | 'templates'       // WorkoutSetup: create a routine from a template
   | 'restore'         // Settings: restore backup confirmation

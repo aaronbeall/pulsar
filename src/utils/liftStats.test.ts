@@ -12,6 +12,7 @@ import {
   sessionsInRange,
   suggestHeavierKg,
   summarizeSetWeights,
+  describeSession,
 } from './liftStats';
 import { displayWeight, toKg } from './units';
 
@@ -96,6 +97,15 @@ describe('summarizeSetWeights', () => {
     expect(summarizeSetWeights(bench([135, 135]), 'lb')).toBe('135 lb');
     expect(summarizeSetWeights(bench([135, 145]), 'lb')).toBe('135–145 lb');
     expect(summarizeSetWeights(bench([]), 'lb')).toBeNull();
+  });
+});
+
+describe('describeSession', () => {
+  it('reads like a lifting log', () => {
+    const [a, b, c] = getLiftSessions('bench', history);
+    expect(describeSession(a, 'lb')).toBe('3 × 8 @ 135 lb');
+    expect(describeSession(b, 'lb')).toBe('3 sets @ 135 lb');
+    expect(describeSession(c, 'lb')).toBe('3 sets @ 140–145 lb');
   });
 });
 

@@ -114,6 +114,21 @@ export function summarizeSetWeights(exercise: WorkoutExercise, unit: WeightUnit)
   return lo === hi ? `${lo} ${unit}` : `${lo}–${hi} ${unit}`;
 }
 
+/** "3 × 8 @ 135 lb", "3 sets @ 135 lb" (reps varied) or "3 sets @ 135–145 lb". */
+export function describeSession(session: LiftSession, unit: WeightUnit): string {
+  const shown = session.sets.map(s => displayWeight(s.weightKg, unit));
+  const lo = Math.min(...shown);
+  const hi = Math.max(...shown);
+  const weight = lo === hi ? `${lo} ${unit}` : `${lo}–${hi} ${unit}`;
+  const reps = new Set(session.sets.map(s => s.reps));
+  const n = session.sets.length;
+  if (reps.size === 1 && lo === hi) {
+    const r = session.sets[0].reps;
+    return r ? `${n} × ${r} @ ${weight}` : `${n} ${n === 1 ? 'set' : 'sets'} @ ${weight}`;
+  }
+  return `${n} sets @ ${weight}`;
+}
+
 export interface NewBest {
   exerciseId: string;
   kind: 'weight' | 'e1rm';
