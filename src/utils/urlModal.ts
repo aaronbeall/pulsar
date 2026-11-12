@@ -27,7 +27,8 @@ export type UrlModalKey =
   | 'templates'       // WorkoutSetup: create a routine from a template
   | 'restore'         // Settings: restore backup confirmation
   | 'loadPreset'      // Settings › Developer: load test data confirmation (value: preset id)
-  | 'day';            // Streak calendar / year grid: one day's details (value: yyyy-MM-dd)
+  | 'day'             // Streak calendar / year grid: one day's details (value: yyyy-MM-dd)
+  | 'share';          // ShareSheet: share a card (value: card kind, or kind:workoutId; 'dev' for the gallery)
 
 /** Key in the history entry's state listing the modals this app pushed, oldest first. */
 export const URL_MODAL_STATE_KEY = 'urlModals';

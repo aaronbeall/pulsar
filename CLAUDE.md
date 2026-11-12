@@ -64,6 +64,12 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   state, with `isStale` dropping the param after a reload. After closing, `await close()`
   before opening something else or navigating; to navigate away from inside a modal use
   `leaveTo` so Back from the destination doesn't reopen it.
+- **Sharing wins goes through `components/ShareSheet.tsx`** (`useShareSheet().openShare(kind,
+  workoutId?)`, URL key `share`), rendered once in `App`. Card data and share text are pure
+  functions in `services/share/cards.ts`; images are drawn by hand on a canvas in
+  `services/share/render.ts` (no DOM screenshots, which are unreliable on iOS). The PNG is made
+  before the tap, because iOS only allows `navigator.share()` straight from a tap. Nothing is
+  uploaded: the phone's own share sheet does the sending.
 - **Testing-only features live behind dev mode** (`src/utils/devMode.ts`: always on under
   `npm run dev`, toggled in any build with `?dev=1` / `?dev=0`). See `DEV-FEATURES.md` for the
   list. Gate any new debug/testing tool with `isDevMode()` and add it to that doc; never ship

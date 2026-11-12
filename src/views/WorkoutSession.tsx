@@ -1,12 +1,14 @@
-import { AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, Box, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Button, Flex, Heading, SlideFade, Spinner, Text, useColorModeValue, useToast, VStack } from '@chakra-ui/react';
+import { AlertDialog, AlertDialogBody, AlertDialogContent, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, Box, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Button, Flex, Heading, IconButton, SlideFade, Spinner, Text, useColorModeValue, useToast, VStack } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMutation } from '@tanstack/react-query';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FaFlagCheckered, FaInfoCircle, FaTimesCircle } from 'react-icons/fa';
+import { FaFlagCheckered, FaInfoCircle, FaShareAlt, FaTimesCircle } from 'react-icons/fa';
 import { Link as RouterLink, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import { CongratulatoryInterstitial } from '../components/CongratulatoryInterstitial';
+import { useShareSheet } from '../components/ShareSheet';
+import { getStreakNudge } from '../services/share/cards';
 import { useUrlModal } from '../hooks/useUrlModal';
 import ExerciseProgress from '../components/ExerciseProgress';
 import TimeElapsed from '../components/TimeElapsed';
@@ -36,6 +38,7 @@ export const WorkoutSession: React.FC = () => {
   // The finish confirmation and the celebration live in the URL so Back closes them.
   const finishDialog = useUrlModal('finish');
   const celebration = useUrlModal('celebrate');
+  const shareSheet = useShareSheet();
   const finishCancelRef = useRef<HTMLButtonElement>(null);
   const toast = useToast();
 
@@ -243,6 +246,12 @@ export const WorkoutSession: React.FC = () => {
       ? (streakInfo.streak === 1 ? 'start' : 'continue')
       : 'none';
 
+  // Whether the celebration offers the streak card: a milestone, or the day the best is passed.
+  const streakNudge = useMemo(() => {
+    if (!workout?.completedAt || !streakCount) return null;
+    const previousBest = getStreakInfo(workouts.filter(w => w.id !== workout.id), routines).best;
+    return getStreakNudge(streakCount, previousBest);
+  }, [workout?.completedAt, workout?.id, streakCount, workouts, routines]);
   // showFinishedAlert is now derived from workout.completedAt
   const showFinishedAlert = !!(workout && workout.completedAt);
 
@@ -306,6 +315,9 @@ export const WorkoutSession: React.FC = () => {
     const completedExercises = workout.exercises.filter(ex => ex.completedAt).length;
     return (
       <CongratulatoryInterstitial
+        onShare={() => shareSheet.openShare('workout', workout.id)}
+        streakNudge={streakNudge}
+        onShareStreak={() => shareSheet.openShare('streak', workout.id)}
         streak={streakCount}
         streakType={streakType}
         isPerfect={!!isPerfect}
@@ -332,7 +344,7 @@ export const WorkoutSession: React.FC = () => {
             transition={{ duration: 0.6, type: 'spring', bounce: 0.4 }}
             style={{ width: '100%' }}
           >
-            <WorkoutFinishedBanner streak={streakCount} streakType={streakType} />
+            <WorkoutFinishedBanner streak={streakCount} streakType={streakType} onShare={() => shareSheet.openShare('workout', workout.id)} />
             <Box mb={4}>
               <ActivitySummaryCard workouts={workouts} routines={routines} title="Your activity" to="/activity" cta="See activity" />
             </Box>
@@ -461,7 +473,7 @@ export const WorkoutSession: React.FC = () => {
   );
 };
 
-const WorkoutFinishedBanner: React.FC<{ streak: number; streakType: 'none' | 'start' | 'continue' }> = ({ streak, streakType }) => {
+const WorkoutFinishedBanner: React.FC<{ streak: number; streakType: 'none' | 'start' | 'continue'; onShare: () => void }> = ({ streak, streakType, onShare }) => {
   const [prevStreak, setPrevStreak] = useState<number | null>(null);
   const [countStep, setCountStep] = useState<'none' | 'prev-in' | 'count-transition' | 'done'>('none');
   const [showFlame, setShowFlame] = useState(false);
@@ -673,6 +685,20 @@ const WorkoutFinishedBanner: React.FC<{ streak: number; streakType: 'none' | 'st
                 </Flex>
               )}
             </Flex>
+            <IconButton
+              aria-label="Share this workout"
+              icon={<FaShareAlt />}
+              onClick={onShare}
+              isRound
+              size="lg"
+              variant="outline"
+              color="white"
+              borderColor="whiteAlpha.500"
+              _hover={{ bg: 'whiteAlpha.200' }}
+              flexShrink={0}
+              ml={3}
+              data-testid="finished-share"
+            />
           </Flex>
         </Box>
       </Flex>

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { Box, Flex, Heading, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
-import { FaChartBar, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaMedal, FaTrophy } from 'react-icons/fa';
+import { Box, Button, Flex, Heading, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
+import { FaChartBar, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaMedal, FaShareAlt, FaTrophy } from 'react-icons/fa';
+import { useShareSheet } from '../components/ShareSheet';
 import { usePulsarLoading, useRoutines, useWorkouts } from '../store/pulsarStore';
 import { formatTotalDuration, getHistorySummaryStats, getRoutineStints } from '../utils/historyStats';
 import YearActivityCalendar from '../components/YearActivityCalendar';
@@ -15,6 +16,7 @@ const Activity: React.FC = () => {
   // routines/workouts default to [] (never undefined) even before loadAll() resolves, so
   // the store's own `loading` flag is the only reliable signal here.
   const isLoading = usePulsarLoading();
+  const shareSheet = useShareSheet();
 
   const summary = useMemo(
     () => (routines && workouts ? getHistorySummaryStats(workouts, routines) : null),
@@ -37,16 +39,32 @@ const Activity: React.FC = () => {
 
   return (
     <Flex direction="column" gap={{ base: 4, sm: 5 }}>
-      <Box>
-        <Heading
-          fontSize={{ base: 'xl', sm: '2xl' }}
-          bgGradient="linear(to-r, orange.400, pink.500)"
-          bgClip="text"
-        >
-          Activity
-        </Heading>
-        <Text fontSize="sm" color="gray.500">Your streaks, workouts and routines over time.</Text>
-      </Box>
+      <Flex align="flex-start" justify="space-between" gap={3}>
+        <Box minW={0}>
+          <Heading
+            fontSize={{ base: 'xl', sm: '2xl' }}
+            bgGradient="linear(to-r, orange.400, pink.500)"
+            bgClip="text"
+          >
+            Activity
+          </Heading>
+          <Text fontSize="sm" color="gray.500">Your streaks, workouts and routines over time.</Text>
+        </Box>
+        {summary.totalCompleted > 0 && (
+          // Opens on the streak, or the first card with something to show (the sheet decides).
+          <Button
+            leftIcon={<FaShareAlt />}
+            colorScheme="pink"
+            variant="outline"
+            borderRadius="full"
+            flexShrink={0}
+            onClick={() => shareSheet.openShare('streak')}
+            data-testid="activity-share"
+          >
+            Share
+          </Button>
+        )}
+      </Flex>
 
       <SimpleGrid columns={{ base: 2, sm: 3 }} spacing={{ base: 3, sm: 4 }}>
         <StatCard icon={FaFire} label="Day streak" value={summary.streak} color="orange.400" />

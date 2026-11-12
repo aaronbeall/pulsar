@@ -15,7 +15,7 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { FaCheck, FaCode, FaExclamationTriangle, FaKey, FaMobileAlt, FaMoon, FaPalette, FaSun } from 'react-icons/fa';
+import { FaCheck, FaCode, FaExclamationTriangle, FaKey, FaMobileAlt, FaMoon, FaPalette, FaShareAlt, FaSun } from 'react-icons/fa';
 import type { IconType } from 'react-icons';
 import { useAIGate } from '../hooks/useAIGate';
 import { useAccount } from '../hooks/useAccount';
@@ -25,6 +25,7 @@ import { testApiKey } from '../services/ai';
 import BackupRestoreCard from '../components/BackupRestoreCard';
 import AccountCard from '../components/AccountCard';
 import TestPresetLoader from '../components/TestPresetLoader';
+import { useShareSheet } from '../components/ShareSheet';
 import { DB_NAME } from '../db/indexedDb';
 import { isDevMode, setDevMode } from '../utils/devMode';
 import { type ColorModePreference, useColorModePreference } from '../store/themeStore';
@@ -61,6 +62,7 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
   const offersPulsarAI = account.hostedAI;
   const hasHostedAllowance = account.hostedAI && !!account.user && !!account.ai;
   const devMode = isDevMode();
+  const shareSheet = useShareSheet();
   const cardBg = useColorModeValue('white', 'gray.800');
   const cardBorder = useColorModeValue('gray.200', 'gray.700');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
@@ -263,6 +265,9 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
           </Text>
           <VStack spacing={3} align="stretch">
             <TestPresetLoader />
+            <Button variant="outline" size="sm" leftIcon={<FaShareAlt />} onClick={() => shareSheet.openGallery()}>
+              Preview share cards
+            </Button>
             <FormControl>
               <FormLabel fontSize="sm" mb={1}>OpenAI model</FormLabel>
               <Input
