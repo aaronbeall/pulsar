@@ -72,8 +72,8 @@ const Home: React.FC = () => {
     // Full-bleed background spanning the entire content area with no margin — breaks out
     // of the parent route Container's max-width (left:50%/-50vw trick) AND its py={6}
     // vertical padding (mt/mb: -6, the matching negative token) so the image runs flush
-    // against the header/footer bars above/below it, with nothing — including
-    // InstallAppAlert — outside its bounds. Tinted the same way as the exercise session
+    // against the header/footer bars above/below it, with nothing outside its bounds
+    // (InstallAppAlert floats over it, fixed above the bottom nav). Tinted the same way as the exercise session
     // screen.
     <Box position="relative" left="50%" marginLeft="-50vw" width="100vw" mt={-6} mb={-6} overflow="hidden">
       <Box position="absolute" top={0} left={0} w="100%" h="100%" zIndex={0}>
