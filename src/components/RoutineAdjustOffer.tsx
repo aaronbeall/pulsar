@@ -84,11 +84,13 @@ export default function RoutineAdjustOffer({ routine, trend }: { routine: Routin
         </Text>
         <CloseButton size="sm" mt={-1} mr={-1} color="gray.500" aria-label="Not now" onClick={() => void markHandled()} />
       </Flex>
-      <Flex gap={1} align="center">
-        <Button colorScheme="cyan" size="sm" h="36px" leftIcon={<FaMagic />} onClick={handleAdjust}>
+      <Flex direction="column" gap={1}>
+        <Button colorScheme="cyan" size="sm" h="38px" leftIcon={<FaMagic />} onClick={handleAdjust}>
           Adjust with Pulsar AI
         </Button>
-        <Button size="sm" h="36px" variant="ghost" onClick={() => void adjustWithPlanner()}>Use the free Planner</Button>
+        <Button size="sm" h="38px" variant="ghost" colorScheme="cyan" leftIcon={<FaListUl />} onClick={() => void adjustWithPlanner()}>
+          Use the free Planner
+        </Button>
       </Flex>
       {aiGate.gate}
     </Box>
