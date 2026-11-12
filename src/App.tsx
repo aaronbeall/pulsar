@@ -32,6 +32,7 @@ import AppMenu from './components/AppMenu';
 import logoSvg from './assets/logo.svg';
 import { requestPersistentStorage } from './utils/storagePersistence';
 import { useCheckoutReturn } from './hooks/useCheckoutReturn';
+import { useSystemColorModeSync } from './store/themeStore';
 
 const App: React.FC = () => {
   usePulsarStoreInit(); // Load all data from DB into Zustand store on app mount
@@ -39,6 +40,7 @@ const App: React.FC = () => {
   useCheckoutReturn(); // Thank-you toast and account refresh after Stripe Checkout, on any page
   // Ask the browser not to evict our IndexedDB data. Fire-and-forget: Settings shows the result.
   useEffect(() => { requestPersistentStorage(); }, []);
+  useSystemColorModeSync(); // Follow the phone's light/dark setting while set to System
   const { colorMode } = useColorMode();
   const [colorScheme, setColorScheme] = useState<string>(() => {
     return localStorage.getItem('colorScheme') || 'red';

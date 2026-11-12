@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Avatar, Box, Button, Divider, Flex, Icon, Text, useColorMode, useColorModeValue, useToast } from '@chakra-ui/react';
+import { Avatar, Box, Button, Divider, Flex, Icon, Switch, Text, useColorModeValue, useToast } from '@chakra-ui/react';
 import { IconType } from 'react-icons';
 import {
   FaChevronRight, FaCog, FaCrown, FaDownload, FaExclamationCircle, FaGlobe, FaGoogle, FaInfoCircle, FaKey, FaMoon, FaShareSquare, FaSun,
@@ -11,12 +11,7 @@ import { useOpenAiApiKey } from '../store/aiSettingsStore';
 import { signInWithGoogle } from '../services/account';
 import { ENERGY_GRADIENT } from './UpgradeButtons';
 import { HOMEPAGE_URL } from './LegalLinks';
-
-const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <Text px={4} mb={2} fontSize="xs" fontWeight="bold" color="gray.500" textTransform="uppercase" letterSpacing="wide">
-    {children}
-  </Text>
-);
+import { useColorModePreference } from '../store/themeStore';
 
 /** A menu row: a button, or with `href` a link that opens in a new tab (outside the app). */
 const MenuRow = ({ icon, label, onClick, href }: { icon: IconType; label: string; onClick?: () => void; href?: string }) => {
@@ -26,6 +21,29 @@ const MenuRow = ({ icon, label, onClick, href }: { icon: IconType; label: string
     <Flex {...linkProps} w="100%" align="center" gap={3} px={4} py={3} minH="48px" transition="background-color 0.2s" _hover={{ bg: hoverBg }}>
       <Icon as={icon} boxSize={4} color="gray.500" />
       <Text fontSize="sm" fontWeight="medium">{label}</Text>
+    </Flex>
+  );
+};
+
+/**
+ * A quick light/dark switch styled like the other rows; the whole row toggles it. Flipping it
+ * picks that mode outright (Settings > Appearance also offers following the system).
+ */
+const DarkModeRow = ({ colorScheme }: { colorScheme: string }) => {
+  const { colorMode, setPreference } = useColorModePreference();
+  const hoverBg = useColorModeValue('gray.100', 'gray.700');
+  const isDark = colorMode === 'dark';
+  return (
+    <Flex
+      as="label" w="100%" align="center" gap={3} px={4} py={3} minH="48px" cursor="pointer"
+      transition="background-color 0.2s" _hover={{ bg: hoverBg }} data-testid="menu-dark-mode"
+    >
+      <Icon as={isDark ? FaMoon : FaSun} boxSize={4} color="gray.500" />
+      <Text flex={1} fontSize="sm" fontWeight="medium">Dark mode</Text>
+      <Switch
+        colorScheme={colorScheme} isChecked={isDark}
+        onChange={(e) => setPreference(e.target.checked ? 'dark' : 'light')}
+      />
     </Flex>
   );
 };
@@ -177,37 +195,16 @@ interface AppMenuProps {
   colorScheme: string;
 }
 
-/** The side menu's contents: install, account and plan, appearance, then the other pages. */
+/** The side menu's contents: install, account and plan, then a dark mode switch and the other pages. */
 const AppMenu = ({ menu, colorScheme }: AppMenuProps) => {
-  const { colorMode, setColorMode } = useColorMode();
-  const tileBg = useColorModeValue('gray.100', 'gray.700');
-
   return (
     <>
       <InstallButton onDone={() => menu.close()} />
       <AccountSummary menu={menu} />
 
-      <SectionLabel>Appearance</SectionLabel>
-      <Flex px={4} gap={2} mb={4}>
-        {(['light', 'dark'] as const).map((mode) => {
-          const active = colorMode === mode;
-          return (
-            <Flex
-              key={mode} as="button" flex={1} direction="column" align="center" gap={1} py={3}
-              borderRadius="lg" borderWidth="2px" borderColor={active ? `${colorScheme}.500` : 'transparent'}
-              bg={active ? `${colorScheme}.50` : tileBg}
-              _dark={{ bg: active ? `${colorScheme}.900` : 'gray.700' }}
-              transition="border-color 0.2s"
-              onClick={() => setColorMode(mode)}
-            >
-              <Icon as={mode === 'light' ? FaSun : FaMoon} boxSize={5} color={active ? `${colorScheme}.500` : undefined} />
-              <Text fontSize="sm" fontWeight={active ? 'bold' : 'medium'} textTransform="capitalize">{mode}</Text>
-            </Flex>
-          );
-        })}
-      </Flex>
-
-      <Divider mb={2} />
+      {/* Hidden when nothing is above it (installed, and no sign-in on this site) */}
+      <Divider mb={2} sx={{ '&:first-child': { display: 'none' } }} />
+      <DarkModeRow colorScheme={colorScheme} />
       <MenuRow icon={FaCog} label="Settings" onClick={() => menu.leaveTo('/settings')} />
       <MenuRow icon={FaInfoCircle} label="About" onClick={() => menu.leaveTo('/about')} />
       <MenuRow icon={FaGlobe} label="Pulsar website" href={HOMEPAGE_URL} />
