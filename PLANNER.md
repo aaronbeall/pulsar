@@ -58,7 +58,7 @@ It is not keyword matching:
    that work the same muscles aren't back to back.
 3. **Exercises** (`sessionExercises`): each session is a list of slots (squat, hinge,
    horizontal push, pull, core, glute...), with extra slots for focus areas. Each slot is
-   filled from `exerciseCatalog.ts` (114 exercises, each tagged with slots, equipment,
+   filled from `exerciseCatalog.ts` (260 exercises, each tagged with slots, equipment,
    level, injury limits, activity tags, seconds and priority):
    - **Filtered** by equipment, injury limits, level, low impact (knees, ankles, hips,
      overweight, senior, pregnant, arthritis), avoided activities and pregnancy (no moves
@@ -151,6 +151,7 @@ time it's needed (`hooks/useLearnedPreferences.ts`) and never stored.
 ## Tests
 
 - Unit (Vitest): `routinePlanner/parseAnswers.test.ts`, `planRoutine.test.ts`,
+  `exerciseCatalog.test.ts`,
   `nicknames.test.ts`, `utils/learnedPreferences.test.ts`, `utils/routineFeedback.test.ts`,
   `worker/ai/request.test.ts`.
 - E2E (Playwright): `e2e/plan-builder.spec.ts` (answers to plan, chips, name ideas),
@@ -162,7 +163,9 @@ time it's needed (`hooks/useLearnedPreferences.ts`) and never stored.
 - New wording the parser misses: add phrases to the lexicon in `parseAnswers.ts` and a test,
   rather than adding special cases.
 - New exercises: add rows to `exerciseCatalog.ts` with honest tags; the filters and slots
-  pick them up.
+  pick them up. Use a name from `exerciseTemplates.ts` or free-exercise-db, or add it to
+  `exerciseTemplates.ts` with a description, so it never ends up a blank stub
+  (`exerciseCatalog.test.ts` checks this).
 - A new learned signal: add it to `LearnedPreferences`, to `describePreferences` and
   `preferencesFrom` for the AI, and to `applyLearned` only if the Planner can use it
   honestly. Keep it soft.

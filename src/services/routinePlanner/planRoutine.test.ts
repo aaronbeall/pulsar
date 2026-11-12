@@ -175,8 +175,9 @@ describe('planRoutine with what it learned', () => {
   });
 
   it('still uses a disliked exercise when nothing else fits the slot', () => {
-    // Bodyweight only: the doorway row is the only pull.
-    expect(names(learnedFrom({ dislikedExercises: ['Doorway Row'] }))).toContain('Doorway Row');
+    // Bodyweight only: these are the only rows, so one of them stays.
+    const rows = ['Doorway Row', 'Towel Row', 'Table Row'];
+    expect(names(learnedFrom({ dislikedExercises: rows })).some(n => rows.includes(n))).toBe(true);
   });
 
   it('leaves out often-skipped exercises', () => {

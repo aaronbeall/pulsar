@@ -10,7 +10,7 @@
 //
 // This sits between the curated `exerciseTemplates.ts` catalog and the live Wikimedia
 // Commons search in the exercise resolution order (see routineBuilderService.ts:
-// getAddedExercise): a much broader net than the curated ~114 templates, with guaranteed-
+// getAddedExercise): a much broader net than the curated ~170 templates, with guaranteed-
 // relevant images (no risk of the keyword-collision false positives a general-purpose
 // image search can return), but still a finite catalog — genuinely novel or AI-invented
 // exercise names fall through to the live search after this.
