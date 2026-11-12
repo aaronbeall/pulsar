@@ -6,8 +6,7 @@ test('logs a weight on each set and sees the lift in Activity', async ({ page })
   await page.getByRole('button', { name: 'Start', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Deadlift' })).toBeVisible();
 
-  // Weights are optional: a quiet link until you add one.
-  await page.getByTestId('add-weight').click();
+  // The weight row starts open with nothing in it; a weight is optional.
   const input = page.getByTestId('weight-input');
   await input.fill('135');
   await input.press('Enter');
@@ -39,4 +38,30 @@ test('logs a weight on each set and sees the lift in Activity', async ({ page })
   await expect(lifts).toContainText('140');
   await lifts.getByRole('button', { name: /Deadlift/ }).click();
   await expect(page.getByTestId('lift-progress')).toContainText('140×4');
+});
+
+test('weight and reps rows fold away separately and stay that way', async ({ page }) => {
+  await createRoutineFromTemplate(page, 'Strength Builder');
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Deadlift' })).toBeVisible();
+
+  // Weight starts open, reps closed.
+  await expect(page.getByTestId('weight-input')).toBeVisible();
+  await expect(page.getByTestId('reps-control')).toBeHidden();
+
+  await page.getByTestId('toggle-weight').click();
+  await page.getByTestId('toggle-reps').click();
+  await expect(page.getByTestId('weight-input')).toBeHidden();
+  await expect(page.getByTestId('reps-control')).toBeVisible();
+
+  // Log a short set from the reps row.
+  await page.getByRole('button', { name: 'Start Set 1' }).click();
+  await page.getByTestId('reps-control').getByRole('button', { name: 'Decrement reps' }).click();
+  await page.getByRole('button', { name: 'Complete 4 Reps' }).click();
+  await expect(page.getByTestId('toggle-reps')).toHaveText('Reps');
+
+  await page.reload();
+  await expect(page.getByText('Set 2 of 5')).toBeVisible();
+  await expect(page.getByTestId('weight-input')).toBeHidden();
+  await expect(page.getByTestId('reps-control')).toBeVisible();
 });

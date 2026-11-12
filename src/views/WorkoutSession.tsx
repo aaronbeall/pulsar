@@ -174,12 +174,12 @@ export const WorkoutSession: React.FC = () => {
   const getFreshWorkout = () =>
     workout ? usePulsarStore.getState().workouts.find(w => w.id === workout.id) ?? workout : null;
 
-  const handleCompleteSet = async (exerciseIndex: number, durationDoneSec?: number, endedAt?: number, weightKg?: number) => {
+  const handleCompleteSet = async (exerciseIndex: number, durationDoneSec?: number, endedAt?: number, weightKg?: number, reps?: number) => {
     if (pendingStartRef.current) await pendingStartRef.current;
     const current = getFreshWorkout();
     if (!current) return;
     const now = endedAt ?? Date.now();
-    const exercise = completeSet(current.exercises[exerciseIndex], now, durationDoneSec, weightKg);
+    const exercise = completeSet(current.exercises[exerciseIndex], now, durationDoneSec, weightKg, reps);
     const exercisesAfter = current.exercises.map((ex, i) => (i === exerciseIndex ? exercise : ex));
     const updatedWorkout: Workout = { ...current, exercises: exercisesAfter };
     // Set workout.completedAt if all exercises are complete
@@ -326,9 +326,9 @@ export const WorkoutSession: React.FC = () => {
       ? suggestHeavierKg(previousLift, currentExercise, weightUnit)
       : undefined,
     onChange: (kg: number | undefined) => updateExerciseAt(currentExerciseIndex, ex => ({ ...ex, weightKg: kg ?? 0 })),
-    onEditSet: (index: number, change: { weightKg?: number; reps?: number }) =>
-      updateExerciseAt(currentExerciseIndex, ex => editSet(ex, index, change)),
   } : undefined;
+  const handleEditSet = (index: number, change: { weightKg?: number; reps?: number }) =>
+    updateExerciseAt(currentExerciseIndex, ex => editSet(ex, index, change));
   const workoutTiming = getWorkoutTiming(workout);
 
   if (celebration.isOpen) {
@@ -426,7 +426,8 @@ export const WorkoutSession: React.FC = () => {
               exercise={currentExercise}
               currentSet={currentSetIndex}
               exerciseDetail={currentExerciseDetail}
-              onCompleteSet={(durationDoneSec, endedAt, weightKg) => handleCompleteSet(currentExerciseIndex, durationDoneSec, endedAt, weightKg)}
+              onCompleteSet={(durationDoneSec, endedAt, weightKg, reps) => handleCompleteSet(currentExerciseIndex, durationDoneSec, endedAt, weightKg, reps)}
+              onEditSet={handleEditSet}
               weight={weightProps}
               onStartSet={(startedAt) => handleStartSet(currentExerciseIndex, startedAt)}
             />

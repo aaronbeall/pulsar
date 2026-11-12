@@ -51,9 +51,9 @@ export function startSet(exercise: WorkoutExercise, now: number): WorkoutExercis
  * scheduled end, not when the app noticed). For timed exercises `durationDoneSec` is how
  * long was actually done (the full duration when the timer ran out, less if ended early).
  * The exercise is completed once all its sets are. `weightKg` is the weight lifted on the set,
- * for weighted exercises.
+ * for weighted exercises; `reps` the reps done, when different from the plan.
  */
-export function completeSet(exercise: WorkoutExercise, endedAt: number, durationDoneSec?: number, weightKg?: number): WorkoutExercise {
+export function completeSet(exercise: WorkoutExercise, endedAt: number, durationDoneSec?: number, weightKg?: number, reps?: number): WorkoutExercise {
   const completedSets = (exercise.completedSets ?? 0) + 1;
   const done = completedSets >= exercise.sets;
   // A set completed without a recorded start (e.g. tapped before the start was saved)
@@ -69,7 +69,12 @@ export function completeSet(exercise: WorkoutExercise, endedAt: number, duration
     currentSetStartedAt: undefined,
     setLog: [
       ...(exercise.setLog ?? []),
-      weightKg && weightKg > 0 ? { startedAt: setStartedAt, endedAt, weightKg } : { startedAt: setStartedAt, endedAt },
+      {
+        startedAt: setStartedAt,
+        endedAt,
+        ...(weightKg && weightKg > 0 ? { weightKg } : {}),
+        ...(reps !== undefined && reps !== exercise.reps ? { reps } : {}),
+      },
     ],
     completedAt: done ? exercise.completedAt ?? endedAt : exercise.completedAt,
   };

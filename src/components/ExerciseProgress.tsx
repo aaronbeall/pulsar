@@ -21,7 +21,7 @@ import { keyframes } from '@emotion/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCheckCircle, FaPlay, FaCheck, FaStopwatch, FaPlayCircle, FaInfoCircle } from 'react-icons/fa';
 import ExerciseDetailsDialog from './ExerciseDetailsDialog';
-import WeightControl from './WeightControl';
+import SetExtras from './SetExtras';
 import EditSetSheet from './EditSetSheet';
 import { useWeightUnit } from '../store/unitsStore';
 import { displayWeight } from '../utils/units';
@@ -126,14 +126,15 @@ interface ExerciseProgressProps {
    * Record the current set as done; for timed sets, how many seconds were done. `endedAt`
    * is when the set really ended, if not now (a timed set that ran out while locked).
    */
-  onCompleteSet: (durationDoneSec?: number, endedAt?: number, weightKg?: number) => void;
+  onCompleteSet: (durationDoneSec?: number, endedAt?: number, weightKg?: number, reps?: number) => void;
+  /** Fix a finished set's weight or reps done. */
+  onEditSet?: (index: number, change: { weightKg?: number; reps?: number }) => void;
   /** Weighted exercises: the next set's weight, and how to change it. */
   weight?: {
     nextKg: number | undefined;
     hint?: string;
     suggestionKg?: number;
     onChange: (weightKg: number | undefined) => void;
-    onEditSet: (index: number, change: { weightKg?: number; reps?: number }) => void;
   };
 }
 
@@ -144,10 +145,18 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
   onStartSet,
   onCompleteSet,
   weight,
+  onEditSet,
 }) => {
   const [unit] = useWeightUnit();
   const editSetModal = useUrlModal('editSet');
   const setWeightKg = weight?.nextKg;
+  // Reps done in this set: the plan unless changed, starting over for each set.
+  const [repsDone, setRepsDone] = useState(exercise.reps ?? 0);
+  useEffect(() => {
+    setRepsDone(exercise.reps ?? 0);
+  }, [currentSet, exercise.exerciseId, exercise.reps]);
+  const setReps = exercise.reps && repsDone !== exercise.reps ? repsDone : undefined;
+  const canEditSets = !!onEditSet && (!!weight || !!exercise.reps);
   // All timing is derived from wall-clock timestamps (see utils/setProgress.ts): the
   // interval below only triggers re-renders, so a throttled or frozen timer (screen
   // locked, app in background) can delay the display but never make it wrong.
@@ -247,10 +256,18 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
     completedForRef.current = setStartedAt;
     setRestStartedAt(Date.now());
     setPending({ startedAt: undefined });
-    onCompleteSet(exercise.duration ? timeElapsed : undefined, undefined, setWeightKg);
+    onCompleteSet(exercise.duration ? timeElapsed : undefined, undefined, setWeightKg, setReps);
   };
 
   const handleNext = handleStart;
+
+  const extras = (
+    <SetExtras
+      unit={unit}
+      weight={weight && isActive ? { ...weight, hint: undefined, suggestionKg: undefined } : weight}
+      reps={exercise.reps && !exercise.duration ? { value: repsDone, planned: exercise.reps, onChange: setRepsDone } : undefined}
+    />
+  );
   const restTimeElapsed = restStartedAt ? Math.max(0, Math.floor((now - restStartedAt) / 1000)) : 0;
 
   const progress = timer?.progress ?? 0;
@@ -353,14 +370,15 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
           mode="view"
         />
       )}
-      {weight && editSetModal.isOpen && exercise.setLog?.[Number(editSetModal.value)] && (
+      {canEditSets && editSetModal.isOpen && exercise.setLog?.[Number(editSetModal.value)] && (
         <EditSetSheet
           exercise={exercise}
           index={Number(editSetModal.value)}
           unit={unit}
+          weighted={!!weight}
           onClose={editSetModal.close}
           onSave={(change) => {
-            weight.onEditSet(Number(editSetModal.value), change);
+            onEditSet?.(Number(editSetModal.value), change);
             editSetModal.close();
           }}
         />
@@ -390,7 +408,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
                 isActive={isActive}
                 isCurrentSet={idx === currentSet}
                 label={weight ? (rec?.weightKg ? `${displayWeight(rec.weightKg, unit)}` : '') : undefined}
-                onClick={weight && rec ? () => editSetModal.open(String(idx)) : undefined}
+                onClick={canEditSets && rec ? () => editSetModal.open(String(idx)) : undefined}
               />
             );
           })}
@@ -416,15 +434,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
               >
                 Rest Time: {formatSeconds(restTimeElapsed)}
               </Text>
-              {weight && (
-                <WeightControl
-                  weightKg={weight.nextKg}
-                  unit={unit}
-                  onChange={weight.onChange}
-                  hint={weight.hint}
-                  suggestionKg={weight.suggestionKg}
-                />
-              )}
+              {extras}
               <Button 
                 colorScheme="cyan"
                 size="lg"
@@ -480,15 +490,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
               </CircularProgress>
             </Box>
 
-            {weight && (
-                <WeightControl
-                  weightKg={weight.nextKg}
-                  unit={unit}
-                  onChange={weight.onChange}
-                  hint={isActive ? undefined : weight.hint}
-                  suggestionKg={isActive ? undefined : weight.suggestionKg}
-                />
-              )}
+            {extras}
 
             {!isActive ? (
               <Button 
@@ -508,7 +510,7 @@ const ExerciseProgress: React.FC<ExerciseProgressProps> = ({
                 onClick={handleComplete}
                 leftIcon={<FaCheckCircle />}
               >
-                {exercise.duration ? 'End Set Early' : `Complete ${exercise.reps} Reps`}
+                {exercise.duration ? 'End Set Early' : `Complete ${repsDone} Reps`}
               </Button>
             )}
           </VStack>

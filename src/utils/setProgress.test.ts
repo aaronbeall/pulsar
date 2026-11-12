@@ -74,6 +74,9 @@ describe('set weights', () => {
     const done = completeSet(started, 5_000, undefined, 61.2);
     expect(done.setLog).toEqual([{ startedAt: 1_000, endedAt: 5_000, weightKg: 61.2 }]);
     expect(completeSet(startSet(lift, 1_000), 5_000).setLog).toEqual([{ startedAt: 1_000, endedAt: 5_000 }]);
+    // Reps done are kept only when they differ from the plan.
+    expect(completeSet(startSet(lift, 1_000), 5_000, undefined, undefined, 6).setLog).toEqual([{ startedAt: 1_000, endedAt: 5_000, reps: 6 }]);
+    expect(completeSet(startSet(lift, 1_000), 5_000, undefined, undefined, 8).setLog).toEqual([{ startedAt: 1_000, endedAt: 5_000 }]);
 
     const edited = editSet(done, 0, { weightKg: 63.5, reps: 6 });
     expect(edited.setLog![0]).toEqual({ startedAt: 1_000, endedAt: 5_000, weightKg: 63.5, reps: 6 });
