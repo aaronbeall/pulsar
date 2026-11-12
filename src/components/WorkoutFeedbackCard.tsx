@@ -1,12 +1,11 @@
 // "How was it?" on a finished workout: how hard and how long it felt, and an optional note.
-// Each tap saves right away. The planners learn from it (see utils/learnedPreferences.ts):
-// workouts that keep feeling too hard or too long make the next plan easier or shorter.
+// Kept small and quiet: two rows of three choices, and the note behind a link. Each tap saves
+// right away. The planners learn from it (see utils/learnedPreferences.ts): workouts that keep
+// feeling too hard or too long make the next plan easier or shorter.
 
-import { Box, Button, Flex, SimpleGrid, Text, Textarea } from '@chakra-ui/react';
+import { Box, Button, ButtonGroup, Flex, Input, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
-import { FaCommentDots } from 'react-icons/fa';
 import type { Workout, WorkoutEffort, WorkoutLengthFeel } from '../models/types';
-import SectionCard from './SectionCard';
 
 const EFFORT: { value: WorkoutEffort; label: string }[] = [
   { value: 'easy', label: 'Too easy' },
@@ -28,26 +27,30 @@ function Choices<T extends string>({ label, options, value, onChange }: {
   onChange: (value: T | undefined) => void;
 }) {
   return (
-    <Box>
-      <Text fontSize="sm" fontWeight="semibold" color="gray.500" mb={2}>{label}</Text>
-      <SimpleGrid columns={3} spacing={2} role="group" aria-label={label}>
-        {options.map(o => (
-          <Button
-            key={o.value}
-            size="md"
-            fontSize="sm"
-            px={2}
-            borderRadius="full"
-            variant={value === o.value ? 'solid' : 'outline'}
-            colorScheme={value === o.value ? 'cyan' : 'gray'}
-            aria-pressed={value === o.value}
-            onClick={() => onChange(value === o.value ? undefined : o.value)}
-          >
-            {o.label}
-          </Button>
-        ))}
-      </SimpleGrid>
-    </Box>
+    <Flex align="center" gap={2}>
+      <Text fontSize="xs" color="gray.500" w="48px" flexShrink={0}>{label}</Text>
+      <ButtonGroup size="sm" isAttached variant="outline" flex={1} role="group" aria-label={label}>
+        {options.map(o => {
+          const on = value === o.value;
+          return (
+            <Button
+              key={o.value}
+              flex={1}
+              h="36px"
+              px={1}
+              fontSize="xs"
+              fontWeight={on ? 700 : 500}
+              colorScheme={on ? 'cyan' : 'gray'}
+              variant={on ? 'solid' : 'outline'}
+              aria-pressed={on}
+              onClick={() => onChange(on ? undefined : o.value)}
+            >
+              {o.label}
+            </Button>
+          );
+        })}
+      </ButtonGroup>
+    </Flex>
   );
 }
 
@@ -56,7 +59,7 @@ export default function WorkoutFeedbackCard({ workout, onChange }: {
   onChange: (workout: Workout) => void;
 }) {
   const [note, setNote] = useState(workout.feedback ?? '');
-  const rated = workout.effort || workout.lengthFeel || workout.feedback;
+  const [showNote, setShowNote] = useState(!!workout.feedback);
 
   const saveNote = () => {
     const feedback = note.trim() || undefined;
@@ -71,24 +74,34 @@ export default function WorkoutFeedbackCard({ workout, onChange }: {
   }, [note]);
 
   return (
-    <SectionCard icon={FaCommentDots} title="How was it?">
-      <Flex direction="column" gap={4}>
+    <Box borderWidth="1px" borderRadius="xl" px={3} py={3} bg="white" _dark={{ bg: 'gray.900', borderColor: 'gray.700' }}>
+      <Flex align="baseline" justify="space-between" mb={2}>
+        <Text fontSize="sm" fontWeight={700}>How was it?</Text>
+        {!showNote && (
+          <Button variant="link" size="xs" colorScheme="cyan" fontWeight={500} onClick={() => setShowNote(true)}>
+            Add a note
+          </Button>
+        )}
+      </Flex>
+      <Flex direction="column" gap={2}>
         <Choices label="Effort" options={EFFORT} value={workout.effort} onChange={effort => onChange({ ...workout, effort })} />
         <Choices label="Length" options={LENGTH} value={workout.lengthFeel} onChange={lengthFeel => onChange({ ...workout, lengthFeel })} />
-        <Textarea
-          aria-label="Notes on this workout"
-          placeholder="Anything else? (optional)"
-          value={note}
-          maxLength={MAX_NOTE}
-          onChange={e => setNote(e.target.value)}
-          onBlur={saveNote}
-          rows={2}
-          fontSize="md"
-        />
-        <Text fontSize="sm" color="gray.500">
-          {rated ? 'Thanks! Pulsar will use this to tune your routines.' : 'Pulsar uses this to tune your routines.'}
-        </Text>
+        {showNote && (
+          <Input
+            aria-label="Notes on this workout"
+            placeholder="Anything else? (optional)"
+            value={note}
+            maxLength={MAX_NOTE}
+            onChange={e => setNote(e.target.value)}
+            onBlur={saveNote}
+            autoFocus={!workout.feedback}
+            size="sm"
+            h="36px"
+            fontSize="md"
+            borderRadius="md"
+          />
+        )}
       </Flex>
-    </SectionCard>
+    </Box>
   );
 }

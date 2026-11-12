@@ -4,7 +4,7 @@
 // no-AI alternative. Either way the result is a suggested change the user reviews day by day
 // on the routine page.
 
-import { Box, Button, Flex, Icon, Text, useColorModeValue, useToast } from '@chakra-ui/react';
+import { Box, Button, CloseButton, Flex, Icon, Text, useColorModeValue, useToast } from '@chakra-ui/react';
 import { FaListUl, FaMagic, FaSlidersH } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,8 +24,8 @@ export default function RoutineAdjustOffer({ routine, trend }: { routine: Routin
   const updateRoutine = usePulsarStore(s => s.updateRoutine);
   const navigate = useNavigate();
   const toast = useToast();
-  const bg = useColorModeValue('cyan.50', 'rgba(0, 163, 196, 0.1)');
-  const border = useColorModeValue('cyan.300', 'cyan.700');
+  const bg = useColorModeValue('cyan.50', 'rgba(0, 163, 196, 0.08)');
+  const border = useColorModeValue('cyan.100', 'cyan.800');
 
   const latest = () => usePulsarStore.getState().routines.find(r => r.id === routine.id) ?? routine;
   const markHandled = (extra: Partial<Routine> = {}) => updateRoutine({ ...latest(), ...extra, feedbackHandledAt: Date.now() });
@@ -76,22 +76,19 @@ export default function RoutineAdjustOffer({ routine, trend }: { routine: Routin
   });
 
   return (
-    <Box bg={bg} borderWidth="1px" borderColor={border} borderRadius="xl" p={{ base: 4, sm: 5 }} data-testid="routine-adjust-offer">
-      <Flex align="center" gap={2} mb={2}>
-        <Icon as={FaSlidersH} color="cyan.500" boxSize={4} />
-        <Text fontWeight="bold">Time to adjust {routine.name}?</Text>
+    <Box bg={bg} borderWidth="1px" borderColor={border} borderRadius="xl" px={3} py={3} data-testid="routine-adjust-offer">
+      <Flex gap={2} align="flex-start" mb={2}>
+        <Icon as={FaSlidersH} color="cyan.500" boxSize={3.5} mt="3px" flexShrink={0} />
+        <Text fontSize="sm" flex={1}>
+          {describeTrend(trend)} Make {routine.name} {describeWant(trend)}?
+        </Text>
+        <CloseButton size="sm" mt={-1} mr={-1} color="gray.500" aria-label="Not now" onClick={() => void markHandled()} />
       </Flex>
-      <Text fontSize="sm" mb={4}>
-        {describeTrend(trend)} Want to make it {describeWant(trend)}? You'll review each day before anything changes.
-      </Text>
-      <Flex direction="column" gap={2}>
-        <Button colorScheme="cyan" size="lg" leftIcon={<FaMagic />} onClick={handleAdjust}>
+      <Flex gap={1} align="center">
+        <Button colorScheme="cyan" size="sm" h="36px" leftIcon={<FaMagic />} onClick={handleAdjust}>
           Adjust with Pulsar AI
         </Button>
-        <Flex gap={2}>
-          <Button flex={1} variant="ghost" onClick={() => void adjustWithPlanner()}>Use the free Planner</Button>
-          <Button flex={1} variant="ghost" color="gray.500" onClick={() => void markHandled()}>Not now</Button>
-        </Flex>
+        <Button size="sm" h="36px" variant="ghost" onClick={() => void adjustWithPlanner()}>Use the free Planner</Button>
       </Flex>
       {aiGate.gate}
     </Box>
