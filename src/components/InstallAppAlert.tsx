@@ -1,26 +1,19 @@
 import React from 'react';
 import { Box, Button, CloseButton, Flex, Text, SlideFade, useToast, useColorModeValue } from '@chakra-ui/react';
 import { FaMobileAlt, FaDownload, FaShareSquare } from 'react-icons/fa';
-import { useInstallBannerVisible, useInstallPromptStore } from '../store/installPromptStore';
-
-/**
- * Extra room to leave at the bottom of the page while the banner shows, so the end of a
- * page can scroll clear of it. The banner is about 9rem tall and sits 5.5rem up.
- */
-export const INSTALL_BANNER_SPACE = '11rem';
+import { useInstallPromptStore } from '../store/installPromptStore';
 
 const InstallAppAlert: React.FC = () => {
-  const { deferredPrompt, dismiss, promptInstall } = useInstallPromptStore();
-  const isVisible = useInstallBannerVisible();
+  const { deferredPrompt, isInstalled, isIOS, dismissed, dismiss, promptInstall } = useInstallPromptStore();
   const toast = useToast();
   const glassBg = useColorModeValue('whiteAlpha.700', 'blackAlpha.400');
   const glassBorder = useColorModeValue('whiteAlpha.800', 'whiteAlpha.100');
   const mutedColor = useColorModeValue('gray.600', 'gray.300');
 
   const canPromptInstall = !!deferredPrompt;
-  const showIOSInstructions = !canPromptInstall;
+  const showIOSInstructions = !canPromptInstall && isIOS;
 
-  if (!isVisible) {
+  if (isInstalled || dismissed || !(canPromptInstall || showIOSInstructions)) {
     return null;
   }
 
