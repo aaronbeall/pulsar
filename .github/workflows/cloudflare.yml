@@ -1,20 +1,19 @@
 name: Cloudflare
 
-# Deploys the site (homepage, app, API) as Cloudflare Workers (wrangler.jsonc):
-# - push to main: `wrangler deploy` to production (pulsarworkouts.app), then the same code to
-#   staging (staging.pulsarworkouts.app, the "pulsar-staging" Worker);
-# - same-repo PR: a Cloudflare Preview named pr-<n> (`wrangler preview`), on the staging
-#   database and secrets, posted as a sticky comment; deleted when the PR closes;
+# Deploys the site (homepage, app, API) as the "pulsar" Cloudflare Worker (wrangler.jsonc).
+# Production is the Worker itself; everything else is a Cloudflare Preview of it:
+# - push to main: `wrangler deploy` to production (pulsarworkouts.app), then the "staging"
+#   Preview (staging-pulsar.<account>.workers.dev);
+# - same-repo PR: a Preview named pr-<n>, posted as a sticky comment, deleted when the PR closes;
 # - a PR that changed worker/migrations/ and is closed without merging: the staging database
-#   is rebuilt from main's migrations (scripts/reset-staging-db.sh);
-# - manual run: deploy the chosen branch to production or staging, or reset the staging
-#   database.
+#   (shared by every Preview) is rebuilt from main's migrations (scripts/reset-staging-db.sh);
+# - manual run: deploy the chosen branch to staging or production, recreate staging (to pick
+#   up changed Previews base secrets), or reset the staging database.
 #
 # Needs repo secrets CLOUDFLARE_API_TOKEN (template "Edit Cloudflare Workers", plus
 # Account > D1 > Edit) and CLOUDFLARE_ACCOUNT_ID; until they're set every run skips and passes.
-# Staging and previews take their runtime secrets from STAGING_* repo secrets (see README
-# "Staging and PR previews"); without them they still deploy, just without sign-in, hosted AI
-# or checkout.
+# Previews' runtime secrets live in Cloudflare, in the Previews base config (README "Staging
+# and PR previews").
 
 on:
   push:
@@ -29,6 +28,7 @@ on:
         default: deploy-staging
         options:
           - deploy-staging
+          - recreate-staging
           - deploy-production
           - reset-staging-database
 
@@ -46,6 +46,8 @@ concurrency:
 env:
   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  # D1 commands for the database staging and PR previews share.
+  STAGING_DB_CONFIG: wrangler.preview-migrations.jsonc
 
 jobs:
   deploy:
@@ -56,13 +58,7 @@ jobs:
     env:
       PR: ${{ github.event.pull_request.number }}
       TO_PRODUCTION: ${{ github.event_name == 'push' || inputs.action == 'deploy-production' }}
-      TO_STAGING: ${{ github.event_name == 'push' || inputs.action == 'deploy-staging' }}
-      STAGING_BETTER_AUTH_SECRET: ${{ secrets.STAGING_BETTER_AUTH_SECRET }}
-      STAGING_GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
-      STAGING_GOOGLE_CLIENT_SECRET: ${{ secrets.STAGING_GOOGLE_CLIENT_SECRET }}
-      STAGING_OPENAI_API_KEY: ${{ secrets.STAGING_OPENAI_API_KEY }}
-      STAGING_STRIPE_SECRET_KEY: ${{ secrets.STAGING_STRIPE_SECRET_KEY }}
-      STAGING_STRIPE_WEBHOOK_SECRET: ${{ secrets.STAGING_STRIPE_WEBHOOK_SECRET }}
+      TO_STAGING: ${{ github.event_name == 'push' || inputs.action == 'deploy-staging' || inputs.action == 'recreate-staging' }}
     steps:
       - name: Check for Cloudflare credentials
         id: creds
@@ -81,20 +77,9 @@ jobs:
           cache: npm
       - run: npm ci
         if: steps.creds.outputs.ok
-
-      # Staging's runtime secrets, for both the staging Worker and previews, as a JSON file
-      # Wrangler uploads with each deploy. Unset ones are left out.
-      - name: Collect staging secrets
-        if: steps.creds.outputs.ok && (env.PR != '' || env.TO_STAGING == 'true')
-        run: |
-          jq -n 'env | to_entries | map(select(.key | startswith("STAGING_")) | select(.value != ""))
-                 | map({key: (.key | ltrimstr("STAGING_")), value}) | from_entries' > "$RUNNER_TEMP/staging-secrets.json"
-          echo "Staging secrets set: $(jq -r 'keys | join(", ")' "$RUNNER_TEMP/staging-secrets.json")"
-      - name: Make sure the D1 databases exist
-        if: steps.creds.outputs.ok
-        run: |
-          npx wrangler d1 info pulsar > /dev/null 2>&1 || npx wrangler d1 create pulsar
-          npx wrangler d1 info pulsar-staging > /dev/null 2>&1 || npx wrangler d1 create pulsar-staging
+      - name: Make sure the production database exists
+        if: steps.creds.outputs.ok && env.TO_PRODUCTION == 'true'
+        run: npx wrangler d1 info pulsar > /dev/null 2>&1 || npx wrangler d1 create pulsar
 
       # Production: only from main (or a manual run), and only production migrates its own
       # database. A PR's unmerged migration never touches it.
@@ -105,12 +90,14 @@ jobs:
           BASE: /
       - name: Apply production database migrations
         if: steps.creds.outputs.ok && env.TO_PRODUCTION == 'true'
-        run: npx wrangler d1 migrations apply pulsar --env "" --remote
+        run: npx wrangler d1 migrations apply pulsar --remote
       - name: Deploy to production
         if: steps.creds.outputs.ok && env.TO_PRODUCTION == 'true'
-        run: npx wrangler deploy --env ""
+        run: npx wrangler deploy
 
-      # Staging: after every production deploy, or on demand for any branch.
+      # Staging: the "staging" Preview, after every production deploy or on demand. A Preview
+      # gets the Previews base secrets only when it's created, so recreate-staging deletes it
+      # first to pick up changed ones.
       - name: Build for staging
         if: steps.creds.outputs.ok && env.TO_STAGING == 'true'
         run: npm run build
@@ -119,13 +106,16 @@ jobs:
           VITE_STAGE: staging
       - name: Apply staging database migrations
         if: steps.creds.outputs.ok && env.TO_STAGING == 'true'
-        run: npx wrangler d1 migrations apply pulsar-staging --env staging --remote
-      - name: Deploy to staging
+        run: npx wrangler d1 migrations apply pulsar-staging --remote -c "$STAGING_DB_CONFIG"
+      - name: Delete the staging Preview, to recreate it
+        if: steps.creds.outputs.ok && inputs.action == 'recreate-staging'
+        run: npx wrangler preview delete --name staging --skip-confirmation || echo "No staging Preview yet."
+      - name: Deploy staging
         if: steps.creds.outputs.ok && env.TO_STAGING == 'true'
-        run: npx wrangler deploy --env staging --secrets-file "$RUNNER_TEMP/staging-secrets.json"
+        run: npx wrangler preview --name staging --message "staging ${{ github.sha }}"
 
       # PR preview: the staging database gets the PR's migrations, so the preview runs on its
-      # schema. Closing the PR unmerged rebuilds staging from main (reset job below).
+      # schema. Closing the PR unmerged rebuilds staging from main (closed job below).
       - name: Build PR preview
         if: steps.creds.outputs.ok && env.PR != ''
         run: npm run build
@@ -135,14 +125,13 @@ jobs:
           VITE_PREVIEW_PR: ${{ env.PR }}
       - name: Apply the PR's migrations to the staging database
         if: steps.creds.outputs.ok && env.PR != ''
-        run: npx wrangler d1 migrations apply pulsar-staging --env staging --remote
+        run: npx wrangler d1 migrations apply pulsar-staging --remote -c "$STAGING_DB_CONFIG"
       - name: Deploy PR preview
         id: preview
         if: steps.creds.outputs.ok && env.PR != ''
         run: |
           npx wrangler preview --name "pr-$PR" --json \
-            --message "PR #$PR ${{ github.event.pull_request.head.sha }}" \
-            --secrets-file "$RUNNER_TEMP/staging-secrets.json" > preview.json
+            --message "PR #$PR ${{ github.event.pull_request.head.sha }}" > preview.json
           cat preview.json
           url=$(jq -r '[.preview.urls[]?, .deployment.urls[]?] | map(if type == "object" then .url else . end) | first // empty' preview.json 2>/dev/null || true)
           [ -n "$url" ] || url=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' preview.json | head -1 || true)
@@ -154,7 +143,7 @@ jobs:
           message: |
             ☁️ **Cloudflare preview:** ${{ steps.preview.outputs.url }}/app/ (homepage: ${{ steps.preview.outputs.url }}/)
 
-            Built from ${{ github.event.pull_request.head.sha }}. Runs on staging: Google sign-in (through staging.pulsarworkouts.app), hosted AI on the staging key, and Stripe test checkout (card 4242 4242 4242 4242). Accounts live in the shared staging database; workout data stays on your device, separate from the live app.
+            Built from ${{ github.event.pull_request.head.sha }}. Runs like staging: Google sign-in (through staging), hosted AI on the staging key, and Stripe test checkout (card 4242 4242 4242 4242). Accounts live in the shared staging database; workout data stays on your device, separate from the live app.
 
   # A closed PR: delete its preview, and if it changed the database schema without being
   # merged, rebuild the staging database from main so the change doesn't linger.

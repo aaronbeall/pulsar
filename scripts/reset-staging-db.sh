@@ -11,7 +11,7 @@ set -euo pipefail
 DB=pulsar-staging
 wrangler() { npx wrangler "$@"; }
 
-tables=$(wrangler d1 execute "$DB" --env staging --remote --json \
+tables=$(wrangler d1 execute "$DB" -c wrangler.preview-migrations.jsonc --remote --json \
   --command "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'" \
   | jq -r '.[0].results[].name')
 
@@ -19,8 +19,8 @@ if [ -n "$tables" ]; then
   sql="PRAGMA defer_foreign_keys = on;"
   while IFS= read -r t; do sql+=" DROP TABLE IF EXISTS \"$t\";"; done <<< "$tables"
   echo "Dropping: $(echo $tables)"
-  wrangler d1 execute "$DB" --env staging --remote --command "$sql"
+  wrangler d1 execute "$DB" -c wrangler.preview-migrations.jsonc --remote --command "$sql"
 fi
 
-wrangler d1 migrations apply "$DB" --env staging --remote
+wrangler d1 migrations apply "$DB" -c wrangler.preview-migrations.jsonc --remote
 echo "Staging database rebuilt from this checkout's migrations."

@@ -84,9 +84,9 @@ at best. All design and layout work going forward must be mobile-first-friendly:
 - **Hosting is Cloudflare.** One Worker (`wrangler.jsonc`, `worker/`) serves the
   homepage, the app and the API from the same origin, so login cookies need no CORS. Static
   files are served before the Worker runs; API routes go under `/api/`. Merging to main
-  deploys production, then staging (`staging.pulsarworkouts.app`, Worker `pulsar-staging`);
-  each PR gets a Cloudflare Preview. Staging and previews share the `pulsar-staging` database,
-  `STAGING_*` secrets and Stripe test mode, and previews sign in through staging
+  deploys production, then the `staging` Cloudflare Preview; each PR gets a `pr-<n>` Preview
+  (`previews` in `wrangler.jsonc`). All Previews share the `pulsar-staging` database, the
+  Previews base secrets and Stripe test mode, and PR previews sign in through staging
   (`oAuthProxy`). A PR's migrations reach staging on push and production only on merge, so
   keep migrations additive. See README "Staging and PR previews".
 - **Naming: the official product name is "Pulsar Workouts"; the brand is "Pulsar".** Use

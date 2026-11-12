@@ -40,47 +40,27 @@
   // GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OPENAI_API_KEY, STRIPE_SECRET_KEY,
   // STRIPE_WEBHOOK_SECRET. See README "Deploying".
 
-  // PR previews (`wrangler preview`, one Cloudflare Preview per PR). Nothing here is inherited
-  // from production: previews use the staging database, staging's secrets (passed by the
-  // workflow from STAGING_* GitHub secrets) and Stripe test mode, and sign in through staging.
+  // Everything that isn't production is a Cloudflare Preview of this Worker (`wrangler
+  // preview`): "staging", deployed from main, and "pr-<n>" for each PR. Nothing here is
+  // inherited from production. Previews share the pulsar-staging database and Stripe test
+  // mode; their secrets are set once in the Previews base config (README "Staging and PR
+  // previews"). A Preview's address is <name>-pulsar.<account>.workers.dev.
   "previews": {
-    // Previews need the database's id (Wrangler doesn't look it up by name for them). It's
-    // pulsar-staging, which the first PR run created; recreating it means updating both ids.
+    // Previews need the database's id (Wrangler doesn't look it up by name for them).
+    // wrangler.preview-migrations.jsonc names the same database for migrations.
     "d1_databases": [
       { "binding": "DB", "database_name": "pulsar-staging", "database_id": "371bcacd-07b5-4f56-8fb4-9a09baa7b98f", "migrations_dir": "worker/migrations" }
     ],
     "vars": {
-      // Preview addresses are <name>-pulsar.<account>.workers.dev; they can't each be
-      // registered with Google, so sign-in goes through staging (AUTH_PROXY_URL).
-      "AUTH_ORIGINS": "https://*.metamodernmonkey.workers.dev",
-      "AUTH_PROXY_URL": "https://staging.pulsarworkouts.app",
+      "AUTH_ORIGINS": "https://*-pulsar.metamodernmonkey.workers.dev",
+      // Google only redirects to registered addresses, so every preview signs in through
+      // staging's fixed address (see worker/auth.ts). Staging's own sign-ins skip the proxy.
+      "AUTH_PROXY_URL": "https://staging-pulsar.metamodernmonkey.workers.dev",
       "AI_MODEL": "gpt-5-mini",
       "AI_DAILY_BUDGET_USD": "2",
       // Always Stripe test mode.
       "STRIPE_PRICE_MONTHLY": "price_1UaEg4Ru7wLB1EixsMo5hCxg",
       "STRIPE_PRICE_YEARLY": "price_1UaEgzRu7wLB1EixjkEftQEi"
-    }
-  },
-
-  "env": {
-    // Staging: `wrangler deploy --env staging` deploys the separate Worker "pulsar-staging" at
-    // staging.pulsarworkouts.app. It shares its database and secrets with PR previews, and is
-    // the fixed address Google (sign-in callback) and Stripe (test webhook) talk to.
-    "staging": {
-      "routes": [{ "pattern": "staging.pulsarworkouts.app", "custom_domain": true }],
-      "d1_databases": [
-        { "binding": "DB", "database_name": "pulsar-staging", "database_id": "371bcacd-07b5-4f56-8fb4-9a09baa7b98f", "migrations_dir": "worker/migrations" }
-      ],
-      "vars": {
-        "AUTH_ORIGINS": "https://staging.pulsarworkouts.app",
-        // Staging is the proxy itself, so its own sign-ins skip it; it's set so that staging
-        // can finish previews' sign-ins.
-        "AUTH_PROXY_URL": "https://staging.pulsarworkouts.app",
-        "AI_MODEL": "gpt-5-mini",
-        "AI_DAILY_BUDGET_USD": "2",
-        "STRIPE_PRICE_MONTHLY": "price_1UaEg4Ru7wLB1EixsMo5hCxg",
-        "STRIPE_PRICE_YEARLY": "price_1UaEgzRu7wLB1EixjkEftQEi"
-      }
     }
   }
 }

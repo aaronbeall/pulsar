@@ -1,0 +1,10 @@
+// Only for `wrangler d1 migrations apply pulsar-staging --remote -c wrangler.preview-migrations.jsonc`:
+// D1 commands don't read the `previews` block of wrangler.jsonc, so this names the database
+// that staging and PR previews share. Keep the id in step with wrangler.jsonc's `previews`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pulsar",
+  "d1_databases": [
+    { "binding": "DB", "database_name": "pulsar-staging", "database_id": "371bcacd-07b5-4f56-8fb4-9a09baa7b98f", "migrations_dir": "worker/migrations" }
+  ]
+}
