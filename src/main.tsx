@@ -8,8 +8,10 @@ import theme from './theme'; // Import the custom theme
 import App from './App';
 import './index.css';
 import { initDevMode } from './utils/devMode';
+import { initColorModePreference } from './store/themeStore';
 
 initDevMode(); // Apply ?dev=1 / ?dev=0 before anything reads the flag
+initColorModePreference(); // Follow the phone's light/dark setting on boot, unless one was picked
 
 // The app lives at <base>app/; the site root is the marketing homepage (see vite.config.ts).
 const base = `${import.meta.env.BASE_URL}app/`;
