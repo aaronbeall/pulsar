@@ -6,31 +6,35 @@
 import { Box, Button, ButtonGroup, Flex, Icon, Input, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import type { IconType } from 'react-icons';
-import { FaCheck, FaCommentDots, FaFeatherAlt, FaFire, FaHourglassEnd, FaHourglassStart, FaPen } from 'react-icons/fa';
+import { FaBolt, FaClock, FaCommentDots, FaPen } from 'react-icons/fa';
 import type { Workout, WorkoutEffort, WorkoutLengthFeel } from '../models/types';
 
-const EFFORT: { value: WorkoutEffort; label: string; icon: IconType }[] = [
-  { value: 'easy', label: 'Too easy', icon: FaFeatherAlt },
-  { value: 'right', label: 'Just right', icon: FaCheck },
-  { value: 'hard', label: 'Too hard', icon: FaFire },
+const EFFORT: { value: WorkoutEffort; label: string }[] = [
+  { value: 'easy', label: 'Too easy' },
+  { value: 'right', label: 'Just right' },
+  { value: 'hard', label: 'Too hard' },
 ];
-const LENGTH: { value: WorkoutLengthFeel; label: string; icon: IconType }[] = [
-  { value: 'short', label: 'Too short', icon: FaHourglassStart },
-  { value: 'right', label: 'Just right', icon: FaCheck },
-  { value: 'long', label: 'Too long', icon: FaHourglassEnd },
+const LENGTH: { value: WorkoutLengthFeel; label: string }[] = [
+  { value: 'short', label: 'Too short' },
+  { value: 'right', label: 'Just right' },
+  { value: 'long', label: 'Too long' },
 ];
 
 const MAX_NOTE = 300;
 
-function Choices<T extends string>({ label, options, value, onChange }: {
+function Choices<T extends string>({ label, icon, options, value, onChange }: {
   label: string;
-  options: { value: T; label: string; icon: IconType }[];
+  icon: IconType;
+  options: { value: T; label: string }[];
   value?: T;
   onChange: (value: T | undefined) => void;
 }) {
   return (
     <Flex align="center" gap={2}>
-      <Text fontSize="xs" color="gray.500" w="48px" flexShrink={0}>{label}</Text>
+      <Flex align="center" gap={1} w="58px" flexShrink={0} color="gray.500">
+        <Icon as={icon} boxSize={3} />
+        <Text fontSize="xs">{label}</Text>
+      </Flex>
       <ButtonGroup size="sm" isAttached variant="outline" flex={1} role="group" aria-label={label}>
         {options.map(o => {
           const on = value === o.value;
@@ -40,8 +44,6 @@ function Choices<T extends string>({ label, options, value, onChange }: {
               flex={1}
               h="36px"
               px={1}
-              leftIcon={<Icon as={o.icon} boxSize={2.5} />}
-              iconSpacing={1}
               fontSize="xs"
               fontWeight={on ? 700 : 500}
               colorScheme={on ? 'cyan' : 'gray'}
@@ -91,8 +93,8 @@ export default function WorkoutFeedbackCard({ workout, onChange }: {
         )}
       </Flex>
       <Flex direction="column" gap={2}>
-        <Choices label="Effort" options={EFFORT} value={workout.effort} onChange={effort => onChange({ ...workout, effort })} />
-        <Choices label="Length" options={LENGTH} value={workout.lengthFeel} onChange={lengthFeel => onChange({ ...workout, lengthFeel })} />
+        <Choices label="Effort" icon={FaBolt} options={EFFORT} value={workout.effort} onChange={effort => onChange({ ...workout, effort })} />
+        <Choices label="Length" icon={FaClock} options={LENGTH} value={workout.lengthFeel} onChange={lengthFeel => onChange({ ...workout, lengthFeel })} />
         {showNote && (
           <Input
             aria-label="Notes on this workout"
