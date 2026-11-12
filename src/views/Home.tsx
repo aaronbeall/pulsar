@@ -7,12 +7,13 @@ import { useExercises, usePulsarLoading, useRoutines, useWorkouts } from '../sto
 import { findExercisesForToday, findRoutineForToday, getWorkoutStatusForToday, hasRoutineForToday } from '../utils/workoutUtils';
 import StreakCalendar from '../components/StreakCalendar';
 import ActivitySummaryCard from '../components/ActivitySummaryCard';
-import InstallAppAlert from '../components/InstallAppAlert';
 import TimeToWorkoutAlert from '../components/TimeToWorkoutAlert';
 import RestDayAlert from '../components/RestDayAlert';
 import FinishedWorkoutAlert from '../components/FinishedWorkoutAlert';
 import NoActiveRoutinesAlert from '../components/NoActiveRoutinesAlert';
 import { pickTodaysHomeBackground } from '../assets/homeBackgrounds';
+import { INSTALL_BANNER_SPACE } from '../components/InstallAppAlert';
+import { useInstallBannerVisible } from '../store/installPromptStore';
 
 const getGreeting = (hour: number): string => {
   if (hour < 5) return 'Still up?';
@@ -29,6 +30,7 @@ const Home: React.FC = () => {
   // the store's own `loading` flag is the only reliable signal here.
   const isLoading = usePulsarLoading();
   const navigate = useNavigate();
+  const installBannerVisible = useInstallBannerVisible();
   const now = new Date();
   const glassBg = useColorModeValue('whiteAlpha.700', 'blackAlpha.400');
   const glassBorder = useColorModeValue('whiteAlpha.800', 'whiteAlpha.100');
@@ -72,10 +74,19 @@ const Home: React.FC = () => {
     // Full-bleed background spanning the entire content area with no margin — breaks out
     // of the parent route Container's max-width (left:50%/-50vw trick) AND its py={6}
     // vertical padding (mt/mb: -6, the matching negative token) so the image runs flush
-    // against the header/footer bars above/below it, with nothing outside its bounds
-    // (InstallAppAlert floats over it, fixed above the bottom nav). Tinted the same way as the exercise session
+    // against the header/footer bars above/below it, with nothing outside its bounds. While
+    // the floating install banner shows, App adds room below the page for it, so the
+    // background reaches into that room too. Tinted the same way as the exercise session
     // screen.
-    <Box position="relative" left="50%" marginLeft="-50vw" width="100vw" mt={-6} mb={-6} overflow="hidden">
+    <Box
+      position="relative"
+      left="50%"
+      marginLeft="-50vw"
+      width="100vw"
+      mt={-6}
+      mb={installBannerVisible ? `calc(-1.5rem - ${INSTALL_BANNER_SPACE})` : -6}
+      overflow="hidden"
+    >
       <Box position="absolute" top={0} left={0} w="100%" h="100%" zIndex={0}>
         <img
           src={background.src}
@@ -92,8 +103,13 @@ const Home: React.FC = () => {
           style={{ background: backgroundTint, mixBlendMode: 'multiply' }}
         />
       </Box>
-      <Container maxW="container.lg" position="relative" zIndex={1} pt={6} pb={6}>
-        <InstallAppAlert />
+      <Container
+        maxW="container.lg"
+        position="relative"
+        zIndex={1}
+        pt={6}
+        pb={installBannerVisible ? `calc(1.5rem + ${INSTALL_BANNER_SPACE})` : 6}
+      >
         {routines.length === 0 ? (
           <Flex align="center" justify="center" minH="calc(100vh - 200px)" w="100%" p={{ base: 4, md: 8 }}>
             <Box

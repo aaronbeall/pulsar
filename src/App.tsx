@@ -27,8 +27,9 @@ import Settings from './views/Settings';
 import Activity from './views/Activity';
 import About from './views/About';
 import { usePulsarStoreInit } from './store/pulsarStore';
-import { useInstallPromptInit } from './store/installPromptStore';
+import { useInstallBannerVisible, useInstallPromptInit } from './store/installPromptStore';
 import AppMenu from './components/AppMenu';
+import InstallAppAlert, { INSTALL_BANNER_SPACE } from './components/InstallAppAlert';
 import logoSvg from './assets/logo.svg';
 import { requestPersistentStorage } from './utils/storagePersistence';
 import { useCheckoutReturn } from './hooks/useCheckoutReturn';
@@ -36,6 +37,7 @@ import { useCheckoutReturn } from './hooks/useCheckoutReturn';
 const App: React.FC = () => {
   usePulsarStoreInit(); // Load all data from DB into Zustand store on app mount
   useInstallPromptInit(); // Listen for PWA installability as early as possible
+  const installBannerVisible = useInstallBannerVisible();
   useCheckoutReturn(); // Thank-you toast and account refresh after Stripe Checkout, on any page
   // Ask the browser not to evict our IndexedDB data. Fire-and-forget: Settings shows the result.
   useEffect(() => { requestPersistentStorage(); }, []);
@@ -122,7 +124,9 @@ const App: React.FC = () => {
         bg={colorMode === 'light' ? 'gray.50' : 'gray.900'}
         position="relative"
         zIndex="1"
-        pb={20}
+        // Room for the bottom nav, plus the floating install banner while it shows, so the
+        // end of every page can still scroll clear of both.
+        pb={installBannerVisible ? `calc(5rem + ${INSTALL_BANNER_SPACE})` : 20}
       >
         <Container maxW="container.lg" py={6}>
           <Routes>
@@ -138,6 +142,9 @@ const App: React.FC = () => {
           </Routes>
         </Container>
       </Box>
+
+      {/* Floats over every view, just above the bottom nav, until installed or dismissed. */}
+      <InstallAppAlert />
 
       <Box
         as="nav"

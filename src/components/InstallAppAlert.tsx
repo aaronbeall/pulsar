@@ -1,19 +1,26 @@
 import React from 'react';
 import { Box, Button, CloseButton, Flex, Text, SlideFade, useToast, useColorModeValue } from '@chakra-ui/react';
 import { FaMobileAlt, FaDownload, FaShareSquare } from 'react-icons/fa';
-import { useInstallPromptStore } from '../store/installPromptStore';
+import { useInstallBannerVisible, useInstallPromptStore } from '../store/installPromptStore';
+
+/**
+ * Extra room to leave at the bottom of the page while the banner shows, so the end of a
+ * page can scroll clear of it. The banner is about 9rem tall and sits 5.5rem up.
+ */
+export const INSTALL_BANNER_SPACE = '11rem';
 
 const InstallAppAlert: React.FC = () => {
-  const { deferredPrompt, isInstalled, isIOS, dismissed, dismiss, promptInstall } = useInstallPromptStore();
+  const { deferredPrompt, dismiss, promptInstall } = useInstallPromptStore();
+  const isVisible = useInstallBannerVisible();
   const toast = useToast();
   const glassBg = useColorModeValue('whiteAlpha.900', 'rgba(26, 32, 44, 0.92)');
   const glassBorder = useColorModeValue('whiteAlpha.800', 'whiteAlpha.100');
   const mutedColor = useColorModeValue('gray.600', 'gray.300');
 
   const canPromptInstall = !!deferredPrompt;
-  const showIOSInstructions = !canPromptInstall && isIOS;
+  const showIOSInstructions = !canPromptInstall;
 
-  if (isInstalled || dismissed || !(canPromptInstall || showIOSInstructions)) {
+  if (!isVisible) {
     return null;
   }
 
@@ -25,7 +32,7 @@ const InstallAppAlert: React.FC = () => {
   };
 
   // Floats over the page just above the bottom nav instead of sitting in the flow, so it
-  // never pushes the home content down (and stays within thumb reach). Near-opaque so it
+  // never pushes any view's content down (and stays within thumb reach). Near-opaque so it
   // reads over whatever is underneath.
   return (
     <Box

@@ -62,6 +62,10 @@ export const useInstallPromptStore = create<InstallPromptState>()((set, get) => 
   },
 }));
 
+/** Whether the install banner is showing: installable (or on iOS), not installed, not dismissed. */
+export const useInstallBannerVisible = () =>
+  useInstallPromptStore((s) => !s.isInstalled && !s.dismissed && (!!s.deferredPrompt || s.isIOS));
+
 // Call once at the app root so the beforeinstallprompt listener is registered as early
 // as possible — the browser only fires it once, and only if we've called
 // preventDefault() before it would otherwise show its own mini-infobar.
