@@ -85,7 +85,10 @@ the day count and the level. "More names" changes the seed.
 
 ### The "Your plan" screen (`components/RoutinePlanBuilder.tsx`)
 
-Opened with `?plan=1`. Shows what the parser understood as chips (goal, days and each
+Opened with `?plan=1`. It first shows a short "Building your plan" moment
+(`components/PlanBuildSteps.tsx`, about 2 seconds): the plan is ready instantly, but each
+step names something real it found (the answers it understood, what it learned, how many
+exercises it picked from the catalog, the days it chose). Then it shows what the parser understood as chips (goal, days and each
 weekday, minutes, equipment, level, focus, watch-outs) and rebuilds the week on every tap.
 Learned items show as removable watch-outs ("Disliked: Push-up", "Often skipped: Lunge").
 Editing a field the history filled in clears its "learned" flag, so the note goes away.

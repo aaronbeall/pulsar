@@ -3,7 +3,7 @@
 // week right away; Shuffle picks other exercises. See services/routinePlanner.
 
 import { Box, Button, Flex, Heading, Input, Text, VStack, Wrap, WrapItem, Tag, TagLabel, TagCloseButton, Badge, Divider } from '@chakra-ui/react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { FaArrowLeft, FaBook, FaPlus, FaRandom, FaRedo, FaTimes, FaCheck } from 'react-icons/fa';
 import NumericStepper from './NumericStepper';
 import type { DayOfWeek } from '../models/types';
@@ -19,7 +19,9 @@ function usesHistory(p: LearnedPreferences | undefined): boolean {
     p.usualDays.length > 0 || p.usualMinutes !== undefined || !!p.effort || !!p.length
   );
 }
-import { PlannedExercise, RoutinePlan, defaultDaysPerWeek, defaultMinutes, planRoutine } from '../services/routinePlanner/planRoutine';
+import { PlannedExercise, RoutinePlan, defaultDaysPerWeek, defaultMinutes, equipmentText, listText, planRoutine } from '../services/routinePlanner/planRoutine';
+import { exerciseCatalog } from '../services/routinePlanner/exerciseCatalog';
+import PlanBuildSteps, { type BuildStep } from './PlanBuildSteps';
 import {
   ALL_EQUIPMENT, Activity, Condition, Equipment, Focus, GOALS, GYM_EQUIPMENT, Goal, Level, Limit, Profile, primaryGoal,
 } from '../services/routinePlanner/profile';
@@ -180,6 +182,44 @@ export const RoutinePlanBuilder: React.FC<RoutinePlanBuilderProps> = ({ response
   // Fun name ideas from what's in the plan, like the ready-made routines' nicknames.
   const [nameSeed, setNameSeed] = useState(0);
   const nicknames = useMemo(() => planNicknames(plan, profile, nameSeed), [plan, profile, nameSeed]);
+
+  // A short build-up before the first plan shows (it's ready instantly; see PlanBuildSteps).
+  const [building, setBuilding] = useState(true);
+  const finishBuilding = useCallback(() => setBuilding(false), []);
+  const [buildSteps] = useState<BuildStep[]>(() => {
+    const understood = [
+      hasGoal(mainGoal) ? GOAL_LABEL[mainGoal] : '',
+      `${profile.daysPerWeek} days a week`,
+      profile.equipment.length ? equipmentText(profile.equipment) : 'bodyweight',
+      ...watchOuts.filter(w => w.kind !== 'disliked' && w.kind !== 'skipped').slice(0, 2).map(w => watchOutLabel(w).toLowerCase()),
+    ].filter(Boolean);
+    const learnedNote = plan.notes.find(n => /disliked|skip|liked|usual|recent workouts/i.test(n));
+    const count = plan.days.reduce((n, d) => n + d.exercises.length, 0);
+    return [
+      { label: 'Reading your answers', detail: listText(understood) },
+      ...(usesHistory(preferences) ? [{ label: 'Checking your workouts and likes', detail: learnedNote }] : []),
+      {
+        label: `Choosing from ${exerciseCatalog.length} exercises`,
+        detail: `${count} picked for your ${profile.limits.length ? 'gear and injuries' : 'goal and gear'}`,
+      },
+      { label: 'Arranging your week', detail: listText(plan.days.map(d => d.day)) },
+    ];
+  });
+
+  if (building) {
+    return (
+      <Box maxW="600px" mx="auto" px={{ base: 0, sm: 4 }} pb={6}>
+        <Flex align="center" mb={1} gap={2}>
+          <Button variant="ghost" size="sm" leftIcon={<FaArrowLeft />} onClick={onBack} ml={-2}>
+            Back
+          </Button>
+        </Flex>
+        <Heading size="lg" mb={1}>Building your plan</Heading>
+        <Text fontSize="sm" color="gray.500" mb={4}>The Pulsar Planner is putting your week together, right on your phone.</Text>
+        <PlanBuildSteps steps={buildSteps} onDone={finishBuilding} />
+      </Box>
+    );
+  }
 
   return (
     <Box maxW="600px" mx="auto" px={{ base: 0, sm: 4 }} pb={6}>

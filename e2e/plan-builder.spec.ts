@@ -10,7 +10,11 @@ test('builds a routine from free-text answers without AI', async ({ page }) => {
     "I have bad knees and I hate running",
   ]);
   await page.getByRole('button', { name: 'Use the free Planner' }).click();
-  await expect(page.getByRole('heading', { name: 'Your plan' })).toBeVisible();
+  // A short build-up first, naming what it found.
+  const steps = page.getByTestId('plan-build-steps');
+  await expect(steps.getByText('Reading your answers')).toBeVisible();
+  await expect(steps.getByText(/Build muscle, 4 days a week, dumbbells/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your plan', exact: true })).toBeVisible();
 
   // What it understood, as chips.
   await expect(page.getByRole('button', { name: 'Build muscle' })).toHaveAttribute('aria-pressed', 'true');
