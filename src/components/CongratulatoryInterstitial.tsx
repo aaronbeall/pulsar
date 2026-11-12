@@ -1,7 +1,7 @@
 import { Box, Button, Flex, Heading, Text, useColorModeValue } from '@chakra-ui/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import React, { useEffect, useState } from 'react';
-import { FaFlagCheckered, FaDumbbell } from 'react-icons/fa';
+import { FaFlagCheckered, FaDumbbell, FaShareAlt, FaChevronRight } from 'react-icons/fa';
 import { Counter } from '../components/Counter';
 import Confetti from 'react-confetti';
 import { formatSessionName } from '../utils/sessionName';
@@ -15,7 +15,12 @@ export const CongratulatoryInterstitial: React.FC<{
   nickname: string;
   kind: string;
   completedExercises: number;
-}> = ({ streak, streakType, isPerfect, totalWorkouts, onDismiss, nickname, kind, completedExercises }) => {
+  /** Open the share sheet on this workout's card. */
+  onShare?: () => void;
+  /** Offer the streak card unprompted: on a streak milestone, or the day the best is passed. */
+  streakNudge?: 'milestone' | 'best' | null;
+  onShareStreak?: () => void;
+}> = ({ streak, streakType, isPerfect, totalWorkouts, onDismiss, nickname, kind, completedExercises, onShare, streakNudge, onShareStreak }) => {
   const [step, setStep] = useState(0);
   useEffect(() => {
     let timers: NodeJS.Timeout[] = [];
@@ -240,11 +245,35 @@ export const CongratulatoryInterstitial: React.FC<{
               transition={{ duration: 0.7, delay: 0.1, type: 'spring', bounce: 0.4 }}
               style={{ width: '100%' }}
             >
-              <Flex justify="center">
-                <Button colorScheme="cyan" size="lg" mt={6} onClick={onDismiss} leftIcon={<Box as={FaFlagCheckered} fontSize="1.3em" />}>
+              <Flex justify="center" gap={3} mt={6} wrap="wrap">
+                {onShare && (
+                  <Button size="lg" flex={{ base: 1, sm: 'none' }} minW="120px" colorScheme="pink" onClick={onShare} leftIcon={<FaShareAlt />} data-testid="celebration-share">
+                    Share
+                  </Button>
+                )}
+                <Button colorScheme="cyan" size="lg" flex={{ base: 1, sm: 'none' }} minW="120px" onClick={onDismiss} leftIcon={<Box as={FaFlagCheckered} fontSize="1.3em" />}>
                   Continue
                 </Button>
               </Flex>
+              {streakNudge && onShareStreak && (
+                <Button
+                  variant="outline"
+                  borderStyle="dashed"
+                  borderColor="orange.300"
+                  color="orange.200"
+                  w="100%"
+                  mt={3}
+                  whiteSpace="normal"
+                  h="auto"
+                  py={3}
+                  onClick={onShareStreak}
+                  rightIcon={<FaChevronRight />}
+                  _hover={{ bg: 'whiteAlpha.100' }}
+                  data-testid="celebration-share-streak"
+                >
+                  🔥 {streakNudge === 'best' ? `A new best: ${streak} days! Share it?` : `${streak} days! Share your streak?`}
+                </Button>
+              )}
             </motion.div>
           )}
         </Flex>

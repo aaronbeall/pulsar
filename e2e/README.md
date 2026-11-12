@@ -26,6 +26,9 @@ you can keep `npx vite preview --port 4173` open between runs (rebuild after app
 - `navigation.spec.ts`: bottom nav and menu reach every screen, and dark mode persists.
 - `homepage.spec.ts`: the marketing homepage (the site root) renders, fits a phone width, works with
   reduced motion, and its "Open the app" link lands in the app.
+- `share.spec.ts`: sharing a finished workout and the streak through a stubbed
+  `navigator.share` (a PNG file plus the share text), Back closing the share sheet, and the
+  "Save image" fallback on Activity when the browser has no Web Share.
 - `back-button.spec.ts`: Back closes modals (menu, routine dialogs, Activity drawer deep link,
   stacked day-template dialogs, finish confirmation, setup's template chooser, AI key prompt).
 

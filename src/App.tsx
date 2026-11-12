@@ -21,6 +21,7 @@ import { IconType } from 'react-icons';
 import { FaBars, FaHome, FaDumbbell, FaChartLine } from 'react-icons/fa';
 import { useUrlModal } from './hooks/useUrlModal';
 import { Routes, Route, Link, useLocation, Link as RouterLink, Navigate } from 'react-router-dom';
+import ShareSheet from './components/ShareSheet';
 import Home from './views/Home';
 import Workout from './views/Workout';
 import Settings from './views/Settings';
@@ -218,6 +219,8 @@ const App: React.FC = () => {
           </DrawerBody>
         </DrawerContent>
       </Drawer>
+
+      <ShareSheet />
     </Flex>
   );
 };

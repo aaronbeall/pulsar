@@ -44,3 +44,9 @@ entries (`rollupOptions.input` in `vite.config.ts`) and deploy together:
 
   The script drives the real app at a phone viewport in dark mode, with canned AI replies
   and a pinned clock, and logs past workouts through dev mode's calendar tap for the streak.
+  The `share` shot (step 07) loads dev mode's "Long streak" test data on a fresh page and opens
+  Activity's share sheet. Known issue: the `streak` shot's calendar taps no longer log days,
+  because a routine made today has no schedule before today (schedule periods), so the run
+  stops there after saving the other shots. `SHOTS_ONLY=share` still regenerates step 07.
+- `../public/og-image.png`: the 1200×630 link preview (`og:image`), a real share card on the
+  nebula. Regenerate with `node scripts/generate-og-image.mjs` against the same preview server.

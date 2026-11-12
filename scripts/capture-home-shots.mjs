@@ -48,6 +48,11 @@ async function newPage(browser) {
   await page.route(/^https?:\/\/(?!localhost)/, (route) => route.abort());
   await page.clock.install({ time: TODAY });
   await page.addInitScript(() => localStorage.setItem('pulsar:openaiApiKey', 'sk-shots'));
+  // Headless Chromium has no Web Share; pretend it does, so the share sheet shows its phone look.
+  await page.addInitScript(() => {
+    navigator.share = async () => {};
+    navigator.canShare = () => true;
+  });
   return page;
 }
 
@@ -146,6 +151,23 @@ try {
     else await page.waitForTimeout(200);
   }
   await page.waitForTimeout(1500);
+
+  // Sharing a streak from Activity, for the "Share the win" step. A fresh page with dev mode's
+  // "Long streak" test data, so the card has a streak worth sharing.
+  {
+    const sharePage = await newPage(browser);
+    await sharePage.goto(`${BASE}/app/settings?dev=1`);
+    await sharePage.getByLabel('Test data preset').selectOption('long-streak');
+    await sharePage.getByRole('button', { name: 'Load Test Data' }).click();
+    await sharePage.getByRole('button', { name: 'Replace & Load' }).click();
+    await sharePage.waitForURL(/\/app\/?$/);
+    await sharePage.goto(`${BASE}/app/activity`);
+    await sharePage.getByTestId('activity-share').click();
+    await sharePage.getByTestId('share-preview').waitFor();
+    await sharePage.waitForTimeout(800);
+    await shot(sharePage, 'share');
+    await sharePage.close();
+  }
 
   // Log earlier workouts with dev mode's calendar tap (it reloads the page), to show a streak.
   await page.goto(`${BASE}/app/?dev=1`);
