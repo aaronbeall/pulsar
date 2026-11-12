@@ -64,6 +64,12 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   state, with `isStale` dropping the param after a reload. After closing, `await close()`
   before opening something else or navigating; to navigate away from inside a modal use
   `leaveTo` so Back from the destination doesn't reopen it.
+- **Lift weights are logged per set** (`SetRecord.weightKg`, always kg; display goes through
+  `utils/units.ts` and the shared lb/kg preference in `store/unitsStore.ts`). Whether an
+  exercise tracks weight is `isWeightedExercise()` in `utils/weightedExercise.ts` (the
+  person's switch, else catalog/equipment/name). Sessions, bests, suggestions and summaries
+  are pure functions in `utils/liftStats.ts`; build lift features on those. Weight inputs stay
+  quiet and optional: nothing about a set should ever require a weight.
 - **Testing-only features live behind dev mode** (`src/utils/devMode.ts`: always on under
   `npm run dev`, toggled in any build with `?dev=1` / `?dev=0`). See `DEV-FEATURES.md` for the
   list. Gate any new debug/testing tool with `isDevMode()` and add it to that doc; never ship

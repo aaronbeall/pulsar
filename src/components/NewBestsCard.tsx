@@ -5,7 +5,7 @@ import { Exercise, Workout } from '../models/types';
 import { useUrlModal } from '../hooks/useUrlModal';
 import { useWeightUnit } from '../store/unitsStore';
 import { findNewBests } from '../utils/liftStats';
-import { displayWeight, formatWeight } from '../utils/units';
+import { displayWeight, formatWeight, fromKg } from '../utils/units';
 import ExerciseDetailsDialog from './ExerciseDetailsDialog';
 
 /** The lifts in a finished workout that beat their best. Renders nothing when none did. */
@@ -27,7 +27,9 @@ const NewBestsCard: React.FC<{ workout: Workout; workouts: Workout[]; exercises:
       <VStack align="stretch" spacing={0}>
         {bests.map(best => {
           const name = exercises.find(e => e.id === best.exerciseId)?.name ?? 'Exercise';
-          const gain = displayWeight(best.valueKg, unit) - displayWeight(best.previousKg, unit);
+          const gain = best.kind === 'e1rm'
+            ? Math.round(fromKg(best.valueKg, unit)) - Math.round(fromKg(best.previousKg, unit))
+            : displayWeight(best.valueKg, unit) - displayWeight(best.previousKg, unit);
           return (
             <Flex
               key={best.exerciseId} as="button" onClick={() => details.open(best.exerciseId)}
@@ -36,7 +38,7 @@ const NewBestsCard: React.FC<{ workout: Workout; workouts: Workout[]; exercises:
             >
               <Text>{name}</Text>
               <Flex align="center" gap={2} color="green.500" fontWeight="bold" whiteSpace="nowrap">
-                <Text>{best.kind === 'e1rm' ? `est. 1RM ${formatWeight(best.valueKg, unit)}` : formatWeight(best.valueKg, unit)}</Text>
+                <Text>{best.kind === 'e1rm' ? `est. 1RM ${Math.round(fromKg(best.valueKg, unit))} ${unit}` : formatWeight(best.valueKg, unit)}</Text>
                 {gain > 0 && (
                   <Flex align="center" fontSize="sm"><Icon as={FaArrowUp} boxSize={3} />{gain}</Flex>
                 )}

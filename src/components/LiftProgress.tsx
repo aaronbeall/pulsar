@@ -22,8 +22,9 @@ const METRICS: { value: LiftMetric; label: string }[] = [
 const RANGES: LiftRange[] = ['1M', '3M', '1Y', 'All'];
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// Estimates and totals read better as whole numbers; a set's weight keeps its half pounds.
 const formatMetric = (kg: number, metric: LiftMetric, unit: WeightUnit) =>
-  metric === 'volume' ? Math.round(fromKg(kg, unit)).toLocaleString() : `${displayWeight(kg, unit)}`;
+  metric === 'weight' ? `${displayWeight(kg, unit)}` : Math.round(fromKg(kg, unit)).toLocaleString();
 
 /** Progress for one weighted exercise: three numbers, a chart and the recent sessions. */
 const LiftProgress: React.FC<{ exerciseId: string }> = ({ exerciseId }) => {
@@ -54,7 +55,7 @@ const LiftProgress: React.FC<{ exerciseId: string }> = ({ exerciseId }) => {
     <VStack align="stretch" spacing={3} data-testid="lift-progress">
       <SimpleGrid columns={3} spacing={2}>
         <Stat value={`${displayWeight(best, unit)}`} label={`heaviest ${unit}`} />
-        <Stat value={`${displayWeight(bestE1rm, unit)}`} label={`est. 1RM ${unit}`} />
+        <Stat value={`${Math.round(fromKg(bestE1rm, unit))}`} label={`est. 1RM ${unit}`} />
         <Stat
           value={change === null ? '–' : `${change >= 0 ? '+' : '−'}${displayWeight(Math.abs(change), unit)}`}
           label="in 3 months"

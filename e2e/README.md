@@ -21,6 +21,8 @@ you can keep `npx vite preview --port 4173` open between runs (rebuild after app
   change that is accepted.
 - `workout.spec.ts`: completing every set of a workout and seeing it on Home and in
   History, resuming a workout after a reload, and finishing a workout early.
+- `lift-weights.spec.ts`: adding a weight to a set, fixing a finished set's reps, and seeing
+  the lift in Activity's Your lifts card and its progress.
 - `data-safety.spec.ts`: a timed set catching up after a simulated screen lock and
   surviving a reload mid-set, backup → wipe → restore, and rejecting a non-backup file.
 - `navigation.spec.ts`: bottom nav and menu reach every screen, and dark mode persists.
