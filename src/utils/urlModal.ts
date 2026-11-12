@@ -25,6 +25,7 @@ export type UrlModalKey =
   | 'finish'          // WorkoutSession: finish workout early confirmation
   | 'celebrate'       // WorkoutSession: the workout complete celebration
   | 'templates'       // WorkoutSetup: create a routine from a template
+  | 'plan'            // WorkoutSetup: build a routine from the answers without AI
   | 'restore'         // Settings: restore backup confirmation
   | 'loadPreset'      // Settings › Developer: load test data confirmation (value: preset id)
   | 'day';            // Streak calendar / year grid: one day's details (value: yyyy-MM-dd)

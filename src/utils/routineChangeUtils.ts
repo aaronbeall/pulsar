@@ -129,7 +129,7 @@ export function decideChangeItems(
 
   const revisions = routine.revisions || [];
   const revision: RoutineRevision | undefined = applied.length
-    ? { id: uuidv4(), date: now, source: 'ai', summary: capitalize(applied.join(', ')), changeId }
+    ? { id: uuidv4(), date: now, source: change.source ?? 'ai', summary: capitalize(applied.join(', ')), changeId }
     : undefined;
 
   return {

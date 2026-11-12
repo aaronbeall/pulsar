@@ -37,3 +37,4 @@ blob-report/
 # Cloudflare Wrangler local state
 .wrangler/
 .dev.vars
+home/shots/_failure.png

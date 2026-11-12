@@ -2,15 +2,17 @@
 // This service now expects exercises to be passed in from the store, and add operations to use the store's addExercise.
 // Direct DB calls (getExercises, addExercise) have been removed from this file.
 
-import { Routine, RoutineChatMessage, Exercise, DayOfWeek, ScheduledExercise } from '../models/types';
+import { Routine, RoutineChatMessage, Exercise, DayOfWeek, ScheduledExercise, RoutineDay } from '../models/types';
 import { v4 as uuidv4 } from 'uuid';
 import { getSearchUrl, getHowToQuery, getExerciseSearchImageUrl, searchExerciseImages } from '../utils/webUtils';
 import { exerciseTemplates, ExerciseTemplate } from './exerciseTemplates';
 import { routineTemplates, RoutineTemplate } from './routineTemplates';
 import { dailyWorkoutTemplates } from './dailyWorkoutTemplates';
+import { normalizeExerciseName } from '../utils/exerciseName';
 import { findFreeExerciseDbEntry, getFreeExerciseDbImageUrls, isTimedCategory } from './freeExerciseDb';
 import { workoutPrompts } from '../constants/prompts';
 import { getActiveAIProvider, AIProvider, AIError, StreamOptions } from './ai';
+import type { RoutinePlan } from './routinePlanner/planRoutine';
 
 /**
  * Create a new Exercise from a template (ExerciseTemplate).
@@ -35,16 +37,7 @@ export async function createNewExercise(template: ExerciseTemplate): Promise<Exe
   };
 }
 
-/**
- * Normalize a string for forgiving search (lowercase, alphanum, no trailing plural 's').
- */
-export function normalizeExerciseName(str: string) {
-  return str
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '') // Remove non-alphanum
-    .replace(/s$/, ''); // Remove trailing plural s
-}
+export { normalizeExerciseName };
 
 /**
  * Find an existing Exercise or ExerciseTemplate by name (forgiving match).
@@ -311,6 +304,28 @@ function zipWizardAnswers(responses: string[]): Array<{ question: string; answer
 }
 
 /**
+ * Resolve a planned week (from Pulsar AI or the Planner) into a routine schedule, adding any
+ * exercises the store doesn't have yet. Days are resolved in order so one new exercise used
+ * on several days is only added once.
+ */
+async function resolveSchedule(
+  days: { day: DayOfWeek; kind?: string; exercises: Parameters<typeof resolveAIExercises>[0] }[],
+  exercises: Exercise[],
+  addExercise: (ex: Exercise) => Promise<void>,
+): Promise<{ dailySchedule: RoutineDay[]; newExercises: Exercise[] }> {
+  let known = [...exercises];
+  const newExercises: Exercise[] = [];
+  const dailySchedule: RoutineDay[] = [];
+  for (const day of days) {
+    const resolved = await resolveAIExercises(day.exercises, known, addExercise);
+    known = [...known, ...resolved.newExercises];
+    newExercises.push(...resolved.newExercises);
+    dailySchedule.push({ day: day.day, kind: day.kind || '', exercises: resolved.scheduled });
+  }
+  return { dailySchedule, newExercises };
+}
+
+/**
  * Build a routine from a real AI-generated plan. Exercise names come back from the model,
  * not exerciseIds — resolved via resolveAIExercises (same pipeline template routines use)
  * before being stored.
@@ -324,15 +339,7 @@ async function generateRoutineWithAI(
 ): Promise<{ routine: Routine, exercises: Exercise[] }> {
   const plan = await provider.generateRoutine(zipWizardAnswers(responses), options);
 
-  let known = [...exercises];
-  const allNewExercises: Exercise[] = [];
-  const dailySchedule = [];
-  for (const day of plan.schedule) {
-    const { scheduled, newExercises } = await resolveAIExercises(day.exercises, known, addExercise);
-    known = [...known, ...newExercises];
-    allNewExercises.push(...newExercises);
-    dailySchedule.push({ day: day.day, kind: day.kind || '', exercises: scheduled });
-  }
+  const { dailySchedule, newExercises: allNewExercises } = await resolveSchedule(plan.schedule, exercises, addExercise);
 
   const routine: Routine = {
     id: uuidv4(),
@@ -367,6 +374,35 @@ export const generateRoutine = async (
   if (!provider) throw new AIError('no_key', 'Pulsar AI isn\'t set up. Sign in or add your OpenAI key in Settings.');
   return generateRoutineWithAI(provider, responses, exercises, addExercise, options);
 };
+
+/**
+ * Create a Routine from a plan the no-AI planner built (services/routinePlanner), adding any
+ * missing exercises to the store. The wizard's answers become the routine's chat, closed
+ * with the plan's notes, so a later AI chat knows what the user asked for.
+ */
+export async function createRoutineFromPlan(
+  plan: RoutinePlan,
+  responses: string[],
+  exercises: Exercise[],
+  addExercise: (ex: Exercise) => Promise<void>,
+  name = plan.name,
+): Promise<{ routine: Routine, exercises: Exercise[] }> {
+  const { dailySchedule, newExercises: allNewExercises } = await resolveSchedule(plan.days, exercises, addExercise);
+  const closing = `I built this from your answers: ${plan.notes.map(n => n.replace(/\.$/, '')).join('. ')}. Change anything you like, or ask me here.`;
+  const routine: Routine = {
+    id: uuidv4(),
+    name: name.trim() || plan.name,
+    description: plan.description,
+    active: true,
+    createdAt: Date.now(),
+    dailySchedule,
+    chatHistory: buildWizardChatHistory(responses, closing),
+    liked: false,
+    disliked: false,
+    favorite: false,
+  };
+  return { routine, exercises: allNewExercises };
+}
 
 /**
  * Create a Routine from a RoutineTemplate, adding any missing exercises to the store.

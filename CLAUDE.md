@@ -36,8 +36,17 @@ at best. All design and layout work going forward must be mobile-first-friendly:
   `hooks/useAIGate.tsx`'s `requireAI(action, { kind: 'plan' | 'edit', ... })`, which shows
   `components/AIAccessDialog.tsx` (sign in for the free allowance, the subscription, or a
   key) and then continues the action. The no-AI alternative for routine creation is the
-  keyword template search (`services/templateSearch.ts`). Don't reintroduce a fake "AI"
-  fallback. Allowances and prices live in `worker/ai/plans.ts`.
+  rule-based planner (`services/routinePlanner/`: `parseAnswers` reads the free-text answers
+  into a Profile, handling negation like "not Thursday"; `planRoutine` assembles a week from
+  it), shown as the editable "Your plan" screen (`components/RoutinePlanBuilder.tsx`), with
+  the keyword template search (`services/templateSearch.ts`) as "Ready-made routines". Both
+  builders learn from the user (`utils/learnedPreferences.ts`: liked, disliked and often-skipped
+  exercises, usual days and workout length, and how recent workouts felt from the "How was it?"
+  card; routine ratings and workout notes go to the AI only), as soft preferences that what the user asks for
+  always overrides; the AI gets them through `describePreferences` in `prompts.ts`. When a
+  routine's rated workouts keep feeling off, the finished workout offers to adjust it (Pulsar AI
+  first, the Planner's rule-based change as the fallback). See `PLANNER.md` for all of it. Don't
+  reintroduce a fake "AI" fallback. Allowances and prices live in `worker/ai/plans.ts`.
 - **Never put a real API key behind a `VITE_`-prefixed env var again.** The existing
   Google CSE key is already public in the client bundle (acceptable for a free-tier image
   search) — that pattern must not be reused for an LLM key or anything metered/abusable.

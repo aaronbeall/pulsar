@@ -25,8 +25,10 @@ export async function createRoutineFromTemplate(page: Page, templateName = 'Stre
   await page.goto('/app/workout/setup');
   // The chooser shows the top three templates for the answers, so answer for this one.
   await answerSetupQuestions(page, ['strength', '', '', '']);
-  await page.getByRole('button', { name: /Choose from a template/ }).click();
-  await expect(page.getByRole('heading', { name: 'Choose a Routine Template' })).toBeVisible();
+  await page.getByRole('button', { name: 'Use the free Planner' }).click();
+  await expect(page.getByRole('heading', { name: 'Your plan' })).toBeVisible();
+  await page.getByRole('button', { name: 'Browse ready-made routines' }).click();
+  await expect(page.getByRole('heading', { name: 'Ready-made routines' })).toBeVisible();
 
   // The nearest ancestor of the template's heading that holds a start button is its card.
   const card = page

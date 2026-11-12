@@ -6,8 +6,11 @@ import { FaRobot, FaPaperPlane, FaChevronDown, FaChevronUp, FaPen } from 'react-
 import { useAIGate } from '../hooks/useAIGate';
 import { useUrlModal } from '../hooks/useUrlModal';
 import { v4 as uuidv4 } from 'uuid';
+import { useLocation, useNavigate } from 'react-router-dom';
+import type { AutoSendState } from './RoutineAdjustOffer';
 import { Routine, RoutineChange, RoutineChatMessage } from '../models/types';
 import { useExercises, usePulsarStore } from '../store/pulsarStore';
+import { learnPreferences } from '../utils/learnedPreferences';
 import { AIError, getActiveAIProvider } from '../services/ai';
 import { supersedePendingItems } from '../utils/routineChangeUtils';
 import { resolveAIExercises } from '../services/routineBuilderService';
@@ -51,6 +54,21 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
   // ?review=<change id>, so Back closes the review.
   const reviewDialog = useUrlModal('review', { isStale: id => !(routine.changes || []).some(c => c.id === id) });
   const reviewChangeId = reviewDialog.value;
+
+  // Arriving with a request to send (the "Adjust with Pulsar AI" offer, already past the AI
+  // gate): send it once, and drop it from the history entry so a reload doesn't resend it.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const autoSent = useRef(false);
+  useEffect(() => {
+    const text = (location.state as AutoSendState | null)?.aiRequest;
+    if (!text || autoSent.current) return;
+    autoSent.current = true;
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+    setIsOpen(true);
+    void sendMessage(text);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const chatHistory = routine.chatHistory;
   const changes = routine.changes || [];
@@ -107,7 +125,9 @@ const RoutineChat: React.FC<RoutineChatProps> = ({ routine, onEditManually }) =>
         })),
       }));
       const history = priorHistory.map(m => ({ role: m.role, message: m.message }));
+      const state = usePulsarStore.getState();
       const response = await provider.suggestRoutineChange(current, scheduleForPrompt, history, text, {
+        preferences: learnPreferences(state.exercises, state.workouts, state.routines),
         onCommentary: (partial, done) => setStreaming({ text: partial, done }),
       });
 

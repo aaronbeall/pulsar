@@ -75,7 +75,7 @@ exercise had zero indication anything was wrong.
 an exercise name through four tiers, each one only reached if the previous misses:
 
 1. **Live exercises already in the store** — unchanged.
-2. **Curated `exerciseTemplates.ts`** (114 hand-tuned entries, `timed`/`relativeWeight`
+2. **Curated `exerciseTemplates.ts`** (about 170 hand-tuned entries, `timed`/`relativeWeight`
    metadata, tightly coupled to `dailyWorkoutTemplates.ts`'s 43 day templates by exact
    name) — unchanged, deliberately left alone. Considered replacing this catalog outright
    with free-exercise-db (873 entries) but rejected it: free-exercise-db has no `timed`
@@ -386,3 +386,10 @@ app does template matching and nothing else.
   from an Enter keypress, so it sets `initialFocusRef` to the key field; otherwise focus
   lands on the close button and the same Enter dismisses the dialog.
 
+
+## Pulsar Planner, learning and routine adjustment — 2026-11-11
+
+The template matcher is replaced (as the no-AI path) by the rule-based Pulsar Planner, both
+routine builders learn from the user, and finished workouts can offer to adjust a routine.
+The whole design (parser, planner, learned signals, feedback trend, adjustment paths, tests)
+is written up in `PLANNER.md`.

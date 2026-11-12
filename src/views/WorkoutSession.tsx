@@ -20,6 +20,9 @@ import { getWorkoutTiming } from '../utils/workoutTiming';
 import { findExercisesForDay, findWorkoutForDay, getStreakInfo, getTodayDayOfWeek } from '../utils/workoutUtils';
 import { formatSessionName } from '../utils/sessionName';
 import ActivitySummaryCard from '../components/ActivitySummaryCard';
+import WorkoutFeedbackCard from '../components/WorkoutFeedbackCard';
+import RoutineAdjustOffer from '../components/RoutineAdjustOffer';
+import { detectRoutineTrend } from '../utils/routineFeedback';
 
 export const WorkoutSession: React.FC = () => {
   const { sessionId } = useParams();
@@ -243,6 +246,12 @@ export const WorkoutSession: React.FC = () => {
       ? (streakInfo.streak === 1 ? 'start' : 'continue')
       : 'none';
 
+  // Recent workouts on this routine keep feeling too hard, easy, long or short: offer to adjust it.
+  const adjustTrend = useMemo(
+    () => (routine && workout?.completedAt ? detectRoutineTrend(routine, workouts) : null),
+    [routine, workout?.completedAt, workouts]
+  );
+
   // showFinishedAlert is now derived from workout.completedAt
   const showFinishedAlert = !!(workout && workout.completedAt);
 
@@ -320,7 +329,8 @@ export const WorkoutSession: React.FC = () => {
 
   return (
     <Flex direction="column" width="100%">
-      {isRoutineUpdated && (
+      {/* A finished workout keeps what was done; only one in progress can restart on the new routine. */}
+      {isRoutineUpdated && !workout.completedAt && (
         <RoutineUpdatedBanner onRestart={handleRestartToRoutine} />
       )}
       <AnimatePresence>
@@ -456,6 +466,17 @@ export const WorkoutSession: React.FC = () => {
         {workout.completedAt && workout.exercises.some(ex => !ex.completedAt) && (
           <IncompleteWorkoutBanner routineId={routine.id} />
         )}
+        {workout.completedAt && (
+          <WorkoutFeedbackCard
+            key={workout.id}
+            workout={workout}
+            onChange={async updated => {
+              setWorkout(updated);
+              await updateWorkout(updated);
+            }}
+          />
+        )}
+        {workout.completedAt && adjustTrend && <RoutineAdjustOffer routine={routine} trend={adjustTrend} />}
       </VStack>
     </Flex>
   );

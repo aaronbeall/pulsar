@@ -316,6 +316,8 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                   size="sm"
                   variant="ghost"
                   color={routine.liked ? "cyan.500" : iconColor}
+                  aria-pressed={!!routine.liked}
+                  onClick={() => updateRoutine({ ...routine, liked: !routine.liked, disliked: false })}
                   _hover={{ color: "cyan.500", bg: "cyan.50" }}
                   _dark={{ _hover: { bg: "cyan.900" } }}
                 />
@@ -327,6 +329,8 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine }) => {
                   size="sm"
                   variant="ghost"
                   color={routine.disliked ? "red.500" : iconColor}
+                  aria-pressed={!!routine.disliked}
+                  onClick={() => updateRoutine({ ...routine, disliked: !routine.disliked, liked: false })}
                   _hover={{ color: "red.500", bg: "red.50" }}
                   _dark={{ _hover: { bg: "red.900" } }}
                 />

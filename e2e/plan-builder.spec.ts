@@ -1,0 +1,50 @@
+import { test, expect } from './fixtures';
+import { answerSetupQuestions } from './helpers';
+
+test('builds a routine from free-text answers without AI', async ({ page }) => {
+  await page.goto('/app/workout/setup');
+  await answerSetupQuestions(page, [
+    'build muscle',
+    'dumbbells and a bench',
+    '4 days a week, not Thursday, 45 min',
+    "I have bad knees and I hate running",
+  ]);
+  await page.getByRole('button', { name: 'Use the free Planner' }).click();
+  // A short build-up first, naming what it found.
+  const steps = page.getByTestId('plan-build-steps');
+  await expect(steps.getByText('Reading your answers')).toBeVisible();
+  await expect(steps.getByText(/Build muscle, 4 days a week, dumbbells/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your plan', exact: true })).toBeVisible();
+
+  // What it understood, as chips.
+  await expect(page.getByRole('button', { name: 'Build muscle' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Dumbbells' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Thursday: keep free' })).toBeVisible();
+  await expect(page.getByText('Bad knees', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Remove No running' })).toBeVisible();
+
+  // The week it built: four days, none on Thursday.
+  const week = page.getByLabel('Your week');
+  await expect(page.getByRole('heading', { name: '4-Day Muscle Builder' })).toBeVisible();
+  await expect(week.getByText('Thursday', { exact: true })).toHaveCount(0);
+  await expect(week.getByText('Upper Body A')).toBeVisible();
+
+  // Changing an answer rebuilds the week.
+  await page.getByRole('button', { name: 'Thursday: keep free' }).click(); // free → any
+  await page.getByRole('button', { name: 'Thursday: any' }).click(); // any → train
+  await expect(week.getByText('Thursday', { exact: true })).toBeVisible();
+
+  // A fun name idea, from what's in the plan, fills in the name.
+  const ideas = page.getByRole('group', { name: 'Name ideas' });
+  const idea = ideas.getByRole('button').first();
+  const nickname = (await idea.textContent())!;
+  expect(nickname).not.toBe('More names');
+  await idea.click();
+  await expect(page.getByRole('textbox', { name: 'Routine name' })).toHaveValue(nickname);
+  await ideas.getByRole('button', { name: 'More names' }).click();
+
+  await page.getByRole('button', { name: 'Create routine' }).click();
+  await expect(page).toHaveURL(/\/workout\/routine\/[\w-]+$/);
+  await expect(page.getByText(nickname).first()).toBeVisible();
+  await expect(page.getByText('Thursday', { exact: true })).toBeVisible();
+});

@@ -94,12 +94,12 @@ export async function testApiKey(apiKey: string): Promise<boolean> {
 
 export const byokProvider: AIProvider = {
   async generateRoutine(qa: WizardAnswer[], options?: StreamOptions): Promise<AIRoutineResponse> {
-    const raw = await callOpenAI(buildRoutineMessages(qa), commentaryStreamer(options));
+    const raw = await callOpenAI(buildRoutineMessages(qa, options?.preferences), commentaryStreamer(options));
     return normalizeRoutineResponse(raw);
   },
 
   async suggestRoutineChange(routine, scheduleForPrompt, history, userMessage, options?: StreamOptions): Promise<AIChangeResponse> {
-    const raw = await callOpenAI(buildChangeMessages(routine, scheduleForPrompt, history, userMessage), commentaryStreamer(options));
+    const raw = await callOpenAI(buildChangeMessages(routine, scheduleForPrompt, history, userMessage, options?.preferences), commentaryStreamer(options));
     return normalizeChangeResponse(raw);
   },
 };
