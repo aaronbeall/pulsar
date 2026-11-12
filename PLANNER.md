@@ -165,7 +165,9 @@ time it's needed (`hooks/useLearnedPreferences.ts`) and never stored.
 - New exercises: add rows to `exerciseCatalog.ts` with honest tags; the filters and slots
   pick them up. Use a name from `exerciseTemplates.ts` or free-exercise-db, or add it to
   `exerciseTemplates.ts` with a description, so it never ends up a blank stub
-  (`exerciseCatalog.test.ts` checks this).
+  (`exerciseCatalog.test.ts` checks this). When free-exercise-db has the same exercise under
+  another name, add it to `FREE_EXERCISE_DB_ALIASES` in `freeExerciseDb.ts` so it gets that
+  photo; definitive matches only.
 - A new learned signal: add it to `LearnedPreferences`, to `describePreferences` and
   `preferencesFrom` for the AI, and to `applyLearned` only if the Planner can use it
   honestly. Keep it soft.
