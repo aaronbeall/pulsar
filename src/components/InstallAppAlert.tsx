@@ -13,7 +13,7 @@ const InstallAppAlert: React.FC = () => {
   const { deferredPrompt, dismiss, promptInstall } = useInstallPromptStore();
   const isVisible = useInstallBannerVisible();
   const toast = useToast();
-  const glassBg = useColorModeValue('whiteAlpha.900', 'rgba(26, 32, 44, 0.92)');
+  const glassBg = useColorModeValue('whiteAlpha.700', 'blackAlpha.400');
   const glassBorder = useColorModeValue('whiteAlpha.800', 'whiteAlpha.100');
   const mutedColor = useColorModeValue('gray.600', 'gray.300');
 
@@ -32,8 +32,7 @@ const InstallAppAlert: React.FC = () => {
   };
 
   // Floats over the page just above the bottom nav instead of sitting in the flow, so it
-  // never pushes any view's content down (and stays within thumb reach). Near-opaque so it
-  // reads over whatever is underneath.
+  // never pushes any view's content down (and stays within thumb reach).
   return (
     <Box
       position="fixed"
