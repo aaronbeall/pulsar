@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { FaCheck } from 'react-icons/fa';
 import { getWorkoutTiming } from '../utils/workoutTiming';
 import { formatSeconds } from '../utils/setProgress';
+import { summarizeSetWeights } from '../utils/liftStats';
+import { useWeightUnit } from '../store/unitsStore';
 
 const MotionCircle = motion(Circle);
 const MotionBox = motion(Box);
@@ -25,6 +27,7 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
   onSelectExercise
 }) => {
   const timing = useMemo(() => getWorkoutTiming({ exercises }), [exercises]);
+  const [unit] = useWeightUnit();
   const connectorColor = useColorModeValue('gray.200', 'gray.700');
   const activeColor = useColorModeValue('cyan.500', 'cyan.400');
   const completedColor = useColorModeValue('green.500', 'green.400');
@@ -110,6 +113,10 @@ const WorkoutTimeline: React.FC<WorkoutTimelineProps> = ({
                         (exercise.sets > 1 ? `${completedSets}/${exercise.sets} × ${exercise.duration}s` : `${exercise.duration}s`) :
                         exercise.sets > 1 ? `${completedSets}/${exercise.sets} × ${exercise.reps}` : 
                         `${exercise.reps} reps`}
+                      {(() => {
+                        const weights = summarizeSetWeights(exercise, unit);
+                        return weights ? ` @ ${weights}` : '';
+                      })()}
                     </Text>
                   </HStack>
 

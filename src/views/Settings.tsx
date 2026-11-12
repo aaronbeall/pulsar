@@ -28,6 +28,8 @@ import TestPresetLoader from '../components/TestPresetLoader';
 import { DB_NAME } from '../db/indexedDb';
 import { isDevMode, setDevMode } from '../utils/devMode';
 import { type ColorModePreference, useColorModePreference } from '../store/themeStore';
+import { useWeightUnit } from '../store/unitsStore';
+import type { WeightUnit } from '../utils/units';
 
 interface SettingsProps {
   colorScheme: string;
@@ -44,10 +46,16 @@ const THEME_OPTIONS: { value: ColorModePreference; label: string; icon: IconType
   { value: 'system', label: 'System', icon: FaMobileAlt },
 ];
 
+const UNIT_OPTIONS: { value: WeightUnit; label: string }[] = [
+  { value: 'lb', label: 'Pounds (lb)' },
+  { value: 'kg', label: 'Kilograms (kg)' },
+];
+
 const ACCENT_COLORS = ['red', 'orange', 'yellow', 'green', 'teal', 'cyan', 'blue', 'purple', 'pink', 'gray'];
 
 const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange }) => {
   const { preference, setPreference } = useColorModePreference();
+  const [weightUnit, setWeightUnit] = useWeightUnit();
   const segmentTrack = useColorModeValue('gray.100', 'gray.900');
   const segmentActive = useColorModeValue('white', 'gray.700');
   const toast = useToast();
@@ -230,6 +238,25 @@ const Settings: React.FC<SettingsProps> = ({ colorScheme, onColorSchemeChange })
                 );
               })}
             </SimpleGrid>
+          </Box>
+          <Box>
+            <Text fontSize="sm" fontWeight="medium" mb={2} id="units-label">Weight units</Text>
+            <Flex role="radiogroup" aria-labelledby="units-label" bg={segmentTrack} borderRadius="xl" p={1} gap={1}>
+              {UNIT_OPTIONS.map(({ value, label }) => {
+                const active = weightUnit === value;
+                return (
+                  <Flex
+                    key={value} as="button" role="radio" aria-checked={active}
+                    flex={1} align="center" justify="center" minH="44px"
+                    borderRadius="lg" bg={active ? segmentActive : 'transparent'} boxShadow={active ? 'sm' : 'none'}
+                    color={active ? undefined : mutedColor} transition="background-color 0.2s, color 0.2s"
+                    onClick={() => setWeightUnit(value)}
+                  >
+                    <Text fontSize="sm" fontWeight={active ? 'bold' : 'medium'}>{label}</Text>
+                  </Flex>
+                );
+              })}
+            </Flex>
           </Box>
         </VStack>
       </Box>

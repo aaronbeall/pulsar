@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { Box, Flex, Heading, SimpleGrid, Spinner, Text } from '@chakra-ui/react';
 import { FaChartBar, FaClock, FaDumbbell, FaFire, FaHistory, FaLayerGroup, FaMedal, FaTrophy } from 'react-icons/fa';
-import { usePulsarLoading, useRoutines, useWorkouts } from '../store/pulsarStore';
+import { useExercises, usePulsarLoading, useRoutines, useWorkouts } from '../store/pulsarStore';
+import LiftsCard from '../components/LiftsCard';
 import { formatTotalDuration, getHistorySummaryStats, getRoutineStints } from '../utils/historyStats';
 import YearActivityCalendar from '../components/YearActivityCalendar';
 import StatCard from '../components/StatCard';
@@ -12,6 +13,7 @@ import WeeklyActivityGraph from '../components/WeeklyActivityGraph';
 const Activity: React.FC = () => {
   const routines = useRoutines();
   const workouts = useWorkouts();
+  const exercises = useExercises();
   // routines/workouts default to [] (never undefined) even before loadAll() resolves, so
   // the store's own `loading` flag is the only reliable signal here.
   const isLoading = usePulsarLoading();
@@ -56,6 +58,8 @@ const Activity: React.FC = () => {
         <StatCard icon={FaClock} label="Total workout time" value={formatTotalDuration(summary.totalWorkoutTimeMs)} color="purple.400" />
         <StatCard icon={FaLayerGroup} label="Exercises done" value={summary.uniqueExercisesDone} color="pink.400" />
       </SimpleGrid>
+
+      <LiftsCard workouts={workouts} exercises={exercises} />
 
       <YearActivityCalendar workouts={workouts} routines={routines} />
 

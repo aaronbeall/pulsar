@@ -14,6 +14,9 @@ export interface Exercise {
   disliked?: boolean;
   favorite?: boolean;
   timed?: boolean;
+  // Log a weight for each set. Unset means "decide from the exercise" (see
+  // utils/weightedExercise.ts: isWeightedExercise); true/false is the person's own choice.
+  weighted?: boolean;
 }
 
 export interface RoutineDay {
@@ -123,7 +126,10 @@ export interface Workout {
 }
 
 export interface WorkoutExercise extends ScheduledExercise {
-  weight?: number;
+  // Weight (kg) for the next set of a weighted exercise, once the person set or changed it.
+  // Unset means the suggested one (the last set's, or last session's); 0 means cleared. Copied
+  // into each finished set's record. See utils/liftStats.ts.
+  weightKg?: number;
   startedAt?: number;
   completedAt?: number;
   skipped?: boolean; // Counts as completed but not or partially performed
@@ -140,4 +146,6 @@ export interface WorkoutExercise extends ScheduledExercise {
 export interface SetRecord {
   startedAt: number; // ms
   endedAt: number; // ms
+  weightKg?: number; // weight lifted on this set, in kg; unset when none was entered
+  reps?: number; // reps actually done, only when different from the plan's `reps`
 }
