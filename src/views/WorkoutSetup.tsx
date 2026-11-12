@@ -84,9 +84,12 @@ export const WorkoutSetup: React.FC = () => {
 
   const handlePlanCreate = async (plan: RoutinePlan, name: string) => {
     setIsLoading(true);
-    const { routine } = await createRoutineFromPlan(plan, responses, exercises, addExercise, name);
-    await addRoutineAndNavigate(routine);
-    setIsLoading(false);
+    try {
+      const { routine } = await createRoutineFromPlan(plan, responses, exercises, addExercise, name);
+      await addRoutineAndNavigate(routine);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleNext = async () => {

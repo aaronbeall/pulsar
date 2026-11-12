@@ -5,7 +5,7 @@
 // Pure logic, no React — see the tests.
 
 import type { Routine, RoutineChangeOp, ScheduledExercise, Workout } from '../models/types';
-import { trend } from './learnedPreferences';
+import { feelTrends } from './learnedPreferences';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WINDOW_DAYS = 30;
@@ -28,10 +28,7 @@ export function detectRoutineTrend(routine: Routine, workouts: Workout[], now = 
     .filter(w => w.routineId === routine.id && w.completedAt && w.completedAt > since && w.startedAt <= now)
     .filter(w => w.effort || w.lengthFeel)
     .sort((a, b) => b.startedAt - a.startedAt);
-  const efforts = rated.map(w => w.effort);
-  const lengths = rated.map(w => w.lengthFeel);
-  const effort = trend(efforts, 'hard', 'easy') ? 'easier' as const : trend(efforts, 'easy', 'hard') ? 'harder' as const : undefined;
-  const length = trend(lengths, 'long', 'short') ? 'shorter' as const : trend(lengths, 'short', 'long') ? 'longer' as const : undefined;
+  const { effort, length } = feelTrends(rated);
   if (!effort && !length) return null;
   return { effort, length, rated: rated.length };
 }

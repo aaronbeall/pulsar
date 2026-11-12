@@ -3,7 +3,7 @@
 // workouts that keep feeling too hard or too long make the next plan easier or shorter.
 
 import { Box, Button, Flex, SimpleGrid, Text, Textarea } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaCommentDots } from 'react-icons/fa';
 import type { Workout, WorkoutEffort, WorkoutLengthFeel } from '../models/types';
 import SectionCard from './SectionCard';
@@ -62,6 +62,13 @@ export default function WorkoutFeedbackCard({ workout, onChange }: {
     const feedback = note.trim() || undefined;
     if (feedback !== workout.feedback) onChange({ ...workout, feedback });
   };
+  // Also save a moment after typing stops, so leaving the page without blurring the box (the
+  // phone's Back button) doesn't lose the note.
+  useEffect(() => {
+    const t = setTimeout(saveNote, 800);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [note]);
 
   return (
     <SectionCard icon={FaCommentDots} title="How was it?">

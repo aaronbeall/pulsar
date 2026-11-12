@@ -11,6 +11,12 @@ import { parseAnswers } from '../services/routinePlanner/parseAnswers';
 import { applyLearned } from '../services/routinePlanner/learned';
 import { planNicknames } from '../services/routinePlanner/nicknames';
 import type { LearnedPreferences } from '../utils/learnedPreferences';
+import { PlannedExercise, RoutinePlan, defaultDaysPerWeek, defaultMinutes, equipmentText, listText, planRoutine } from '../services/routinePlanner/planRoutine';
+import { exerciseCatalog } from '../services/routinePlanner/exerciseCatalog';
+import PlanBuildSteps, { type BuildStep } from './PlanBuildSteps';
+import {
+  ALL_EQUIPMENT, Activity, Condition, Equipment, Focus, GOALS, GYM_EQUIPMENT, Goal, Level, Limit, Profile, primaryGoal,
+} from '../services/routinePlanner/profile';
 
 /** True when the planner has something of the user's history to go on (routine ratings and notes are for the AI only). */
 function usesHistory(p: LearnedPreferences | undefined): boolean {
@@ -19,12 +25,6 @@ function usesHistory(p: LearnedPreferences | undefined): boolean {
     p.usualDays.length > 0 || p.usualMinutes !== undefined || !!p.effort || !!p.length
   );
 }
-import { PlannedExercise, RoutinePlan, defaultDaysPerWeek, defaultMinutes, equipmentText, listText, planRoutine } from '../services/routinePlanner/planRoutine';
-import { exerciseCatalog } from '../services/routinePlanner/exerciseCatalog';
-import PlanBuildSteps, { type BuildStep } from './PlanBuildSteps';
-import {
-  ALL_EQUIPMENT, Activity, Condition, Equipment, Focus, GOALS, GYM_EQUIPMENT, Goal, Level, Limit, Profile, primaryGoal,
-} from '../services/routinePlanner/profile';
 
 const GOAL_LABEL: Record<Goal, string> = {
   strength: 'Get stronger', muscle: 'Build muscle', fatLoss: 'Lose fat', endurance: 'Endurance',

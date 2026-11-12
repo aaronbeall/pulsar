@@ -15,6 +15,8 @@
 // image search can return), but still a finite catalog — genuinely novel or AI-invented
 // exercise names fall through to the live search after this.
 
+import { normalizeExerciseName as normalize } from '../utils/exerciseName';
+
 export interface FreeExerciseDbEntry {
   name: string;
   category: string;
@@ -29,16 +31,6 @@ const IMAGE_BASE_URL = 'https://raw.githubusercontent.com/yuhonas/free-exercise-
 // Categories that are typically held/timed rather than rep-counted.
 const TIMED_CATEGORIES = new Set(['cardio', 'stretching']);
 
-// Local, private copy of the same normalization scheme used elsewhere (lowercase, strip
-// non-alphanumeric, strip trailing plural 's') — duplicated rather than imported from
-// routineBuilderService.ts to avoid a circular import (that module will import from here).
-function normalize(name: string): string {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '')
-    .replace(/s$/, '');
-}
 
 /**
  * Curated exercise names (exerciseTemplates.ts and the Planner catalog) whose free-exercise-db

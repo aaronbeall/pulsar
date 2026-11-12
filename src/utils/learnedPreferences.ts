@@ -68,6 +68,19 @@ export function trend<T extends string>(ratings: (T | undefined)[], toward: T, a
   return yes >= 2 && yes > no && yes * 2 >= recent.length;
 }
 
+/**
+ * Whether workouts, newest first, keep feeling too hard or easy and too long or short (the
+ * "How was it?" card). Used for the whole history here and per routine in routineFeedback.ts.
+ */
+export function feelTrends(newestFirst: Workout[]): Pick<LearnedPreferences, 'effort' | 'length'> {
+  const efforts = newestFirst.map(w => w.effort);
+  const lengths = newestFirst.map(w => w.lengthFeel);
+  return {
+    effort: trend(efforts, 'hard', 'easy') ? 'easier' : trend(efforts, 'easy', 'hard') ? 'harder' : undefined,
+    length: trend(lengths, 'long', 'short') ? 'shorter' : trend(lengths, 'short', 'long') ? 'longer' : undefined,
+  };
+}
+
 export function learnPreferences(exercises: Exercise[], workouts: Workout[], routines: Routine[] = [], now = Date.now()): LearnedPreferences {
   const names = new Map(exercises.map(e => [e.id, e.name]));
   const likedExercises = exercises.filter(e => (e.liked || e.favorite) && !e.disliked).map(e => e.name).slice(0, MAX_NAMES);
@@ -119,10 +132,7 @@ export function learnPreferences(exercises: Exercise[], workouts: Workout[], rou
 
   // How recent workouts felt ("How was it?"), from the last 30 days, newest first.
   const rated = finished.filter(w => now - w.startedAt <= 30 * DAY_MS).sort((a, b) => b.startedAt - a.startedAt);
-  const efforts = rated.map(w => w.effort);
-  const lengths_ = rated.map(w => w.lengthFeel);
-  const effort = trend(efforts, 'hard', 'easy') ? 'easier' as const : trend(efforts, 'easy', 'hard') ? 'harder' as const : undefined;
-  const length = trend(lengths_, 'long', 'short') ? 'shorter' as const : trend(lengths_, 'short', 'long') ? 'longer' as const : undefined;
+  const { effort, length } = feelTrends(rated);
   const workoutNotes = rated
     .map(w => w.feedback?.trim().replace(/\s+/g, ' '))
     .filter((n): n is string => !!n)

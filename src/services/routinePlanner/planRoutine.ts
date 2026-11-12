@@ -11,6 +11,7 @@
 // Pure logic, no React — see planRoutine.test.ts.
 
 import type { DayOfWeek } from '../../models/types';
+import { normalizeExerciseName } from '../../utils/exerciseName';
 import { CatalogExercise, ExerciseTag, Slot, exerciseCatalog } from './exerciseCatalog';
 import { Activity, Equipment, Focus, Goal, Level, Limit, Profile, effectiveLevel, needsLowImpact, primaryGoal, rankedGoals } from './profile';
 
@@ -94,7 +95,7 @@ export function defaultDaysPerWeek(profile: Profile): number {
 
 export function defaultMinutes(profile: Profile): number {
   if (profile.minutes) return profile.minutes;
-  if (profile.conditions.includes('senior') || profile.level === 'beginner') return 30;
+  if (profile.conditions.includes('senior') || effectiveLevel(profile) === 'beginner') return 30;
   return 45;
 }
 
@@ -266,8 +267,7 @@ function arrangeSessions(sessions: Session[], days: DayOfWeek[]): Session[] {
 // ---------------------------------------------------------------------------------------------
 // 3. Exercises
 
-/** Lowercase letters and digits only, so "Push-up" and "push up" compare equal. */
-const nameKey = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '').replace(/s$/, '');
+const nameKey = normalizeExerciseName;
 
 interface Filters {
   liked: Set<string>;
@@ -520,7 +520,7 @@ export function equipmentText(equipment: Equipment[]): string {
   return listText(equipment.map(e => EQUIPMENT_LABEL[e]));
 }
 
-function buildNotes(profile: Profile, days: PlannedDay[], minutes: number): string[] {
+function buildNotes(profile: Profile, days: PlannedDay[], minutes: number, f: Filters): string[] {
   const notes: string[] = [];
   const dayNames = days.map(d => d.day);
   notes.push(`${listText(dayNames)}, about ${minutes} minutes${dayNames.length > 1 ? ' each' : ''}`);
@@ -546,10 +546,11 @@ function buildNotes(profile: Profile, days: PlannedDay[], minutes: number): stri
   if (profile.conditions.includes('asthma')) notes.push('Shorter intervals with rest to catch your breath. Warm up first and keep your inhaler handy');
   if (!profile.conditions.includes('pregnant') && needsLowImpact(profile) && !profile.limits.length) notes.push('Low impact: no jumping or running');
   if (profile.focus.length) notes.push(`Extra work for ${listText(profile.focus.map(f => (f === 'upper' ? 'upper body' : f === 'lower' ? 'lower body' : f)))}`);
-  // Learned exercise likes and dislikes, named only where they changed the plan.
-  const inCatalog = (name: string) => exerciseCatalog.some(c => nameKey(c.name) === nameKey(name));
+  // Learned exercise likes and dislikes, named only where they changed the plan: a disliked
+  // exercise counts as left out only if this plan could have used it (gear, injuries...).
+  const couldUse = (name: string) => exerciseCatalog.some(c => nameKey(c.name) === nameKey(name) && isAvailable(c, f));
   const planned = new Set(days.flatMap(d => d.exercises.map(e => nameKey(e.name))));
-  const left = (name: string) => inCatalog(name) && !planned.has(nameKey(name));
+  const left = (name: string) => couldUse(name) && !planned.has(nameKey(name));
   const disliked = profile.dislikedExercises.filter(left);
   if (disliked.length) notes.push(`Leaves out ${listText(disliked)}, since you disliked ${disliked.length > 1 ? 'them' : 'it'}`);
   const skipped = profile.skippedExercises.filter(left);
@@ -593,5 +594,5 @@ export function planRoutine(profile: Profile, seed = 0): RoutinePlan {
   const name = `${planned.length}-Day ${bodyweightOnly ? 'Bodyweight ' : ''}${goalName}`;
   const kinds = Array.from(new Set(planned.map(d => d.kind.replace(/ [A-Z]$/, ''))));
   const description = `${listText(kinds)}, ${planned.length} ${planned.length === 1 ? 'day' : 'days'} a week, about ${minutes} minutes, with ${equipmentText(profile.equipment)}.`;
-  return { name, description, notes: buildNotes(profile, planned, minutes), days: planned };
+  return { name, description, notes: buildNotes(profile, planned, minutes, filters), days: planned };
 }
