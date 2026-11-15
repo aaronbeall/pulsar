@@ -54,7 +54,7 @@ async function callHosted(path: 'plan' | 'edit', body: unknown, onContent?: (con
 
 export const hostedProvider: AIProvider = {
   async generateRoutine(qa, options?: StreamOptions): Promise<AIRoutineResponse> {
-    const raw = await callHosted('plan', { answers: qa }, commentaryStreamer(options));
+    const raw = await callHosted('plan', { answers: qa, preferences: options?.preferences }, commentaryStreamer(options));
     return normalizeRoutineResponse(raw);
   },
 
@@ -66,6 +66,7 @@ export const hostedProvider: AIProvider = {
         schedule: scheduleForPrompt,
         history,
         message: userMessage,
+        preferences: options?.preferences,
       },
       commentaryStreamer(options)
     );

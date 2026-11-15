@@ -171,6 +171,7 @@ const AIAccessDialog: React.FC<AIAccessDialogProps> = ({ isOpen, reason, kind, o
                 <Benefits items={[
                   'A routine built around your goals, schedule and equipment',
                   'Change it by asking, like "swap squats, my knees hurt"',
+                  'It learns what you like, skip and find too hard',
                 ]} />
                 <Button leftIcon={<FaGoogle />} colorScheme="cyan" size="lg" w="full" mt={4} onClick={handleSignIn} isLoading={signingIn}>
                   Continue with Google

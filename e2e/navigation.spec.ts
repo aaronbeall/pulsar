@@ -30,9 +30,27 @@ test('the bottom nav and menu reach every screen', async ({ page }) => {
 test('switching to dark mode sticks after a reload', async ({ page }) => {
   await page.goto('/app/');
   await page.getByRole('button', { name: 'Open menu' }).click();
-  await page.getByRole('button', { name: 'Dark' }).click();
+  await page.getByTestId('menu-dark-mode').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+});
+
+test('Settings can follow the system light/dark setting', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.goto('/app/settings');
+  await page.getByRole('radio', { name: 'Dark' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+  await page.getByRole('radio', { name: 'System' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+  // Still following the system after a reload.
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.getByRole('radio', { name: 'System' })).toHaveAttribute('aria-checked', 'true');
 });

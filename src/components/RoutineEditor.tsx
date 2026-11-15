@@ -826,6 +826,7 @@ const ExerciseDayEditor = React.memo<{
           <DayProposalPanel
             current={schedule}
             op={proposal.op}
+            source={proposal.change.source}
             onAccept={() => onDecide(proposal.change.id, [schedule.day], 'accepted')}
             onReject={() => onDecide(proposal.change.id, [schedule.day], 'rejected')}
           />

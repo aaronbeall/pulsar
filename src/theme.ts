@@ -2,7 +2,9 @@ import { extendTheme, type ThemeConfig } from '@chakra-ui/react';
 
 const config: ThemeConfig = {
   initialColorMode: 'system',
-  useSystemColorMode: true,
+  // Following the system is opt-in (Settings > Appearance), handled by store/themeStore.ts,
+  // so a manual Light/Dark choice isn't overridden when the phone's setting changes.
+  useSystemColorMode: false,
 };
 
 const theme = extendTheme({

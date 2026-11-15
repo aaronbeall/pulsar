@@ -80,6 +80,15 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
     setChanged(true);
   };
 
+  // Like/dislike. In view mode there's no Save button, so the rating is saved right away
+  // (the planners learn from it, see utils/learnedPreferences.ts).
+  const setRating = (rating: { liked?: boolean; disliked?: boolean }) => {
+    const next = { liked: !!rating.liked, disliked: !!rating.disliked };
+    setEdit(prev => ({ ...prev, ...next }));
+    if (mode === 'view') updateExercise({ ...exercise, ...next });
+    else setChanged(true);
+  };
+
   // Save handler (use Zustand store)
   const handleSave = async () => {
     await updateExercise(edit);
@@ -266,22 +275,8 @@ const ExerciseDetailsDialog: React.FC<ExerciseDetailsDialogProps> = ({ exerciseI
                 <LikeDislikeButtons
                   liked={!!edit.liked}
                   disliked={!!edit.disliked}
-                  onLike={() => {
-                    if (edit.liked) {
-                      handleChange('liked', false);
-                    } else {
-                      handleChange('liked', true);
-                      handleChange('disliked', false);
-                    }
-                  }}
-                  onDislike={() => {
-                    if (edit.disliked) {
-                      handleChange('disliked', false);
-                    } else {
-                      handleChange('disliked', true);
-                      handleChange('liked', false);
-                    }
-                  }}
+                  onLike={() => setRating(edit.liked ? {} : { liked: true })}
+                  onDislike={() => setRating(edit.disliked ? {} : { disliked: true })}
                   iconColor="gray.400"
                   size="md"
                 />

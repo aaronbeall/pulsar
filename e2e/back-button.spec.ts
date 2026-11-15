@@ -109,16 +109,20 @@ test('Back closes the finish confirmation without leaving the workout', async ({
   await expect(page).toHaveURL(sessionUrl);
 });
 
-test('Back from the template chooser in setup returns to the questions', async ({ page }) => {
+test('Back from the template chooser in setup returns to the plan, then the questions', async ({ page }) => {
   await page.goto('/app/workout/setup');
   await answerSetupQuestions(page, ['strength', '', '', '']);
-  await page.getByRole('button', { name: /Choose from a template/ }).click();
-  await expect(page.getByRole('heading', { name: 'Choose a Routine Template' })).toBeVisible();
+  await page.getByRole('button', { name: 'Use the free Planner' }).click();
+  await expect(page.getByRole('heading', { name: 'Your plan' })).toBeVisible();
+  await page.getByRole('button', { name: 'Browse ready-made routines' }).click();
+  await expect(page.getByRole('heading', { name: 'Ready-made routines' })).toBeVisible();
 
   await page.goBack();
-  await expect(page.getByRole('heading', { name: 'Choose a Routine Template' })).toBeHidden();
+  await expect(page.getByRole('heading', { name: 'Ready-made routines' })).toBeHidden();
+  await expect(page.getByRole('heading', { name: 'Your plan' })).toBeVisible();
+  await page.goBack();
   await expect(page).toHaveURL(/\/workout\/setup$/);
-  await expect(page.getByRole('button', { name: /Choose from a template/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Use the free Planner' })).toBeVisible();
 });
 
 test('Back closes the AI key prompt, and a reload drops a prompt whose action is gone', async ({ page }) => {

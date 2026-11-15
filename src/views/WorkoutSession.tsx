@@ -20,6 +20,9 @@ import { getWorkoutTiming } from '../utils/workoutTiming';
 import { findExercisesForDay, findWorkoutForDay, getStreakInfo, getTodayDayOfWeek } from '../utils/workoutUtils';
 import { formatSessionName } from '../utils/sessionName';
 import ActivitySummaryCard from '../components/ActivitySummaryCard';
+import WorkoutFeedbackCard from '../components/WorkoutFeedbackCard';
+import RoutineAdjustOffer from '../components/RoutineAdjustOffer';
+import { detectRoutineTrend } from '../utils/routineFeedback';
 
 export const WorkoutSession: React.FC = () => {
   const { sessionId } = useParams();
@@ -30,6 +33,7 @@ export const WorkoutSession: React.FC = () => {
   const workouts = useWorkouts();
   const addWorkout = usePulsarStore(s => s.addWorkout);
   const updateWorkout = usePulsarStore(s => s.updateWorkout);
+  const feedbackSave = useRef<Promise<void>>(Promise.resolve());
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [routine, setRoutine] = useState<Routine | null>(null);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null);
@@ -243,6 +247,12 @@ export const WorkoutSession: React.FC = () => {
       ? (streakInfo.streak === 1 ? 'start' : 'continue')
       : 'none';
 
+  // Recent workouts on this routine keep feeling too hard, easy, long or short: offer to adjust it.
+  const adjustTrend = useMemo(
+    () => (routine && workout?.completedAt ? detectRoutineTrend(routine, workouts) : null),
+    [routine, workout?.completedAt, workouts]
+  );
+
   // showFinishedAlert is now derived from workout.completedAt
   const showFinishedAlert = !!(workout && workout.completedAt);
 
@@ -320,7 +330,8 @@ export const WorkoutSession: React.FC = () => {
 
   return (
     <Flex direction="column" width="100%">
-      {isRoutineUpdated && (
+      {/* A finished workout keeps what was done; only one in progress can restart on the new routine. */}
+      {isRoutineUpdated && !workout.completedAt && (
         <RoutineUpdatedBanner onRestart={handleRestartToRoutine} />
       )}
       <AnimatePresence>
@@ -456,6 +467,26 @@ export const WorkoutSession: React.FC = () => {
         {workout.completedAt && workout.exercises.some(ex => !ex.completedAt) && (
           <IncompleteWorkoutBanner routineId={routine.id} />
         )}
+        {workout.completedAt && (
+          <WorkoutFeedbackCard
+            key={workout.id}
+            workout={workout}
+            onChange={async feedback => {
+              // Serialize field updates so a note and a rating cannot overwrite each other,
+              // even if the previous IndexedDB write is still pending.
+              const save = async () => {
+                const latest = usePulsarStore.getState().workouts.find(w => w.id === workout.id);
+                if (!latest) return;
+                const updated = { ...latest, ...feedback };
+                setWorkout(updated);
+                await updateWorkout(updated);
+              };
+              feedbackSave.current = feedbackSave.current.then(save, save);
+              await feedbackSave.current;
+            }}
+          />
+        )}
+        {workout.completedAt && adjustTrend && <RoutineAdjustOffer routine={routine} trend={adjustTrend} />}
       </VStack>
     </Flex>
   );

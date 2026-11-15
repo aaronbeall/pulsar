@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, Button, Flex, Heading, Input, Text, Skeleton, VStack, useColorModeValue, useToast } from '@chakra-ui/react';
 import { usePulsarStore, useExercises } from '../store/pulsarStore';
-import { generateRoutine, createRoutineFromTemplate } from '../services/routineBuilderService';
+import { generateRoutine, createRoutineFromTemplate, createRoutineFromPlan } from '../services/routineBuilderService';
 import { workoutPrompts } from '../constants/prompts'; // Import reusable prompts
 import { Routine } from '../models/types';
 import { RoutineTemplate } from '../services/routineTemplates';
 import type { NavigateFunction } from 'react-router-dom';
-import { FaArrowRight, FaMagic, FaBook } from 'react-icons/fa';
+import { FaArrowRight, FaMagic, FaListUl } from 'react-icons/fa';
 import { RoutineTemplateChooser } from '../components/RoutineTemplateChooser';
+import { RoutinePlanBuilder } from '../components/RoutinePlanBuilder';
+import type { RoutinePlan } from '../services/routinePlanner/planRoutine';
 import { AIError } from '../services/ai';
 import { useAIGate } from '../hooks/useAIGate';
 import { useUrlModal } from '../hooks/useUrlModal';
 import { useSessionDraft } from '../hooks/useSessionDraft';
+import { useLearnedPreferences } from '../hooks/useLearnedPreferences';
 import ThinkingIndicator from '../components/ThinkingIndicator';
 import RoutineBuildProgress, { PlannedDay } from '../components/RoutineBuildProgress';
 
@@ -31,6 +34,8 @@ export const WorkoutSetup: React.FC = () => {
   // The template chooser is a sheet over the questions: ?templates=1, so Back returns to them.
   const templateChooser = useUrlModal('templates');
   const showTemplateChooser = templateChooser.isOpen;
+  // The no-AI planner: ?plan=1, so Back returns to the questions.
+  const planBuilder = useUrlModal('plan');
   const inputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
   // Signing in or subscribing from the AI gate leaves the site; coming back, building continues
@@ -41,6 +46,7 @@ export const WorkoutSetup: React.FC = () => {
   const addRoutine = usePulsarStore(s => s.addRoutine);
   const exercises = useExercises();
   const routines = usePulsarStore(s => s.routines);
+  const preferences = useLearnedPreferences();
 
   // Hoist all useColorModeValue hooks
   const orTextColor = useColorModeValue('gray.300', 'gray.600');
@@ -59,8 +65,9 @@ export const WorkoutSetup: React.FC = () => {
     await addRoutine(routineToAdd);
   };
 
-  // Replaces the setup screen (and the template chooser's entry, if open), so Back from the new routine skips setup.
-  const openRoutine = (routine: Routine) => templateChooser.leaveTo(`/workout/routine/${routine.id}`, { replace: true });
+  // Replaces the setup screen (and the template chooser's or planner's entry, if open), so Back from the new routine skips setup.
+  const openRoutine = (routine: Routine) =>
+    (planBuilder.isOpen ? planBuilder : templateChooser).leaveTo(`/workout/routine/${routine.id}`, { replace: true });
 
   const addRoutineAndNavigate = async (routine: Routine) => {
     await saveRoutine(routine);
@@ -75,6 +82,16 @@ export const WorkoutSetup: React.FC = () => {
     setIsLoading(false);
   };
 
+  const handlePlanCreate = async (plan: RoutinePlan, name: string) => {
+    setIsLoading(true);
+    try {
+      const { routine } = await createRoutineFromPlan(plan, responses, exercises, addExercise, name);
+      await addRoutineAndNavigate(routine);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleNext = async () => {
     if (step < workoutPrompts.length) {
       setStep(step + 1);
@@ -83,10 +100,10 @@ export const WorkoutSetup: React.FC = () => {
         kind: 'plan',
         reason: 'Building a routine from your answers uses Pulsar AI.',
         alternative: {
-          label: 'Match me to a template',
-          description: 'We score every ready-made routine against your answers and show you the best fits. No AI needed, and you can edit any of it by hand.',
-          icon: FaBook,
-          onClick: () => templateChooser.open(),
+          label: 'Use the free Pulsar Planner',
+          description: 'It reads your answers and builds a week around your days, gear and injuries, and what it\'s learned from your workouts. Runs on your phone, no AI.',
+          icon: FaListUl,
+          onClick: () => planBuilder.open(),
         },
       });
     }
@@ -97,6 +114,7 @@ export const WorkoutSetup: React.FC = () => {
     setBuild({ commentary: '', commentaryDone: false, plannedDays: [] });
     try {
       const { routine } = await generateRoutine(responses, exercises, addExercise, {
+        preferences,
         onCommentary: (commentary, commentaryDone) => setBuild(b => ({ ...b, commentary, commentaryDone })),
         onScheduleDays: (plannedDays) => setBuild(b => ({ ...b, plannedDays })),
       });
@@ -162,14 +180,32 @@ export const WorkoutSetup: React.FC = () => {
     );
   }
 
+  if (planBuilder.isOpen && !showTemplateChooser) {
+    return (
+      <RoutinePlanBuilder
+        responses={responses}
+        preferences={preferences}
+        onCreate={handlePlanCreate}
+        onBrowseTemplates={() => templateChooser.open()}
+        onBack={planBuilder.close}
+        onStartOver={async () => {
+          await planBuilder.close();
+          setStep(1);
+          setResponses(emptyResponses());
+        }}
+      />
+    );
+  }
+
   if (showTemplateChooser) {
     return (
       <RoutineTemplateChooser
         userInput={responses.join(' ')}
         onSelect={handleTemplateSelect}
         onBack={templateChooser.close}
-        onStartOver={() => {
-          templateChooser.close();
+        onStartOver={async () => {
+          await templateChooser.close();
+          if (planBuilder.isOpen) await planBuilder.close();
           setStep(1);
           setResponses(emptyResponses());
         }}
@@ -211,14 +247,14 @@ export const WorkoutSetup: React.FC = () => {
           <Button
             variant="ghost"
             colorScheme={chooseBtnColor}
-            onClick={() => templateChooser.open()}
+            onClick={() => planBuilder.open()}
             fontWeight="normal"
             fontSize="sm"
-            leftIcon={<FaBook style={{marginRight:4}} />}
+            leftIcon={<FaListUl style={{marginRight:4}} />}
             opacity={chooseBtnOpacity}
             _hover={{ opacity: 1, bg: chooseBtnHoverBg }}
           >
-            Choose from a template...
+            Use the free Planner
           </Button>
           {aiGate.gate}
         </Box>
