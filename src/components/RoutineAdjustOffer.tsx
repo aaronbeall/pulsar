@@ -62,7 +62,7 @@ export default function RoutineAdjustOffer({ routine, trend }: { routine: Routin
     });
   };
 
-  const aiGate = useAIGate({ key: `adjust:${routine.id}`, kind: 'edit', onResume: () => void adjustWithAI() });
+  const aiGate = useAIGate({ key: `adjust:${routine.id}`, kind: 'edit', onResume: () => handleAdjust() });
 
   const handleAdjust = () => aiGate.requireAI(() => void adjustWithAI(), {
     kind: 'edit',

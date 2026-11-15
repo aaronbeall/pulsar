@@ -33,6 +33,7 @@ export const WorkoutSession: React.FC = () => {
   const workouts = useWorkouts();
   const addWorkout = usePulsarStore(s => s.addWorkout);
   const updateWorkout = usePulsarStore(s => s.updateWorkout);
+  const feedbackSave = useRef<Promise<void>>(Promise.resolve());
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [routine, setRoutine] = useState<Routine | null>(null);
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState<number | null>(null);
@@ -470,9 +471,18 @@ export const WorkoutSession: React.FC = () => {
           <WorkoutFeedbackCard
             key={workout.id}
             workout={workout}
-            onChange={async updated => {
-              setWorkout(updated);
-              await updateWorkout(updated);
+            onChange={async feedback => {
+              // Serialize field updates so a note and a rating cannot overwrite each other,
+              // even if the previous IndexedDB write is still pending.
+              const save = async () => {
+                const latest = usePulsarStore.getState().workouts.find(w => w.id === workout.id);
+                if (!latest) return;
+                const updated = { ...latest, ...feedback };
+                setWorkout(updated);
+                await updateWorkout(updated);
+              };
+              feedbackSave.current = feedbackSave.current.then(save, save);
+              await feedbackSave.current;
             }}
           />
         )}

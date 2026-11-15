@@ -72,6 +72,18 @@ const FOCUS_SLOTS: Record<Focus, Slot[]> = {
 };
 const LOWER_SLOTS = new Set<Slot>(['squat', 'hinge', 'lunge', 'glute', 'quad', 'hamstring', 'calf']);
 const UPPER_SLOTS = new Set<Slot>(['hPush', 'vPush', 'chestIso', 'shoulderIso', 'rearDelt', 'hPull', 'vPull', 'biceps', 'triceps']);
+// Exclusions include the main compound movements for each area, not just isolation slots.
+const SKIP_FOCUS_SLOTS: Record<Focus, Slot[]> = {
+  chest: ['hPush', 'chestIso'],
+  back: ['hPull', 'vPull', 'rearDelt'],
+  shoulders: ['vPush', 'shoulderIso', 'rearDelt'],
+  arms: ['biceps', 'triceps'],
+  core: ['core'],
+  glutes: ['glute', 'hinge', 'squat', 'lunge'],
+  legs: [...LOWER_SLOTS],
+  lower: [...LOWER_SLOTS],
+  upper: [...UPPER_SLOTS],
+};
 const COMPOUND_SLOTS = new Set<Slot>(['squat', 'hinge', 'lunge', 'hPush', 'vPush', 'hPull', 'vPull']);
 
 /** Small seeded random number generator (mulberry32), so a seed always builds the same week. */
@@ -279,6 +291,7 @@ interface Filters {
   equipment: Set<Equipment>;
   limits: Set<Limit>;
   excludeTags: Set<ExerciseTag>;
+  excludeSlots: Set<Slot>;
   likes: Set<Activity>;
   level: Level;
   maxLevel: number;
@@ -304,6 +317,7 @@ function buildFilters(profile: Profile): Filters {
     equipment: new Set(profile.equipment),
     limits: new Set(profile.limits),
     excludeTags,
+    excludeSlots: new Set(profile.skipFocus.flatMap(f => SKIP_FOCUS_SLOTS[f])),
     likes: new Set(profile.likes),
     level,
     maxLevel: level === 'beginner' ? 2 : 3,
@@ -312,6 +326,7 @@ function buildFilters(profile: Profile): Filters {
 
 function isAvailable(ex: CatalogExercise, f: Filters): boolean {
   if (ex.level > f.maxLevel) return false;
+  if (ex.slots.some(slot => f.excludeSlots.has(slot))) return false;
   if (!ex.equipment.some(alt => alt.every(e => f.equipment.has(e)))) return false;
   if (ex.limits.some(l => f.limits.has(l))) return false;
   if (ex.tags.some(t => f.excludeTags.has(t))) return false;

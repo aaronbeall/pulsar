@@ -94,3 +94,49 @@ test('"Not now" puts the offer away', async ({ page }) => {
   await expect(page.getByText('How was it?')).toBeVisible();
   await expect(page.getByTestId('routine-adjust-offer')).toHaveCount(0);
 });
+
+test('a delayed note save preserves ratings selected while it was pending', async ({ page }) => {
+  await seedHardWorkouts(page);
+  await page.getByRole('button', { name: 'Add a note' }).click();
+  await page.getByRole('textbox', { name: 'Notes on this workout' }).fill('Needed more rest');
+  await page.getByRole('group', { name: 'Effort', exact: true }).getByRole('button', { name: 'Too easy' }).click();
+  await page.getByRole('group', { name: 'Length', exact: true }).getByRole('button', { name: 'Too short' }).click();
+  await page.clock.runFor(1000);
+  await page.reload();
+  await expect(page.getByRole('textbox', { name: 'Notes on this workout' })).toHaveValue('Needed more rest');
+  await expect(page.getByRole('group', { name: 'Effort', exact: true }).getByRole('button', { name: 'Too easy' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('group', { name: 'Length', exact: true }).getByRole('button', { name: 'Too short' })).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('returning from Google with no edits left reopens the adjustment gate', async ({ page }) => {
+  let signedIn = false;
+  let aiCalls = 0;
+  await page.route('**/api/me', route => route.fulfill({ json: {
+    signInAvailable: true, hostedAI: true, billing: true,
+    user: signedIn ? { id: 'u1', name: 'Ada', email: 'ada@example.com', image: null } : null,
+    ai: signedIn ? { tier: 'free', plan: { used: 1, limit: 1 }, edit: { used: 2, limit: 2 }, resetsAt: null } : null,
+  } }));
+  await page.route('**/api/auth/**', route => route.fulfill({ json: {
+    url: 'https://accounts.google.com/o/oauth2/v2/auth?client_id=e2e', redirect: true,
+  } }));
+  await page.route('https://accounts.google.com/**', route => route.fulfill({ contentType: 'text/html', body: '<title>Google</title>' }));
+  await page.route('**/api/ai/*', route => {
+    aiCalls++;
+    return route.fulfill({ status: 429, json: { code: 'allowance_used' } });
+  });
+  await seedHardWorkouts(page);
+  await page.getByTestId('routine-adjust-offer').getByRole('button', { name: 'Adjust with Pulsar AI' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Continue with Google' }).click();
+  await page.waitForURL(/accounts\.google\.com/);
+  signedIn = true;
+  await page.goto('/app/workout/session/w1');
+  const gate = page.getByRole('dialog');
+  await expect(gate.getByText("You've used your free AI.", { exact: false })).toBeVisible();
+  await expect(gate.getByRole('button', { name: /Use the free Pulsar Planner/ })).toBeVisible();
+  await expect(page).toHaveURL(/\/workout\/session\/w1\?ai=/);
+  expect(aiCalls).toBe(0);
+  // The feedback isn't marked handled until the user actually chooses an adjustment.
+  await gate.getByRole('button', { name: /Use the free Pulsar Planner/ }).click();
+  await expect(page).toHaveURL(/\/workout\/routine\/r1$/);
+  await expect(page.getByText('Planner suggestion')).toBeVisible();
+});

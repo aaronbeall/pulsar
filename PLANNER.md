@@ -63,6 +63,8 @@ It is not keyword matching:
    - **Filtered** by equipment, injury limits, level, low impact (knees, ankles, hips,
      overweight, senior, pregnant, arthritis), avoided activities and pregnancy (no moves
      lying on the back or front, crunches, heavy loads, hanging or impact).
+   - **Skipped body areas** exclude every exercise with a matching movement slot, including
+     compound exercises and exercises that could otherwise enter through a different slot.
    - **Scored** for the goal, level, priority, variety across the week, and the soft learned
      signals below.
 4. **Dose** (`dose`): sets, reps or seconds from the goal, level and slot. Loaded compounds
@@ -142,7 +144,8 @@ time it's needed (`hooks/useLearnedPreferences.ts`) and never stored.
     `adjustRoutine(routine, trend)` makes one `setDay` op per changed day. Easier: a set
     fewer (down to 3), then 20% fewer reps or seconds. Harder: a set more (up to 4), then
     more reps or seconds. Shorter: drop each day's last exercise (keeping 3), else a set
-    fewer. Longer: a set more (up to 5).
+    fewer, or fewer reps/seconds when already at the minimum sets. Existing low doses are
+    never raised by a reduction. Longer: a set more (up to 5).
   - **Not now**: sets `feedbackHandledAt`.
 - Both paths end as a pending `RoutineChange`, reviewed day by day with the existing
   accept/reject UI. `RoutineChange.source` (`'ai'` or `'planner'`) labels the inline panel

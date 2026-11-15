@@ -40,3 +40,27 @@ describe('FREE_EXERCISE_DB_ALIASES', () => {
     }
   });
 });
+
+
+describe('catalog poses match resolved exercise instructions', () => {
+  // These cases are checked against the actual descriptions, not inferred from catalog tags.
+  const poses = [
+    ['Leg Curl', 'prone', /lie face down/i],
+    ['Rear Delt Fly', 'prone', /chest and stomach pressing against/i],
+    ['Incline Dumbbell Press', 'supine', /lie back/i],
+    ['Incline Bench Press', 'supine', /lie back/i],
+    ['Decline Bench Press', 'supine', /lay down on the bench/i],
+    ['Incline Dumbbell Flyes', 'supine', /lie on an incline bench/i],
+    ['Hamstring Stretch', 'supine', /lie on your back/i],
+    ['Oblique Crunches', 'supine', /lower back pressed/i],
+    ['Air Bike', 'supine', /lower back pressed/i],
+    ['Flutter Kick', 'prone', /lie facedown/i],
+  ] as const;
+  const db = JSON.parse(readFileSync('public/free-exercise-db.json', 'utf8')) as { name: string; description: string }[];
+  it.each(poses)('%s is tagged %s', (name, pose, description) => {
+    const resolved = FREE_EXERCISE_DB_ALIASES[name] ?? name;
+    const entry = db.find(e => normalizeExerciseName(e.name) === normalizeExerciseName(resolved));
+    expect(entry?.description).toMatch(description);
+    expect(exerciseCatalog.find(e => e.name === name)?.tags).toContain(pose);
+  });
+});

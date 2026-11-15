@@ -50,10 +50,10 @@ Deadlift                | hinge                 | barbell                    | 2
 Kettlebell Deadlift     | hinge                 | kettlebell                 | 1 |                         | deadlifts                           |    | 2
 Glute Bridge            | hinge,glute           | -                          | 1 |                         | floor,supine                        |    | 2
 Single Leg Glute Bridge | glute                 | -                          | 2 |                         | floor,supine                        |    | 1
-Hip Thrust              | glute,hinge           | barbell+bench/dumbbell     | 1 |                         |                                     |    | 3
+Hip Thrust              | glute,hinge           | barbell+bench/dumbbell     | 1 |                         | supine                              |    | 3
 Band Good Morning       | hinge,hamstring       | band                       | 1 | back                    |                                     |    | 1
 Superman                | hinge,core            | -                          | 1 |                         | floor,prone                             |    | 1
-Leg Curl                | hamstring             | machine                    | 1 |                         |                                     |    | 2
+Leg Curl                | hamstring             | machine                    | 1 |                         | prone                               |    | 2
 Nordic Curl             | hamstring             | -                          | 3 | knee                    | floor                               |    | 1
 Reverse Lunge           | lunge                 | -/dumbbell/kettlebell      | 1 | knee                    | lunges                              |    | 3
 Lunge                   | lunge                 | -/dumbbell                 | 1 | knee                    | lunges                              |    | 2
@@ -74,7 +74,7 @@ Incline Push-Up         | hPush                 | -                          | 1
 Bench Press             | hPush                 | barbell+bench              | 2 | shoulder                | heavy,supine                        |    | 3
 Dumbbell Bench Press    | hPush                 | dumbbell+bench             | 1 |                         | supine                              |    | 3
 Dumbbell Floor Press    | hPush                 | dumbbell                   | 1 |                         | supine,floor                        |    | 2
-Incline Dumbbell Press  | hPush,chestIso        | dumbbell+bench             | 1 | shoulder                |                                     |    | 2
+Incline Dumbbell Press  | hPush,chestIso        | dumbbell+bench             | 1 | shoulder                | supine                              |    | 2
 Cable Chest Press       | hPush                 | cable/machine              | 1 |                         |                                     |    | 2
 Band Chest Press        | hPush                 | band                       | 1 |                         |                                     |    | 1
 Chest Fly               | chestIso              | dumbbell+bench/cable/machine| 1 | shoulder               | supine                              |    | 2
@@ -86,7 +86,7 @@ Band Shoulder Press     | vPush                 | band                       | 1
 Pike Push-up            | vPush                 | -                          | 2 | shoulder,wrist          | overhead,floor                      |    | 2
 Lateral Raise           | shoulderIso           | dumbbell/cable/band        | 1 |                         |                                     |    | 3
 Front Raise             | shoulderIso           | dumbbell                   | 1 | shoulder                |                                     |    | 1
-Rear Delt Fly           | rearDelt              | dumbbell/cable/machine     | 1 |                         |                                     |    | 2
+Rear Delt Fly           | rearDelt              | dumbbell/cable/machine     | 1 |                         | prone                               |    | 2
 Face Pull               | rearDelt              | cable/band                 | 1 |                         |                                     |    | 3
 Band Pull Apart         | rearDelt              | band                       | 1 |                         |                                     |    | 2
 Bent-over Row           | hPull                 | barbell/dumbbell           | 1 | back                    |                                     |    | 3
@@ -113,7 +113,7 @@ Dead Bug                | core                  | -                          | 1
 Bird Dog                | core                  | -                          | 1 | wrist                   | floor                               |    | 2
 Crunch                  | core                  | -                          | 1 | neck,back               | crunches,floor,supine               |    | 1
 Bicycle Crunch          | core                  | -                          | 1 | neck,back               | crunches,floor,supine               |    | 2
-Russian Twist           | core                  | -                          | 1 | back                    | floor                               |    | 1
+Russian Twist           | core                  | -                          | 1 | back                    | floor,supine                        |    | 1
 Leg Raise               | core                  | -                          | 2 | back                    | floor,supine                        |    | 1
 Hanging Leg Raise       | core                  | pullupBar                  | 3 | shoulder,back           | hang                                |    | 2
 Pallof Press            | core                  | cable/band                 | 1 |                         |                                     |    | 3
@@ -132,7 +132,7 @@ Kettlebell Swing        | cond,hinge            | kettlebell                 | 2
 Boxing                  | cond                  | -                          | 1 | shoulder                | boxing                              | 40 | 2
 Marching in Place       | cond                  | -                          | 1 |                         | walking                             | 40 | 1
 Bear Crawl              | cond                  | -                          | 2 | wrist                   | floor                               | 30 | 1
-Air Bike                | cond,cardio           | bike                       | 1 |                         | cycling                             | 45 | 2
+Air Bike                | cond,cardio           | bike                       | 1 |                         | cycling,crunches,supine,floor         | 45 | 2
 Row Machine             | cond,cardio           | rower                      | 1 | back                    | rowing                              | 45 | 2
 Running                 | cardio                | -/treadmill                | 1 | knee,ankle,hip          | running,impact                      |    | 3
 Walking                 | cardio                | -/treadmill                | 1 |                         | walking                             |    | 2
@@ -143,7 +143,7 @@ Stair Climber           | cardio                | machine                    | 1
 Cat Stretch             | mobility              | -                          | 1 | wrist                   | yoga,floor                          | 40 | 2
 Child's Pose            | mobility              | -                          | 1 | knee                    | yoga,floor                          | 40 | 2
 World's Greatest Stretch| mobility              | -                          | 1 | wrist,knee              | yoga,floor                          | 40 | 3
-Hamstring Stretch       | mobility              | -                          | 1 |                         | yoga                                | 40 | 2
+Hamstring Stretch       | mobility              | -                          | 1 |                         | yoga,floor,supine                   | 40 | 2
 Kneeling Hip Flexor     | mobility              | -                          | 1 | knee                    | yoga,floor                          | 40 | 2
 Standing Hip Flexors    | mobility              | -                          | 1 |                         | yoga                                | 40 | 2
 Calf Stretch Hands Against Wall | mobility      | -                          | 1 |                         |                                     | 40 | 1
@@ -190,15 +190,15 @@ Wall Push-up            | hPush                 | -                          | 1
 Decline Push-Up         | hPush                 | -                          | 2 | wrist,shoulder          | pushups,floor                       |    | 1
 Push-Up Wide            | hPush,chestIso        | -                          | 1 | wrist,shoulder          | pushups,floor                       |    | 1
 Diamond Push-up         | hPush,triceps         | -                          | 2 | wrist,elbow             | pushups,floor                       |    | 2
-Incline Bench Press     | hPush,chestIso        | barbell+bench              | 2 | shoulder                | heavy                               |    | 2
-Decline Bench Press     | hPush                 | barbell+bench              | 2 | shoulder                | heavy                               |    | 1
+Incline Bench Press     | hPush,chestIso        | barbell+bench              | 2 | shoulder                | heavy,supine                        |    | 2
+Decline Bench Press     | hPush                 | barbell+bench              | 2 | shoulder                | heavy,supine                        |    | 1
 Machine Bench Press     | hPush                 | machine                    | 1 |                         |                                     |    | 2
 Close-Grip Barbell Bench Press | hPush,triceps  | barbell+bench              | 2 | wrist,elbow             | heavy,supine                        |    | 1
 Close-Grip Dumbbell Press | triceps,hPush       | dumbbell                   | 1 | elbow                   | supine                              |    | 1
 Dips - Chest Version    | hPush,triceps         | machine                    | 3 | shoulder,elbow          |                                     |    | 1
 Cable Crossover         | chestIso              | cable                      | 1 |                         |                                     |    | 2
 Incline Cable Flye      | chestIso              | cable+bench                | 1 |                         |                                     |    | 1
-Incline Dumbbell Flyes  | chestIso              | dumbbell+bench             | 1 | shoulder                |                                     |    | 1
+Incline Dumbbell Flyes  | chestIso              | dumbbell+bench             | 1 | shoulder                | supine                              |    | 1
 Band Chest Fly          | chestIso              | band                       | 1 |                         |                                     |    | 2
 Push-up Plus            | chestIso,core         | -                          | 1 | wrist                   | pushups,floor                       |    | 1
 Straight-Arm Dumbbell Pullover | chestIso,vPull | dumbbell+bench             | 2 | shoulder                | supine,overhead                     |    | 1
@@ -244,13 +244,13 @@ Reverse Crunch          | core                  | -                          | 1
 Sit-up                  | core                  | -                          | 1 | neck,back               | crunches,floor,supine               |    | 1
 Hollow Body Hold        | core                  | -                          | 2 | back                    | floor,supine                        | 25 | 2
 V-Up                    | core                  | -                          | 3 | back                    | floor,supine                        |    | 1
-Flutter Kick            | core                  | -                          | 1 | back                    | floor,supine                        | 30 | 1
+Flutter Kick            | core                  | -                          | 1 | back                    | floor,prone                         | 30 | 1
 Scissor Kick            | core                  | -                          | 1 | back                    | floor,supine                        | 30 | 1
 Forearm Plank           | core                  | -                          | 1 |                         | planks,floor                        | 30 | 2
 Plank Up-Down           | core,hPush            | -                          | 2 | wrist,shoulder          | planks,floor                        | 30 | 1
 Push Up to Side Plank   | core,hPush            | -                          | 2 | wrist,shoulder          | planks,pushups,floor                |    | 1
 Ab Wheel Rollout        | core                  | barbell                    | 3 | back,shoulder           | floor                               |    | 1
-Oblique Crunches        | core                  | -                          | 1 | neck                    | crunches,floor                      |    | 1
+Oblique Crunches        | core                  | -                          | 1 | neck                    | crunches,floor,supine               |    | 1
 Toe Touchers            | core                  | -                          | 1 | neck,back               | crunches,floor,supine               |    | 1
 Dumbbell Side Bend      | core                  | dumbbell/kettlebell        | 1 | back                    |                                     |    | 1
 Standing Oblique Crunch | core                  | -                          | 1 |                         |                                     |    | 2
@@ -291,7 +291,7 @@ Middle Back Stretch     | mobility              | -                          | 1
 Chin To Chest Stretch   | mobility              | -                          | 1 |                         |                                     | 30 | 1
 Ankle Circles           | mobility              | -                          | 1 |                         |                                     | 30 | 1
 90/90 Hamstring         | mobility              | -                          | 1 |                         | floor,supine                        | 30 | 1
-IT Band and Glute Stretch | mobility            | -                          | 1 |                         | floor                               | 30 | 1
+IT Band and Glute Stretch | mobility            | -                          | 1 |                         | floor,supine                        | 30 | 1
 Pigeon Pose             | mobility              | -                          | 2 | knee,hip                | yoga,floor                          | 40 | 2
 Thread the Needle       | mobility              | -                          | 1 | wrist,knee              | yoga,floor                          | 30 | 1
 Happy Baby              | mobility              | -                          | 1 |                         | yoga,floor,supine                   | 40 | 1

@@ -231,3 +231,42 @@ describe('planRoutine with what it learned', () => {
     expect(p.learned).toEqual({});
   });
 });
+
+
+describe('planner exclusions', () => {
+  it.each([
+    ['chest', ['Bench Press', 'Dumbbell Bench Press', 'Incline Bench Press', 'Push-up']],
+    ['back', ['Bent-over Row', 'Seated Row', 'Pull-down', 'Pull-up']],
+    ['shoulders', ['Overhead Press', 'Lateral Raise', 'Rear Delt Fly']],
+    ['arms', ['Bicep Curl', 'Tricep Extension', 'Hammer Curl', 'Cable Pushdown']],
+    ['core', ['Plank', 'Dead Bug', 'Pallof Press', 'Standing Knee Raise']],
+    ['glutes', ['Hip Thrust', 'Glute Bridge', 'Barbell Squat', 'Reverse Lunge']],
+    ['legs', ['Barbell Squat', 'Leg Press', 'Reverse Lunge', 'Calf Raise']],
+    ['lower', ['Barbell Squat', 'Leg Press', 'Reverse Lunge', 'Calf Raise']],
+    ['upper', ['Bench Press', 'Overhead Press', 'Bent-over Row', 'Bicep Curl']],
+  ] as const)(
+    'honors skip %s across goals and shuffles', (focus, excluded) => {
+      for (const goal of ['get stronger', 'lose weight', 'endurance', 'mobility'] as const) {
+        for (let seed = 0; seed < 5; seed++) {
+          const p = parseAnswers([goal, 'gym', '4 days 60 minutes', `skip ${focus}`]);
+          expect(p.skipFocus).toContain(focus);
+          const exercises = allExercises(planRoutine(p, seed));
+          expect(exercises.length).toBeGreaterThan(0);
+          for (const name of excluded) expect(exercises.map(e => e.name)).not.toContain(name);
+        }
+      }
+    }
+  );
+
+  it('does not offer lying leg curls or hip thrusts in a pregnancy plan', () => {
+    const p = parseAnswers(['get stronger', 'gym', '4 days 60 minutes', 'pregnant']);
+    for (let seed = 0; seed < 10; seed++) {
+      const names = allExercises(planRoutine(p, seed)).map(e => e.name);
+      expect(names.length).toBeGreaterThan(0);
+      expect(names).not.toContain('Leg Curl');
+      expect(names).not.toContain('Hip Thrust');
+      expect(names).not.toContain('Incline Dumbbell Press');
+      expect(names).not.toContain('Rear Delt Fly');
+    }
+  });
+});

@@ -60,14 +60,14 @@ function Choices<T extends string>({ label, options, value, onChange }: {
 
 export default function WorkoutFeedbackCard({ workout, onChange }: {
   workout: Workout;
-  onChange: (workout: Workout) => void;
+  onChange: (feedback: Partial<Pick<Workout, 'effort' | 'lengthFeel' | 'feedback'>>) => void;
 }) {
   const [note, setNote] = useState(workout.feedback ?? '');
   const [showNote, setShowNote] = useState(!!workout.feedback);
 
   const saveNote = () => {
     const feedback = note.trim() || undefined;
-    if (feedback !== workout.feedback) onChange({ ...workout, feedback });
+    if (feedback !== workout.feedback) onChange({ feedback });
   };
   // Also save a moment after typing stops, so leaving the page without blurring the box (the
   // phone's Back button) doesn't lose the note.
@@ -91,8 +91,8 @@ export default function WorkoutFeedbackCard({ workout, onChange }: {
         )}
       </Flex>
       <Flex direction="column" gap={2}>
-        <Choices label="Effort" options={EFFORT} value={workout.effort} onChange={effort => onChange({ ...workout, effort })} />
-        <Choices label="Length" options={LENGTH} value={workout.lengthFeel} onChange={lengthFeel => onChange({ ...workout, lengthFeel })} />
+        <Choices label="Effort" options={EFFORT} value={workout.effort} onChange={effort => onChange({ effort })} />
+        <Choices label="Length" options={LENGTH} value={workout.lengthFeel} onChange={lengthFeel => onChange({ lengthFeel })} />
         {showNote && (
           <Input
             aria-label="Notes on this workout"

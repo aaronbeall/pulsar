@@ -84,3 +84,30 @@ describe('adjustRoutine', () => {
       .toBe('My last few workouts on this routine felt too hard and too long. Please make it a bit easier and shorter, keeping the same training days.');
   });
 });
+
+
+describe('adjustment lower bounds', () => {
+  const schedule = (sets: number, dose: { reps?: number; duration?: number }): Routine => routine({
+    dailySchedule: [{ day: 'Monday', kind: 'Cardio', exercises: [{ exerciseId: 'a', sets, ...dose }] }],
+  });
+
+  it('shortens single-set cardio by duration, without adding sets', () => {
+    const ops = adjustRoutine(schedule(1, { duration: 1800 }), { length: 'shorter', rated: 2 });
+    expect(ops).toEqual([{ op: 'setDay', day: 'Monday', kind: 'Cardio',
+      exercises: [{ exerciseId: 'a', sets: 1, duration: 1440 }] }]);
+  });
+
+  it.each(['easier', 'shorter'] as const)('%s never raises a low dose', reduction => {
+    for (const sets of [1, 2, 3]) {
+      for (const dose of [{ reps: 1 }, { reps: 3 }, { reps: 5 }, { duration: 5 }, { duration: 10 }, {}]) {
+        const r = schedule(sets, dose);
+        const trend = reduction === 'easier' ? { effort: 'easier' as const, rated: 2 } : { length: 'shorter' as const, rated: 2 };
+        const op = adjustRoutine(r, trend)[0];
+        const ex = op?.op === 'setDay' ? op.exercises[0] : r.dailySchedule[0].exercises[0];
+        expect(ex.sets).toBeLessThanOrEqual(sets);
+        if (dose.reps) expect(ex.reps).toBeLessThanOrEqual(dose.reps);
+        if (dose.duration) expect(ex.duration).toBeLessThanOrEqual(dose.duration);
+      }
+    }
+  });
+});

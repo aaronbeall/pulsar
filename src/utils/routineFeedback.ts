@@ -65,9 +65,9 @@ const roundTo = (n: number, step: number) => Math.round(n / step) * step;
 
 function easier(ex: ScheduledExercise): ScheduledExercise {
   if (ex.sets > MIN_SETS + 1) return { ...ex, sets: ex.sets - 1 };
-  if (ex.duration) return { ...ex, duration: Math.max(10, roundTo(ex.duration * 0.8, 5)) };
-  if (ex.reps) return { ...ex, reps: Math.max(MIN_REPS, Math.round(ex.reps * 0.8)) };
-  return { ...ex, sets: Math.max(MIN_SETS, ex.sets - 1) };
+  if (ex.duration) return { ...ex, duration: Math.min(ex.duration, Math.max(10, roundTo(ex.duration * 0.8, 5))) };
+  if (ex.reps) return { ...ex, reps: Math.min(ex.reps, Math.max(MIN_REPS, Math.round(ex.reps * 0.8))) };
+  return { ...ex, sets: Math.min(ex.sets, Math.max(MIN_SETS, ex.sets - 1)) };
 }
 
 function harder(ex: ScheduledExercise): ScheduledExercise {
@@ -81,7 +81,8 @@ function harder(ex: ScheduledExercise): ScheduledExercise {
  * The rule-based adjustment, as one setDay op per training day it changes:
  * - easier: a set fewer (down to 3), else 20% fewer reps or seconds
  * - harder: a set more (up to 4), else 2 more reps or 20% more seconds
- * - shorter: the last exercise of each day goes (keeping at least 3), else a set fewer
+ * - shorter: the last exercise goes (keeping at least 3), else fewer sets or reps/seconds
+ * Reductions preserve an existing dose below the usual minimum instead of raising it.
  * - longer: a set more on each exercise (up to 5)
  * Effort and length are combined so a day isn't cut twice for the same reason.
  */
@@ -94,7 +95,11 @@ export function adjustRoutine(routine: Routine, t: RoutineTrend): RoutineChangeO
     if (t.effort === 'harder') exercises = exercises.map(harder);
     if (t.length === 'shorter') {
       if (exercises.length > MIN_EXERCISES) exercises = exercises.slice(0, -1);
-      else if (t.effort !== 'easier') exercises = exercises.map(ex => ({ ...ex, sets: Math.max(MIN_SETS, ex.sets - 1) }));
+      else if (t.effort !== 'easier') exercises = exercises.map(ex =>
+        ex.sets > MIN_SETS
+          ? { ...ex, sets: ex.sets - 1 }
+          : easier(ex)
+      );
     }
     if (t.length === 'longer' && t.effort !== 'harder') {
       exercises = exercises.map(ex => ({ ...ex, sets: Math.min(MAX_SETS, ex.sets + 1) }));
