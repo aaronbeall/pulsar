@@ -14,7 +14,7 @@ import {
 } from '@chakra-ui/react';
 import { format } from 'date-fns'; // Import date-fns for formatting dates
 import React, { useMemo } from 'react';
-import { FaCheckCircle, FaEdit, FaInfoCircle, FaPlay, FaPowerOff, FaRobot, FaTimes, FaTrophy } from 'react-icons/fa'; // Import icons
+import { FaCheckCircle, FaEdit, FaInfoCircle, FaPlay, FaListUl, FaPowerOff, FaRobot, FaTimes, FaTrophy } from 'react-icons/fa'; // Import icons
 import { Routine, Workout } from '../models/types';
 import { getRoutineStats } from '../utils/workoutUtils';
 import WeeklyActivityGraph from './WeeklyActivityGraph';
@@ -117,8 +117,8 @@ const ActivityTimeline: React.FC<{
       type: 'revision',
       id: r.id,
       date: r.date,
-      label: r.source === 'ai' ? 'AI change' : 'Edited',
-      color: r.source === 'ai' ? 'purple' : 'blue',
+      label: r.source === 'ai' ? 'AI change' : r.source === 'planner' ? 'Planner change' : 'Edited',
+      color: r.source === 'ai' ? 'purple' : r.source === 'planner' ? 'cyan' : 'blue',
       name: '',
       detail: r.summary,
     })),
@@ -139,6 +139,7 @@ const ActivityTimeline: React.FC<{
     Started: <FaPlay style={{ verticalAlign: 'middle' }} />,
     Created: <FaPowerOff style={{ verticalAlign: 'middle' }} />,
     'AI change': <FaRobot style={{ verticalAlign: 'middle' }} />,
+    'Planner change': <FaListUl style={{ verticalAlign: 'middle' }} />,
     Edited: <FaEdit style={{ verticalAlign: 'middle' }} />,
   };
   const eventTypeColorScheme = {
@@ -147,6 +148,7 @@ const ActivityTimeline: React.FC<{
     Started: 'cyan',
     Created: 'gray',
     'AI change': 'purple',
+    'Planner change': 'cyan',
     Edited: 'blue',
   };
   return (

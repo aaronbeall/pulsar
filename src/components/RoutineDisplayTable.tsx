@@ -54,6 +54,7 @@ export const RoutineDisplayTable: React.FC<{
                 <DayProposalPanel
                   current={scheduleForDay ?? null}
                   op={proposal.op}
+                  source={proposal.change.source}
                   onAccept={() => onDecide(proposal.change.id, [day], 'accepted')}
                   onReject={() => onDecide(proposal.change.id, [day], 'rejected')}
                 />

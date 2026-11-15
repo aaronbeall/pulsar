@@ -108,6 +108,52 @@ try {
   await page.evaluate(() => window.scrollBy(0, -120));
   await shot(page, 'review');
 
+  // The Pulsar Planner, for the "No AI" step: its own page, so the AI routine stays as is.
+  {
+    const planner = await newPage(browser);
+    await planner.goto(`${BASE}/app/workout/setup`);
+    await answerSetup(planner, ['lose weight and tone my arms', 'dumbbells, bands', '3 days a week, not Thursdays, 45 min', 'bad knees, hate burpees']);
+    await planner.getByRole('button', { name: 'Use the free Planner' }).click();
+    await planner.getByRole('heading', { name: 'Your plan' }).waitFor();
+    await planner.getByText('Extra focus').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    await planner.evaluate(() => window.scrollBy(0, -90));
+    await shot(planner, 'planner');
+    await planner.context().close();
+  }
+
+  // "How was it?" and the offer to adjust, for the "tell it how it went" step: two earlier
+  // workouts of a routine that felt too hard and too long, seeded straight into IndexedDB.
+  {
+    const feedback = await newPage(browser);
+    await feedback.goto(`${BASE}/app/`);
+    await feedback.evaluate(async () => {
+      const db = await new Promise((resolve) => { const q = indexedDB.open('PulsarDB', 1); q.onsuccess = () => resolve(q.result); });
+      const tx = db.transaction(['exercises', 'routines', 'workouts'], 'readwrite');
+      const names = ['Goblet Squat', 'Dumbbell Bench Press', 'Dumbbell Row', 'Romanian Deadlift', 'Plank'];
+      names.forEach((name, i) => tx.objectStore('exercises').put({ id: `fb${i}`, name, description: '', howToUrl: '', coverImageUrl: '', iconImageUrl: '' }));
+      const exercises = names.map((_, i) => ({ exerciseId: `fb${i}`, sets: 4, reps: 10 }));
+      tx.objectStore('routines').put({
+        id: 'fb', name: 'Strong & Steady', description: '', active: true, createdAt: Date.now() - 20 * 864e5, chatHistory: [],
+        dailySchedule: ['Monday', 'Wednesday', 'Friday'].map((day) => ({ day, kind: 'Full Body', exercises })),
+      });
+      for (const [id, daysAgo, feedbackNote] of [['fb1', 0, 'Legs were toast by the deadlifts'], ['fb2', 2, '']]) {
+        const startedAt = Date.now() - daysAgo * 864e5 - 3600e3;
+        tx.objectStore('workouts').put({
+          id, nickname: 'Iron Monday', routineId: 'fb', day: 'Monday', startedAt, completedAt: startedAt + 58 * 60e3,
+          effort: 'hard', lengthFeel: 'long', feedback: feedbackNote || undefined,
+          exercises: exercises.map((e) => ({ ...e, completedSets: 4, completedAt: startedAt + 55 * 60e3 })),
+        });
+      }
+      await new Promise((resolve) => { tx.oncomplete = resolve; });
+    });
+    await feedback.goto(`${BASE}/app/workout/session/fb1`);
+    await feedback.getByTestId('routine-adjust-offer').waitFor();
+    await feedback.getByText('How was it?').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    await feedback.evaluate(() => window.scrollBy(0, -24));
+    await shot(feedback, 'feedback');
+    await feedback.context().close();
+  }
+
   // The routine editor, for the "do it yourself" step.
   await page.goto(routineUrl);
   await page.getByRole('button', { name: 'Edit', exact: true }).click();

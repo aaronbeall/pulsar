@@ -67,7 +67,7 @@ export const RoutineTemplateChooser: React.FC<RoutineTemplateChooserProps> = ({ 
         <Button variant="ghost" size="sm" leftIcon={<FaArrowLeft />} onClick={onBack} mr={2}>
           Back
         </Button>
-        <Heading size="md">Choose a Routine Template</Heading>
+        <Heading size="md">Ready-made routines</Heading>
       </Flex>
       <InputGroup mb={4}>
         <InputLeftElement pointerEvents="none">

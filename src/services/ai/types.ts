@@ -1,4 +1,5 @@
 import { DayOfWeek, Routine } from '../../models/types';
+import type { LearnedPreferences } from '../../utils/learnedPreferences';
 
 // Raw exercise entry as returned by the LLM — a name, not yet resolved to a real Exercise
 // record. Resolving names -> Exercise (creating new ones as needed) happens client-side via
@@ -80,6 +81,9 @@ export interface AIProvider {
 }
 
 export interface StreamOptions {
+  /** What the app has learned from the user's likes, dislikes and workouts, sent along so
+   *  the model can weigh it (see utils/learnedPreferences.ts). */
+  preferences?: LearnedPreferences;
   /** Called as the reply's commentary is written: the text so far, and whether it's finished.
    *  The full response (routine or change) still only arrives when the promise resolves. */
   onCommentary?: (text: string, done: boolean) => void;

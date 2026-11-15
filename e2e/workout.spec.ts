@@ -56,6 +56,41 @@ test('finishing a workout early flags the skipped exercises', async ({ page }) =
 
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByText('Not all exercises were completed')).toBeVisible();
+
+  // "How was it?" saves each answer right away, so it's still there after a reload.
+  await page.getByRole('group', { name: 'Effort' }).getByRole('button', { name: 'Too hard' }).click();
+  await page.getByRole('group', { name: 'Length' }).getByRole('button', { name: 'Too long' }).click();
+  await page.getByRole('button', { name: 'Add a note' }).click();
+  await page.getByRole('textbox', { name: 'Notes on this workout' }).fill('Squats hurt my knee');
+  await page.getByRole('textbox', { name: 'Notes on this workout' }).blur();
+  await expect.poll(() => page.evaluate(async () => {
+    const req = indexedDB.open('PulsarDB', 1);
+    const db = await new Promise<IDBDatabase>((resolve) => { req.onsuccess = () => resolve(req.result); });
+    const all = await new Promise<any[]>((resolve) => {
+      const get = db.transaction('workouts').objectStore('workouts').getAll();
+      get.onsuccess = () => resolve(get.result);
+    });
+    db.close();
+    return all.some(w => w.effort === 'hard' && w.lengthFeel === 'long' && w.feedback === 'Squats hurt my knee');
+  })).toBe(true);
+  await page.reload();
+  await expect(page.getByRole('group', { name: 'Effort' }).getByRole('button', { name: 'Too hard' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('group', { name: 'Length' }).getByRole('button', { name: 'Too long' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('textbox', { name: 'Notes on this workout' })).toHaveValue('Squats hurt my knee');
+});
+
+test('liking a routine from its card sticks', async ({ page }) => {
+  await createRoutineFromTemplate(page, 'Strength Builder');
+  await navTab(page, 'Workout').click();
+  const card = page.getByRole('group', { name: 'View details for Strength Builder' });
+  await card.getByRole('button', { name: 'Like routine', exact: true }).click();
+  await expect(card.getByRole('button', { name: 'Like routine', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  // Tapping it doesn't open the routine.
+  await expect(page).toHaveURL(/\/workout$/);
+  await card.getByRole('button', { name: 'Dislike routine' }).click();
+  await expect(card.getByRole('button', { name: 'Like routine', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  await page.reload();
+  await expect(card.getByRole('button', { name: 'Dislike routine' })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('opening a workout day without starting a set does not start it', async ({ page }) => {

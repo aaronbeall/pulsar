@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { Box, Button, Flex, Icon, Text } from '@chakra-ui/react';
-import { FaArrowRight, FaCheck, FaCheckCircle, FaMinus, FaPlus, FaRegCircle, FaRobot, FaTimes, FaTimesCircle } from 'react-icons/fa';
+import { FaArrowRight, FaCheck, FaCheckCircle, FaMinus, FaPlus, FaRegCircle, FaListUl, FaRobot, FaTimes, FaTimesCircle } from 'react-icons/fa';
 import type { RoutineChangeOp, RoutineDay, ScheduledExercise } from '../models/types';
 import { useExercise } from '../store/pulsarStore';
 import { ChangeItemStatus, dayAfterOp, diffExercises, ExerciseDiffRow } from '../utils/routineChangeUtils';
@@ -142,9 +142,11 @@ export const DecisionButtons: React.FC<{ onAccept: () => void; onReject: () => v
 export const DayProposalPanel: React.FC<{
   current: RoutineDay | null;
   op: RoutineChangeOp;
+  /** Who suggested it: Pulsar AI unless it came from the rule-based Planner. */
+  source?: 'ai' | 'planner';
   onAccept: () => void;
   onReject: () => void;
-}> = ({ current, op, onAccept, onReject }) => (
+}> = ({ current, op, source, onAccept, onReject }) => (
   <Box
     borderWidth="2px"
     borderColor="cyan.400"
@@ -155,8 +157,8 @@ export const DayProposalPanel: React.FC<{
     p={3}
   >
     <Flex align="center" gap={2} mb={2} fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="wide" color="cyan.700" _dark={{ color: 'cyan.300' }}>
-      <Icon as={FaRobot} />
-      Suggested change
+      <Icon as={source === 'planner' ? FaListUl : FaRobot} />
+      {source === 'planner' ? 'Planner suggestion' : 'Suggested change'}
     </Flex>
     <DayChangeDiff before={current && current.exercises.length > 0 ? current : null} after={dayAfterOp(op)} />
     <Flex justify="flex-end" mt={3}>
