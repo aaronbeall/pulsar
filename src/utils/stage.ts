@@ -1,6 +1,6 @@
 /**
- * Which copy of Pulsar this build is: production, staging (staging.pulsarworkouts.app) or a
- * PR preview. Set at build time by .github/workflows/cloudflare.yml; production and local
+ * Which copy of Pulsar this build is: production, staging (the "staging" Cloudflare
+ * Preview) or a PR preview. Set at build time by .github/workflows/cloudflare.yml; production and local
  * builds set neither.
  */
 export function stageLabel(stage: string | undefined, previewPr: string | undefined): string | null {

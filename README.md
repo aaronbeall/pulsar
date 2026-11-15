@@ -149,8 +149,9 @@ Setup, once:
    - `OPENAI_API_KEY`: the staging key
    - `STRIPE_SECRET_KEY`: the test-mode `sk_test_...`
    - `STRIPE_WEBHOOK_SECRET`: the staging webhook's `whsec_...`
-5. Run the workflow's `recreate-staging` (and push to any open PR, after deleting its preview,
-   for it to pick them up).
+5. Run the workflow's `recreate-staging`. An open PR's preview that predates the secrets
+   won't have them: delete it with `npx wrangler preview delete --name pr-<n>` and its next
+   push recreates it.
 
 Without these secrets, staging and previews still deploy, just without sign-in, hosted AI or
 checkout.
