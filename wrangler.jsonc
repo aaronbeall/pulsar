@@ -39,4 +39,28 @@
   // Secrets (wrangler secret put, or .dev.vars locally): BETTER_AUTH_SECRET,
   // GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, OPENAI_API_KEY, STRIPE_SECRET_KEY,
   // STRIPE_WEBHOOK_SECRET. See README "Deploying".
+
+  // Everything that isn't production is a Cloudflare Preview of this Worker (`wrangler
+  // preview`): "staging", deployed from main, and "pr-<n>" for each PR. Nothing here is
+  // inherited from production. Previews share the pulsar-staging database and Stripe test
+  // mode; their secrets are set once in the Previews base config (README "Staging and PR
+  // previews"). A Preview's address is <name>-pulsar.<account>.workers.dev.
+  "previews": {
+    // Previews need the database's id (Wrangler doesn't look it up by name for them).
+    // wrangler.preview-migrations.jsonc names the same database for migrations.
+    "d1_databases": [
+      { "binding": "DB", "database_name": "pulsar-staging", "database_id": "371bcacd-07b5-4f56-8fb4-9a09baa7b98f", "migrations_dir": "worker/migrations" }
+    ],
+    "vars": {
+      "AUTH_ORIGINS": "https://*-pulsar.metamodernmonkey.workers.dev",
+      // Google only redirects to registered addresses, so every preview signs in through
+      // staging's fixed address (see worker/auth.ts). Staging's own sign-ins skip the proxy.
+      "AUTH_PROXY_URL": "https://staging-pulsar.metamodernmonkey.workers.dev",
+      "AI_MODEL": "gpt-5-mini",
+      "AI_DAILY_BUDGET_USD": "2",
+      // Always Stripe test mode.
+      "STRIPE_PRICE_MONTHLY": "price_1UaEg4Ru7wLB1EixsMo5hCxg",
+      "STRIPE_PRICE_YEARLY": "price_1UaEgzRu7wLB1EixjkEftQEi"
+    }
+  }
 }

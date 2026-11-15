@@ -1,11 +1,14 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
+import { appendFileSync } from 'node:fs';
 import { VitePWA } from 'vite-plugin-pwa';
 import license from 'rollup-plugin-license';
 
 // Set only in PR preview builds (see .github/workflows/cloudflare.yml).
 const previewPr = process.env.VITE_PREVIEW_PR;
+// "staging" only in staging builds (same workflow).
+const isStaging = process.env.VITE_STAGE === 'staging';
 
 const base = process.env.BASE || '/';
 // The site has two pages: the marketing homepage at <base> (index.html) and the app at
@@ -62,6 +65,22 @@ OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.`;
 }
 
+/**
+ * Staging and PR preview builds tell search engines to stay away, with an X-Robots-Tag header on
+ * every page (Cloudflare reads dist/_headers). Production builds are left alone.
+ */
+function noindexOutsideProduction(): Plugin {
+  return {
+    name: 'noindex-outside-production',
+    apply: 'build',
+    writeBundle(options) {
+      if (!previewPr && !isStaging) return;
+      const file = resolve(options.dir ?? 'dist', '_headers');
+      appendFileSync(file, '\n# Staging and PR previews only: keep them out of search results.\n/*\n  X-Robots-Tag: noindex\n');
+    },
+  };
+}
+
 function thirdPartyLicenses(): Plugin {
   return {
     ...license({
@@ -108,6 +127,7 @@ export default defineConfig({
     react(),
     appRouteFallback(),
     thirdPartyLicenses(),
+    noindexOutsideProduction(),
     VitePWA({
       registerType: 'autoUpdate',
       // The service worker is served from <base>sw.js but only controls the app.
@@ -163,8 +183,8 @@ export default defineConfig({
       },
       manifest: {
         id: 'app/',
-        name: previewPr ? `Pulsar Workouts (PR #${previewPr})` : 'Pulsar Workouts',
-        short_name: previewPr ? `Pulsar #${previewPr}` : 'Pulsar',
+        name: previewPr ? `Pulsar Workouts (PR #${previewPr})` : isStaging ? 'Pulsar Staging' : 'Pulsar Workouts',
+        short_name: previewPr ? `Pulsar #${previewPr}` : isStaging ? 'Pulsar Staging' : 'Pulsar',
         description: 'A modern, installable workout and routine tracker.',
         // Relative to the manifest (served at <base>), so they work at any base path: the
         // installed app opens at <base>app/ and stays inside it.

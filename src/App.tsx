@@ -16,6 +16,7 @@ import {
   Text,
   Container,
   useToken,
+  Badge,
 } from '@chakra-ui/react';
 import { IconType } from 'react-icons';
 import { FaBars, FaHome, FaDumbbell, FaChartLine } from 'react-icons/fa';
@@ -33,6 +34,7 @@ import InstallAppAlert from './components/InstallAppAlert';
 import logoSvg from './assets/logo.svg';
 import { requestPersistentStorage } from './utils/storagePersistence';
 import { useCheckoutReturn } from './hooks/useCheckoutReturn';
+import { STAGE_LABEL } from './utils/stage';
 import { useSystemColorModeSync } from './store/themeStore';
 
 const App: React.FC = () => {
@@ -104,6 +106,20 @@ const App: React.FC = () => {
                   </Box>
                 </Flex>
               </RouterLink>
+              {STAGE_LABEL && (
+                // Staging and PR previews: never mistaken for the real app.
+                <Badge
+                  bg="whiteAlpha.900"
+                  color="gray.800"
+                  fontSize="0.65rem"
+                  px={2}
+                  py={0.5}
+                  borderRadius="full"
+                  data-testid="stage-badge"
+                >
+                  {STAGE_LABEL}
+                </Badge>
+              )}
             </Flex>
 
             <Flex gap={3}>

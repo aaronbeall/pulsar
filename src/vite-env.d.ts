@@ -3,4 +3,6 @@
 interface ImportMetaEnv {
   /** Set only in PR preview builds (see .github/workflows/cloudflare.yml). */
   readonly VITE_PREVIEW_PR?: string;
+  /** "staging" in staging builds (see .github/workflows/cloudflare.yml). */
+  readonly VITE_STAGE?: string;
 }
