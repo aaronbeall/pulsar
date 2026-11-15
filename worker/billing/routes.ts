@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { currentUser } from '../session';
 import { verifyStripeSignature } from './signature';
 import { StripeError, createCheckoutSession, createPortalSession, retrieveSubscription } from './stripe';
+import { isFakeSubscription } from '../dev/accountTools';
 import { claimEvent, forgetEvent, getSubscription, isActive, rowFromStripe, saveSubscription, shouldReplace, userIdForSubscription } from './subscription';
 
 // Pulsar AI subscriptions through Stripe Checkout with Managed Payments (Stripe is the
@@ -37,7 +38,7 @@ billingRoutes.post('/checkout', async (c) => {
       managed_payments: { enabled: true },
       client_reference_id: user.id,
       // Reuse the Stripe customer from an earlier subscription, so their history stays together.
-      ...(existing ? { customer: existing.stripeCustomerId } : { customer_email: user.email }),
+      ...(existing && !isFakeSubscription(existing) ? { customer: existing.stripeCustomerId } : { customer_email: user.email }),
       metadata: { userId: user.id },
       subscription_data: { metadata: { userId: user.id } },
       success_url: `${origin}${back}${back.includes('?') ? '&' : '?'}subscribed=1`,
@@ -56,6 +57,9 @@ billingRoutes.post('/portal', async (c) => {
   if (!user) return error('signin_required', 'Sign in to manage your subscription.', 401);
   const sub = await getSubscription(c.env.DB, user.id);
   if (!sub) return error('no_subscription', "You don't have a subscription.", 404);
+  if (isFakeSubscription(sub)) {
+    return error('pretend_subscription', 'This is a pretend subscription from Account tools. Change it there.', 409);
+  }
   try {
     const portal = await createPortalSession(c.env, sub.stripeCustomerId, `${new URL(c.req.url).origin}/app/settings`);
     return c.json({ url: portal.url });

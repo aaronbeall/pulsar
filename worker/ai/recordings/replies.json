@@ -1,0 +1,484 @@
+[
+  {
+    "id": "plan-dumbbells-knees",
+    "kind": "plan",
+    "label": "Plan: get stronger with dumbbells, 3 days, bad knees",
+    "input": {
+      "answers": [
+        {
+          "question": "What are your goals?",
+          "answer": "get stronger"
+        },
+        {
+          "question": "What equipment will you use?",
+          "answer": "dumbbells only"
+        },
+        {
+          "question": "How much can you work out?",
+          "answer": "3 days a week"
+        },
+        {
+          "question": "Anything else I should know?",
+          "answer": "bad knees"
+        }
+      ]
+    },
+    "promptKey": "16a6ca6ca9f2c9",
+    "model": "hand-written",
+    "recordedAt": null,
+    "content": "{\"name\":\"Knee-Kind Dumbbell Strength\",\"description\":\"Three full-body dumbbell sessions a week that build strength without pounding your knees.\",\"commentary\":\"I built three full-body dumbbell days so every session moves you toward getting stronger. I left out jumps and deep lunges because of your knees, and used hip hinges and supported moves instead.\",\"schedule\":[{\"day\":\"Monday\",\"kind\":\"Full Body\",\"exercises\":[{\"name\":\"Dumbbell Bench Press\",\"sets\":3,\"reps\":10},{\"name\":\"Dumbbell Row\",\"sets\":3,\"reps\":10},{\"name\":\"Romanian Deadlift\",\"sets\":3,\"reps\":10},{\"name\":\"Plank\",\"sets\":3,\"duration\":30}]},{\"day\":\"Wednesday\",\"kind\":\"Full Body\",\"exercises\":[{\"name\":\"Dumbbell Shoulder Press\",\"sets\":3,\"reps\":10},{\"name\":\"Dumbbell Row\",\"sets\":3,\"reps\":12},{\"name\":\"Glute Bridge\",\"sets\":3,\"reps\":12},{\"name\":\"Dead Bug\",\"sets\":3,\"reps\":10}]},{\"day\":\"Friday\",\"kind\":\"Full Body\",\"exercises\":[{\"name\":\"Dumbbell Bench Press\",\"sets\":3,\"reps\":8},{\"name\":\"Bicep Curl\",\"sets\":3,\"reps\":12},{\"name\":\"Romanian Deadlift\",\"sets\":3,\"reps\":8},{\"name\":\"Side Plank\",\"sets\":2,\"duration\":30}]}]}",
+    "usage": null
+  },
+  {
+    "id": "plan-bodyweight-beginner",
+    "kind": "plan",
+    "label": "Plan: beginner, no equipment, short sessions",
+    "input": {
+      "answers": [
+        {
+          "question": "What are your goals?",
+          "answer": "lose weight and feel healthier"
+        },
+        {
+          "question": "What equipment will you use?",
+          "answer": "nothing, just bodyweight"
+        },
+        {
+          "question": "How much can you work out?",
+          "answer": "20 minutes, 4 days a week"
+        },
+        {
+          "question": "Anything else I should know?",
+          "answer": "I'm a complete beginner"
+        }
+      ]
+    },
+    "promptKey": "10351b024626f9",
+    "model": "hand-written",
+    "recordedAt": null,
+    "content": "{\"name\":\"Fresh Start Bodyweight\",\"description\":\"Four short bodyweight sessions to build the habit and burn calories.\",\"commentary\":\"Since you're just starting, I kept each session to about 20 minutes with simple moves you can do anywhere. Four short days will build the habit without wearing you out.\",\"schedule\":[{\"day\":\"Monday\",\"kind\":\"Full Body\",\"exercises\":[{\"name\":\"Squat\",\"sets\":3,\"reps\":10},{\"name\":\"Push-up\",\"sets\":3,\"reps\":8},{\"name\":\"Plank\",\"sets\":3,\"duration\":20}]},{\"day\":\"Tuesday\",\"kind\":\"Cardio\",\"exercises\":[{\"name\":\"Jumping Jacks\",\"sets\":3,\"duration\":40},{\"name\":\"High Knees\",\"sets\":3,\"duration\":30}]},{\"day\":\"Thursday\",\"kind\":\"Full Body\",\"exercises\":[{\"name\":\"Lunge\",\"sets\":3,\"reps\":8},{\"name\":\"Glute Bridge\",\"sets\":3,\"reps\":12},{\"name\":\"Dead Bug\",\"sets\":3,\"reps\":8}]},{\"day\":\"Saturday\",\"kind\":\"Cardio\",\"exercises\":[{\"name\":\"Mountain Climbers\",\"sets\":3,\"duration\":30},{\"name\":\"Jumping Jacks\",\"sets\":3,\"duration\":40}]}]}",
+    "usage": null
+  },
+  {
+    "id": "plan-gym-muscle",
+    "kind": "plan",
+    "label": "Plan: build muscle in a full gym, 5 days",
+    "input": {
+      "answers": [
+        {
+          "question": "What are your goals?",
+          "answer": "build muscle, especially arms and chest"
+        },
+        {
+          "question": "What equipment will you use?",
+          "answer": "full gym"
+        },
+        {
+          "question": "How much can you work out?",
+          "answer": "5 days a week, about an hour"
+        },
+        {
+          "question": "Anything else I should know?",
+          "answer": "I hate running"
+        }
+      ]
+    },
+    "promptKey": "0f12611573b6ac",
+    "model": "hand-written",
+    "recordedAt": null,
+    "content": "{\"name\":\"Arms & Chest Builder\",\"description\":\"A five-day gym split with extra volume for chest and arms.\",\"commentary\":\"I gave chest and arms their own days so they get the most volume, and kept legs and back in to stay balanced. No running anywhere: conditioning comes from the lifting pace.\",\"schedule\":[{\"day\":\"Monday\",\"kind\":\"Chest\",\"exercises\":[{\"name\":\"Bench Press\",\"sets\":4,\"reps\":8},{\"name\":\"Incline Dumbbell Press\",\"sets\":3,\"reps\":10},{\"name\":\"Cable Fly\",\"sets\":3,\"reps\":12}]},{\"day\":\"Tuesday\",\"kind\":\"Back\",\"exercises\":[{\"name\":\"Pull-up\",\"sets\":4,\"reps\":8},{\"name\":\"Barbell Row\",\"sets\":4,\"reps\":8},{\"name\":\"Lat Pulldown\",\"sets\":3,\"reps\":12}]},{\"day\":\"Wednesday\",\"kind\":\"Legs\",\"exercises\":[{\"name\":\"Squat\",\"sets\":4,\"reps\":8},{\"name\":\"Romanian Deadlift\",\"sets\":3,\"reps\":10},{\"name\":\"Leg Press\",\"sets\":3,\"reps\":12}]},{\"day\":\"Thursday\",\"kind\":\"Arms\",\"exercises\":[{\"name\":\"Bicep Curl\",\"sets\":4,\"reps\":10},{\"name\":\"Tricep Pushdown\",\"sets\":4,\"reps\":10},{\"name\":\"Hammer Curl\",\"sets\":3,\"reps\":12}]},{\"day\":\"Friday\",\"kind\":\"Chest & Arms\",\"exercises\":[{\"name\":\"Dumbbell Bench Press\",\"sets\":4,\"reps\":10},{\"name\":\"Dips\",\"sets\":3,\"reps\":10},{\"name\":\"Bicep Curl\",\"sets\":3,\"reps\":12}]}]}",
+    "usage": null
+  },
+  {
+    "id": "edit-friday-rest",
+    "kind": "edit",
+    "label": "Edit (Strength Builder): make Friday a rest day",
+    "input": {
+      "routine": {
+        "name": "Strength Builder",
+        "description": "Focuses on building maximum strength with heavy compound lifts."
+      },
+      "schedule": [
+        {
+          "day": "Monday",
+          "kind": "Powerlifting",
+          "exercises": [
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Pull-up",
+              "sets": 3,
+              "reps": 8
+            }
+          ]
+        },
+        {
+          "day": "Wednesday",
+          "kind": "Powerlifting",
+          "exercises": [
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Pull-up",
+              "sets": 3,
+              "reps": 8
+            }
+          ]
+        },
+        {
+          "day": "Friday",
+          "kind": "Powerlifting",
+          "exercises": [
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Pull-up",
+              "sets": 3,
+              "reps": 8
+            }
+          ]
+        }
+      ],
+      "history": [],
+      "message": "make friday a rest day"
+    },
+    "promptKey": "0860ab70630a6a",
+    "model": "hand-written",
+    "recordedAt": null,
+    "content": "{\"commentary\":\"Done: Friday is now a rest day, so you lift Monday and Wednesday with more recovery in between.\",\"patch\":{\"dailySchedule\":[{\"op\":\"clearDay\",\"day\":\"Friday\"}]}}",
+    "usage": null
+  },
+  {
+    "id": "edit-knee-friendly",
+    "kind": "edit",
+    "label": "Edit (Strength Builder): swap squats for something easier on the knees",
+    "input": {
+      "routine": {
+        "name": "Strength Builder",
+        "description": "Focuses on building maximum strength with heavy compound lifts."
+      },
+      "schedule": [
+        {
+          "day": "Monday",
+          "kind": "Powerlifting",
+          "exercises": [
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Pull-up",
+              "sets": 3,
+              "reps": 8
+            }
+          ]
+        },
+        {
+          "day": "Wednesday",
+          "kind": "Powerlifting",
+          "exercises": [
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Pull-up",
+              "sets": 3,
+              "reps": 8
+            }
+          ]
+        },
+        {
+          "day": "Friday",
+          "kind": "Powerlifting",
+          "exercises": [
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Pull-up",
+              "sets": 3,
+              "reps": 8
+            }
+          ]
+        }
+      ],
+      "history": [],
+      "message": "my knees hurt when I squat, swap squats for something easier on them"
+    },
+    "promptKey": "06513f6a0a1e28",
+    "model": "hand-written",
+    "recordedAt": null,
+    "content": "{\"commentary\":\"I swapped squats for Romanian deadlifts on every lifting day. They train your legs hard while keeping your knees mostly still.\",\"patch\":{\"dailySchedule\":[{\"op\":\"setDay\",\"day\":\"Monday\",\"kind\":\"Powerlifting\",\"exercises\":[{\"name\":\"Deadlift\",\"sets\":5,\"reps\":5},{\"name\":\"Bench Press\",\"sets\":5,\"reps\":5},{\"name\":\"Romanian Deadlift\",\"sets\":4,\"reps\":8},{\"name\":\"Pull-up\",\"sets\":3,\"reps\":8}]},{\"op\":\"setDay\",\"day\":\"Wednesday\",\"kind\":\"Powerlifting\",\"exercises\":[{\"name\":\"Deadlift\",\"sets\":5,\"reps\":5},{\"name\":\"Bench Press\",\"sets\":5,\"reps\":5},{\"name\":\"Romanian Deadlift\",\"sets\":4,\"reps\":8},{\"name\":\"Pull-up\",\"sets\":3,\"reps\":8}]},{\"op\":\"setDay\",\"day\":\"Friday\",\"kind\":\"Powerlifting\",\"exercises\":[{\"name\":\"Deadlift\",\"sets\":5,\"reps\":5},{\"name\":\"Bench Press\",\"sets\":5,\"reps\":5},{\"name\":\"Romanian Deadlift\",\"sets\":4,\"reps\":8},{\"name\":\"Pull-up\",\"sets\":3,\"reps\":8}]}]}}",
+    "usage": null
+  },
+  {
+    "id": "edit-add-cardio",
+    "kind": "edit",
+    "label": "Edit (Strength Builder): add a short cardio day on Saturday",
+    "input": {
+      "routine": {
+        "name": "Strength Builder",
+        "description": "Focuses on building maximum strength with heavy compound lifts."
+      },
+      "schedule": [
+        {
+          "day": "Monday",
+          "kind": "Powerlifting",
+          "exercises": [
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Pull-up",
+              "sets": 3,
+              "reps": 8
+            }
+          ]
+        },
+        {
+          "day": "Wednesday",
+          "kind": "Powerlifting",
+          "exercises": [
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Pull-up",
+              "sets": 3,
+              "reps": 8
+            }
+          ]
+        },
+        {
+          "day": "Friday",
+          "kind": "Powerlifting",
+          "exercises": [
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Pull-up",
+              "sets": 3,
+              "reps": 8
+            }
+          ]
+        }
+      ],
+      "history": [],
+      "message": "add a short cardio day on Saturday"
+    },
+    "promptKey": "0a0e3a4bc8be20",
+    "model": "hand-written",
+    "recordedAt": null,
+    "content": "{\"commentary\":\"I added a short Saturday cardio session to build your conditioning without cutting into recovery for your lifting days.\",\"patch\":{\"dailySchedule\":[{\"op\":\"setDay\",\"day\":\"Saturday\",\"kind\":\"Cardio\",\"exercises\":[{\"name\":\"Jumping Jacks\",\"sets\":3,\"duration\":60},{\"name\":\"Mountain Climbers\",\"sets\":3,\"duration\":30}]}]}}",
+    "usage": null
+  },
+  {
+    "id": "question-rest-time",
+    "kind": "edit",
+    "label": "Question (Strength Builder): how long to rest between sets",
+    "input": {
+      "routine": {
+        "name": "Strength Builder",
+        "description": "Focuses on building maximum strength with heavy compound lifts."
+      },
+      "schedule": [
+        {
+          "day": "Monday",
+          "kind": "Powerlifting",
+          "exercises": [
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Pull-up",
+              "sets": 3,
+              "reps": 8
+            }
+          ]
+        },
+        {
+          "day": "Wednesday",
+          "kind": "Powerlifting",
+          "exercises": [
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Pull-up",
+              "sets": 3,
+              "reps": 8
+            }
+          ]
+        },
+        {
+          "day": "Friday",
+          "kind": "Powerlifting",
+          "exercises": [
+            {
+              "name": "Deadlift",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Bench Press",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Squat",
+              "sets": 5,
+              "reps": 5
+            },
+            {
+              "name": "Pull-up",
+              "sets": 3,
+              "reps": 8
+            }
+          ]
+        }
+      ],
+      "history": [],
+      "message": "how long should I rest between sets?"
+    },
+    "promptKey": "1490da8c68a40b",
+    "model": "hand-written",
+    "recordedAt": null,
+    "content": "{\"commentary\":\"For heavy sets of 5 like yours, rest about 3 to 5 minutes so you can lift with good form each set. For pull-ups, 2 minutes is plenty.\",\"patch\":{}}",
+    "usage": null
+  }
+]

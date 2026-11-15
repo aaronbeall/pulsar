@@ -1,4 +1,6 @@
 import { test as base, expect, type Page, type Route } from '@playwright/test';
+import type { AIKind } from '../worker/ai/plans';
+import { RERECORD_HINT, currentPromptKey, promptKey, recordingById, replayEvents, type RecordedReply } from '../worker/ai/replay';
 
 /**
  * A Monday morning. Template routines put their first workout on Monday, so pinning the
@@ -55,9 +57,28 @@ export async function mockOpenAI(page: Page, reply: OpenAIMock) {
   });
 }
 
+/**
+ * Replays recorded OpenAI replies (worker/ai/recordings/, made by `npm run ai:record`), so a
+ * test runs on real model output without a key. Queue the recordings a test expects, in order:
+ *
+ *   await aiReplay.openai(page, 'plan-dumbbells-knees');   // bring-your-own-key calls
+ *   await aiReplay.hosted(page, 'edit-friday-rest');       // hosted /api/ai/* calls
+ *
+ * Each request must be the one the reply was recorded for. If the prompts or the test's input
+ * changed, the reply is still played so the test can carry on, and the test fails at the end
+ * with a "re-record" message.
+ */
+export interface AIReplay {
+  openai(page: Page, ...ids: string[]): Promise<RecordedReply[]>;
+  hosted(page: Page, ...ids: string[]): Promise<RecordedReply[]>;
+  /** The request bodies seen so far. */
+  requests: unknown[];
+}
+
 type Fixtures = {
   /** Uncaught page errors seen during the test; checked automatically at the end. */
   pageErrors: string[];
+  aiReplay: AIReplay;
 };
 
 export const test = base.extend<Fixtures>({
@@ -80,6 +101,62 @@ export const test = base.extend<Fixtures>({
     },
     { auto: true },
   ],
+
+  aiReplay: async ({}, use) => {
+    const mismatches: string[] = [];
+    const requests: unknown[] = [];
+    const queue = (ids: string[]) => {
+      const recordings = ids.map((id) => recordingById(id));
+      let next = 0;
+      return {
+        recordings,
+        take(kind: AIKind | null, key: string, body: unknown) {
+          requests.push(body);
+          const rec = recordings[Math.min(next++, recordings.length - 1)];
+          if (next > recordings.length) mismatches.push(`An unexpected extra AI request after "${rec.id}".`);
+          else if (kind && rec.kind !== kind) mismatches.push(`"${rec.id}" is a ${rec.kind} reply, but the app asked for a ${kind}.`);
+          else if (key !== rec.promptKey) {
+            mismatches.push(`The request for "${rec.id}" isn't the one that was recorded: the prompts or the test's input changed.`);
+          }
+          return rec;
+        },
+      };
+    };
+
+    await use({
+      requests,
+      async openai(page, ...ids) {
+        const q = queue(ids);
+        await page.unroute(`${OPENAI_HOST}**`);
+        await page.route(`${OPENAI_HOST}**`, (route) => {
+          if (route.request().url().endsWith('/v1/models')) {
+            return route.fulfill({ json: { object: 'list', data: [{ id: 'gpt-4o-mini', object: 'model' }] } });
+          }
+          const body = route.request().postDataJSON();
+          const rec = q.take(null, promptKey(body.messages ?? []), body);
+          if (body.stream) {
+            return route.fulfill({ contentType: 'text/event-stream', body: replayEvents(rec.content, rec.usage).join('') });
+          }
+          return route.fulfill({
+            json: { id: 'chatcmpl-replay', object: 'chat.completion', choices: [{ index: 0, finish_reason: 'stop', message: { role: 'assistant', content: rec.content } }] },
+          });
+        });
+        return q.recordings;
+      },
+      async hosted(page, ...ids) {
+        const q = queue(ids);
+        await page.route('**/api/ai/*', (route) => {
+          const kind: AIKind = route.request().url().endsWith('/plan') ? 'plan' : 'edit';
+          const body = route.request().postDataJSON();
+          const rec = q.take(kind, currentPromptKey(kind, body), body);
+          return route.fulfill({ contentType: 'text/event-stream', body: replayEvents(rec.content, rec.usage).join('') });
+        });
+        return q.recordings;
+      },
+    });
+
+    expect(mismatches, `Recorded AI replies don't fit this test. ${RERECORD_HINT}`).toEqual([]);
+  },
 });
 
 export { expect };
